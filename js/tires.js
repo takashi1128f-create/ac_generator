@@ -254,7 +254,6 @@ window.renderTyreUI = function() {
 					<div class="suspension-item-title_box"><p>COMPOUNDS</p></div>
 					<div id="tyre-compound-list" class="gear-set-list"></div>
 					<div>
-						<button class="add-set-btn" onclick="window.addNewTyreCompound()">+ 新規</button>
 						<button class="add-set-btn" onclick="window.addTyreCompound()">+ 複製</button>
 					</div>
 				</aside>
@@ -398,6 +397,7 @@ window.renderTyreUI = function() {
 	
 	// 🌟 重複を完全に排除し、GLOBALとコンパウンド別項目を正しく仕分ける唯一のループ
 	const globalSectionMap = {
+		'VERSION': 'HEADER',
 		'INDEX': 'COMPOUND_DEFAULT',
 		'USE_LOAD': 'VIRTUALKM',
 		'MAX_KM': 'VIRTUALKM',
@@ -572,13 +572,12 @@ window.addTyreInputField = function(parent, compoundObj, sectionName, key, val) 
 	
 	const helpText = helpMap[key] || '';
 
-	// 🕵️ ファイル内から元々記載されていた本物のLUTファイル名の一覧を自動で集めて候補リストを作る
-	let lutOptionsHtml = '';
+let inputHtml = '';
+
 	if (key === 'WEAR_CURVE' || key === 'PERFORMANCE_CURVE') {
 		let foundLuts = new Set();
 		if (window.tyreCompoundList) {
 			window.tyreCompoundList.forEach(c => {
-				// 元々のインポートデータ（raw_ini）の全セクションから、このキーに指定されている値を集める
 				if (c.raw_ini) {
 					for (let sec in c.raw_ini) {
 						if (c.raw_ini[sec] && c.raw_ini[sec][key]) {
@@ -588,19 +587,37 @@ window.addTyreInputField = function(parent, compoundObj, sectionName, key, val) 
 				}
 			});
 		}
-		// 候補が見つかった場合のみ、inputタグと連動するdatalistタグを生成
-		if (foundLuts.size > 0) {
-			lutOptionsHtml = `<datalist id="list-${key}">` + Array.from(foundLuts).map(l => `<option value="${l}"></option>`).join('') + `</datalist>`;
+
+		const kunosDefault = key === 'WEAR_CURVE' ? 'kunos_wear.lut' : 'kunos_thermal.lut';
+		let options = [];
+		
+		foundLuts.forEach(lut => {
+			options.push({ value: lut, label: `${lut}` });
+		});
+
+		if (!foundLuts.has(kunosDefault)) {
+			options.push({ value: kunosDefault, label: `${kunosDefault} (標準)` });
 		}
+
+		if (val && !foundLuts.has(val) && val !== kunosDefault) {
+			options.push({ value: val, label: `${val}` });
+		}
+
+		let optionsHtml = options.map(opt => {
+			const isSelected = (opt.value.toLowerCase() === val.toLowerCase()) ? 'selected' : '';
+			return `<option value="${opt.value}" ${isSelected}>${opt.label}</option>`;
+		}).join('');
+
+		inputHtml = `<select class="text-input tyre-text-input tyre-lut-select" style="cursor: pointer;">${optionsHtml}</select>`;
+	} else {
+		inputHtml = `<input type="${isNum ? 'number' : 'text'}" class="text-input tyre-text-input" value="${val}" step="${currentStep}"${currentMin}${currentMax}>`;
 	}
 
-	// 🌟 修正：inputタグに list="list-${key}" 属性を紐付け、datalistを背後に埋め込む
 	itemDiv.innerHTML = `
 		<div class="input-unit${colorClass}${groupClass}">
 			<label>${key}</label>
 			<div class="input-with-range tyre-input-wrapper">
-				<input type="${isNum ? 'number' : 'text'}" class="text-input tyre-text-input" value="${val}" step="${currentStep}"${currentMin}${currentMax} ${lutOptionsHtml ? `list="list-${key}"` : ''}>
-				${lutOptionsHtml}
+				${inputHtml}
 				<div class="tyre-indicator-icons">
 					${indicatorIcon}
 				</div>
@@ -609,7 +626,37 @@ window.addTyreInputField = function(parent, compoundObj, sectionName, key, val) 
 	`;
 	parent.appendChild(itemDiv);
 	
-	const input = itemDiv.querySelector('input');
+	const input = itemDiv.querySelector('.tyre-text-input');
+
+	if (key === 'WEAR_CURVE' || key === 'PERFORMANCE_CURVE') {
+		input.addEventListener('change', (e) => {
+			const selectedValue = e.target.value;
+			console.log(`\n[LUT-UI-EVENT] 🔄 ドロップダウン変更: "${selectedValue}" (項目: ${key})`);
+
+			// 1. 画面の再描画元である raw_ini を確実に上書き
+			if (compoundObj.raw_ini && compoundObj.raw_ini[sectionName]) {
+				compoundObj.raw_ini[sectionName][key] = selectedValue;
+			}
+
+			// 2. 従来のサフィックス付きdataに保存
+			if (!compoundObj.data[sectionName]) compoundObj.data[sectionName] = {};
+			compoundObj.data[sectionName][key] = selectedValue;
+
+			// 3. export.jsが見に行く固定キー（FRONT / REAR 等）に確実に保存
+			let baseSide = '';
+			if (sectionName.startsWith('FRONT')) baseSide = 'FRONT';
+			else if (sectionName.startsWith('REAR')) baseSide = 'REAR';
+			else if (sectionName.startsWith('THERMAL_FRONT')) baseSide = 'THERMAL_FRONT';
+			else if (sectionName.startsWith('THERMAL_REAR')) baseSide = 'THERMAL_REAR';
+
+			if (baseSide && compoundObj.data[baseSide]) {
+				compoundObj.data[baseSide][key] = selectedValue;
+			}
+
+			if (typeof window.updateTiresChart === 'function') window.updateTiresChart();
+			if (typeof window.requestRender === 'function') window.requestRender();
+		});
+	}
 
 	// ★ 入力欄をクリック（フォーカス）した時に解説ボックスの中身を書き換える
 	input.addEventListener('focus', () => {
@@ -619,12 +666,34 @@ window.addTyreInputField = function(parent, compoundObj, sectionName, key, val) 
 		}
 	});
 
+	// ② 普通の数値・文字入力（インプットボックス）の変更イベント監視
 	input.addEventListener('input', (e) => {
+		if (e.target.tagName === 'SELECT') {
+			return;
+		}
+
+		// 1. 画面の再描画元である raw_ini を確実に上書き
+		if (compoundObj.raw_ini && compoundObj.raw_ini[sectionName]) {
+			compoundObj.raw_ini[sectionName][key] = e.target.value;
+		}
+
+		// 2. 従来のサフィックス付きdataに保存
 		if (!compoundObj.data[sectionName]) compoundObj.data[sectionName] = {};
 		compoundObj.data[sectionName][key] = e.target.value;
+
+		// 3. export.jsが見に行く固定キー（FRONT / REAR 等）に確実に保存
+		let baseSide = '';
+		if (sectionName.startsWith('FRONT')) baseSide = 'FRONT';
+		else if (sectionName.startsWith('REAR')) baseSide = 'REAR';
+		else if (sectionName.startsWith('THERMAL_FRONT')) baseSide = 'THERMAL_FRONT';
+		else if (sectionName.startsWith('THERMAL_REAR')) baseSide = 'THERMAL_REAR';
+
+		if (baseSide && compoundObj.data[baseSide]) {
+			compoundObj.data[baseSide][key] = e.target.value;
+		}
+
 		// ⚠️ 手動でVERSIONが10に変更された場合のアラート通知
 		if (key === 'VERSION' && e.target.value === '10') {
-			// マウスクリック時にアラートが出ると数値が暴走するブラウザバグを防ぐため、強制的にフォーカスを外す
 			e.target.blur();
 			setTimeout(() => {
 				alert("⚠️ 注意: VERSION=10が設定されました。「DY0、DY1、DX0、DX1、XMU」は完全なダミーデータ（走行物理に無影響）として扱われます。");
@@ -704,48 +773,33 @@ window.addTyreCompound = function() {
 	if (newSet.data.FRONT) newSet.data.FRONT.NAME = newSet.name;
 	if (newSet.data.REAR) newSet.data.REAR.NAME = newSet.name;
 	
-	// ここがミソ：複製した場合は新しいインデックス（末尾の数字）を振る
+	// 複製した新しいインデックス番号を決定
 	newSet.index = Math.max(...window.tyreCompoundList.map(c => c.index)) + 1;
 	
-	window.tyreCompoundList.push(newSet);
-	window.activeTyreIdx = window.tyreCompoundList.length - 1;
-	window.renderTyreUI();
-};
-window.addNewTyreCompound = function() {
-	const nextIdx = window.tyreCompoundList.length > 0 ? Math.max(...window.tyreCompoundList.map(c => c.index)) + 1 : 0;
-	const cName = `New_Compound_${nextIdx}`;
-
-	const newSet = {
-		index: nextIdx,
-		name: cName,
-		// 新規作成なので raw_ini は空（保存時に自動でデフォルトLUTファイルを作るトリガーになります）
-		raw_ini: {}, 
-		data: {
-			FRONT: {
-				VERSION: "10", NAME: cName, SHORT_NAME: `NEW${nextIdx}`, DESCRIPTION: "New Compound Data",
-				WIDTH: "0.235", RADIUS: "0.3150", RIM_RADIUS: "0.2286", ANGULAR_INERTIA: "1.50",
-				DAMP: "600", RATE: "300000", FLEX: "0.000500", XMU: "0.24", FZ0: "3200",
-				DX_REF: "1.200", DY_REF: "1.200", LS_EXPX: "0.700", LS_EXPY: "0.700",
-				FLEX_GAIN: "0.015", FLEX_GAIN_LOAD: "0.0", FALLOFF_LEVEL: "0.900", FALLOFF_SPEED: "1.5",
-				SPEED_SENSITIVITY: "0.003", RELAXATION_LENGTH: "0.070000", ROLLING_RESISTANCE_SLIP: "4500",
-				PRESSURE_STATIC: "30", PRESSURE_IDEAL: "31", COMBINED_FACTOR: "1.0",
-				ROLLING_RESISTANCE_0: "11", ROLLING_RESISTANCE_1: "0.00045"
-			},
-			REAR: {
-				VERSION: "10", NAME: cName, SHORT_NAME: `NEW${nextIdx}`, DESCRIPTION: "New Compound Data",
-				WIDTH: "0.255", RADIUS: "0.3150", RIM_RADIUS: "0.2286", ANGULAR_INERTIA: "1.60",
-				DAMP: "600", RATE: "300000", FLEX: "0.000500", XMU: "0.24", FZ0: "3200",
-				DX_REF: "1.200", DY_REF: "1.200", LS_EXPX: "0.700", LS_EXPY: "0.700",
-				FLEX_GAIN: "0.015", FLEX_GAIN_LOAD: "0.0", FALLOFF_LEVEL: "0.900", FALLOFF_SPEED: "1.5",
-				SPEED_SENSITIVITY: "0.003", RELAXATION_LENGTH: "0.070000", ROLLING_RESISTANCE_SLIP: "4500",
-				PRESSURE_STATIC: "30", PRESSURE_IDEAL: "31", COMBINED_FACTOR: "1.0",
-				ROLLING_RESISTANCE_0: "11", ROLLING_RESISTANCE_1: "0.00045"
-			},
-			THERMAL_FRONT: { SURFACE_TRANSFER: "0.010", PATCH_TRANSFER: "0.0002", CORE_TRANSFER: "0.0002", FRICTION_K: "0.03", ROLLING_K: "0.085" },
-			THERMAL_REAR: { SURFACE_TRANSFER: "0.010", PATCH_TRANSFER: "0.0002", CORE_TRANSFER: "0.0002", FRICTION_K: "0.03", ROLLING_K: "0.085" }
-		}
-	};
-
+	// サフィックス管理されている実体データ（raw_ini）の引っ越し（器の複製）
+	if (newSet.raw_ini) {
+		const oldSuffix = currentSet.index === 0 ? '' : `_${currentSet.index}`;
+		const newSuffix = `_${newSet.index}`;
+		
+		const oldFrontSec = `FRONT${oldSuffix}`;
+		const oldRearSec = `REAR${oldSuffix}`;
+		const oldThermFrontSec = `THERMAL_FRONT${oldSuffix}`;
+		const oldThermRearSec = `THERMAL_REAR${oldSuffix}`;
+		
+		const newFrontSec = `FRONT${newSuffix}`;
+		const newRearSec = `REAR${newSuffix}`;
+		const newThermFrontSec = `THERMAL_FRONT${newSuffix}`;
+		const newThermRearSec = `THERMAL_REAR${newSuffix}`;
+		
+		if (newSet.raw_ini[oldFrontSec]) newSet.raw_ini[newFrontSec] = JSON.parse(JSON.stringify(newSet.raw_ini[oldFrontSec]));
+		if (newSet.raw_ini[oldRearSec]) newSet.raw_ini[newRearSec] = JSON.parse(JSON.stringify(newSet.raw_ini[oldRearSec]));
+		if (newSet.raw_ini[oldThermFrontSec]) newSet.raw_ini[newThermFrontSec] = JSON.parse(JSON.stringify(newSet.raw_ini[oldThermFrontSec]));
+		if (newSet.raw_ini[oldThermRearSec]) newSet.raw_ini[newThermRearSec] = JSON.parse(JSON.stringify(newSet.raw_ini[oldThermRearSec]));
+		
+		if (newSet.raw_ini[newFrontSec]) newSet.raw_ini[newFrontSec].NAME = newSet.name;
+		if (newSet.raw_ini[newRearSec]) newSet.raw_ini[newRearSec].NAME = newSet.name;
+	}
+	
 	window.tyreCompoundList.push(newSet);
 	window.activeTyreIdx = window.tyreCompoundList.length - 1;
 	window.renderTyreUI();
