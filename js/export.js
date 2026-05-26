@@ -78,20 +78,34 @@ window.executeBulkExport = async function() {
 		}
 	}
 
-	// ★ タイヤのLUTファイルを書き出すかどうかの選択確認ポップアップ
-	// ★ タイヤのLUTファイルを動的に生成して書き出しリストに追加（全自動スマート判定仕様）
+	// ★ タイヤのLUTファイルを動的に生成して書き出しリストに追加
 	if (window.tyreCompoundList && window.tyreCompoundList.length > 0) {
 		
-		// 🕵️ アップロードされた元のファイル群に最初から記載されていた「本物の既存のLUTファイル名」をすべて集めて記憶する
+		// 🕵️ 元のデータから「本物の既存のLUTファイル名」を収集（クノス標準名は意図的に除外し、初期化時の誤判定を防ぐ）
 		const originalLutNames = new Set();
 		window.tyreCompoundList.forEach(c => {
 			if (c.raw_ini) {
 				for (let sec in c.raw_ini) {
-					if (c.raw_ini[sec].WEAR_CURVE) originalLutNames.add(c.raw_ini[sec].WEAR_CURVE.trim().toLowerCase());
-					if (c.raw_ini[sec].PERFORMANCE_CURVE) originalLutNames.add(c.raw_ini[sec].PERFORMANCE_CURVE.trim().toLowerCase());
+					if (c.raw_ini[sec]) {
+						if (c.raw_ini[sec].WEAR_CURVE) {
+							const lut = c.raw_ini[sec].WEAR_CURVE.trim().toLowerCase();
+							if (lut !== 'kunos_wear.lut' && lut !== 'kunos_thermal.lut') {
+								originalLutNames.add(lut);
+							}
+						}
+						if (c.raw_ini[sec].PERFORMANCE_CURVE) {
+							const lut = c.raw_ini[sec].PERFORMANCE_CURVE.trim().toLowerCase();
+							if (lut !== 'kunos_wear.lut' && lut !== 'kunos_thermal.lut') {
+								originalLutNames.add(lut);
+							}
+						}
+					}
 				}
 			}
 		});
+
+		// 同一ファイル名が複数回リストに追加されるのを防ぐためのガード用Set
+		const addedLutFiles = new Set();
 
 		window.tyreCompoundList.forEach(comp => {
 			const suffix = comp.index === 0 ? '' : `_${comp.index}`;
@@ -100,10 +114,10 @@ window.executeBulkExport = async function() {
 			const tfSec = `THERMAL_FRONT${suffix}`;
 			const trSec = `THERMAL_REAR${suffix}`;
 
-			const fData = comp.data[fSec] || {};
-			const rData = comp.data[rSec] || {};
-			const tfData = comp.data[tfSec] || {};
-			const trData = comp.data[trSec] || {};
+			const fData = comp.data.FRONT || {};
+			const rData = comp.data.REAR || {};
+			const tfData = comp.data.THERMAL_FRONT || {};
+			const trData = comp.data.THERMAL_REAR || {};
 
 			const power = comp.wizardPower || 300;
 			const pattern = document.getElementById('wiz-lut-pattern') ? document.getElementById('wiz-lut-pattern').value : 'A';
@@ -111,15 +125,17 @@ window.executeBulkExport = async function() {
 
 			// 1️⃣ FRONTの摩耗LUT
 			let fWearName = fData.WEAR_CURVE ? fData.WEAR_CURVE.trim() : "";
-			// 💡 入力欄が「空欄」または「既存リストに無い新しい名前」の時だけ、デフォルトデータを当てて新規書き出しをします。
-			// ユーザーが既存のLUT名（_wear1.lutなど）を【選んだ場合】は、新規書き出しを完全にスキップします（要らない）。
 			if (!fWearName || !originalLutNames.has(fWearName.toLowerCase())) {
 				if (!fWearName) {
 					fWearName = `wcurve_front${nameSuffix}.lut`;
-					fData.WEAR_CURVE = fWearName; // INIファイル側にも名前を登録
+					fData.WEAR_CURVE = fWearName;
 				}
-				const fWearContent = `0|100\n0.005|95\n0.008|98\n0.015|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
-				filesToExport.push({ name: fWearName, content: fWearContent });
+				const fWearNameLower = fWearName.toLowerCase();
+				if (!addedLutFiles.has(fWearNameLower)) {
+					const fWearContent = `0|100\n0.005|95\n0.008|98\n0.015|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
+					filesToExport.push({ name: fWearName, content: fWearContent });
+					addedLutFiles.add(fWearNameLower);
+				}
 			}
 
 			// ② REARの摩耗LUT
@@ -129,9 +145,13 @@ window.executeBulkExport = async function() {
 					rWearName = `wcurve_rear${nameSuffix}.lut`;
 					rData.WEAR_CURVE = rWearName;
 				}
-				const peak = (0.015 + (power / 600) * 0.655).toFixed(3);
-				const rWearContent = `0|100\n0.005|95\n0.008|98\n${peak}|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
-				filesToExport.push({ name: rWearName, content: rWearContent });
+				const rWearNameLower = rWearName.toLowerCase();
+				if (!addedLutFiles.has(rWearNameLower)) {
+					const peak = (0.015 + (power / 600) * 0.655).toFixed(3);
+					const rWearContent = `0|100\n0.005|95\n0.008|98\n${peak}|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
+					filesToExport.push({ name: rWearName, content: rWearContent });
+					addedLutFiles.add(rWearNameLower);
+				}
 			}
 
 			// ③ FRONTの温度熱ダレLUT
@@ -141,8 +161,12 @@ window.executeBulkExport = async function() {
 					fPerfName = `tcurve_front${nameSuffix}.lut`;
 					tfData.PERFORMANCE_CURVE = fPerfName;
 				}
-				const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
-				filesToExport.push({ name: fPerfName, content: tContent });
+				const fPerfNameLower = fPerfName.toLowerCase();
+				if (!addedLutFiles.has(fPerfNameLower)) {
+					const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
+					filesToExport.push({ name: fPerfName, content: tContent });
+					addedLutFiles.add(fPerfNameLower);
+				}
 			}
 
 			// ④ REARの温度熱ダレLUT
@@ -152,8 +176,12 @@ window.executeBulkExport = async function() {
 					rPerfName = `tcurve_rear${nameSuffix}.lut`;
 					trData.PERFORMANCE_CURVE = rPerfName;
 				}
-				const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
-				filesToExport.push({ name: rPerfName, content: tContent });
+				const rPerfNameLower = rPerfName.toLowerCase();
+				if (!addedLutFiles.has(rPerfNameLower)) {
+					const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
+					filesToExport.push({ name: rPerfName, content: tContent });
+					addedLutFiles.add(rPerfNameLower);
+				}
 			}
 		});
 	}
@@ -673,21 +701,58 @@ window.downloadSuspensionIni = function(isExport = false) {
 };
 // --- ここから追加：各INIの書き出し機能 ---
 window.downloadTyreIni = function(isExport = false) {
-	if (!window.currentTyreData) {
+	if (!window.tyreCompoundList || window.tyreCompoundList.length === 0) {
 		alert("タイヤデータが存在しません。");
 		return;
 	}
+
+	let iniObj = {};
+
+	// 1. 共通のグローバルセクションをベースの生データから安全に引き継ぐ
+	const baseRaw = window.tyreCompoundList[0].raw_ini || {};
+	if (baseRaw.HEADER) iniObj["HEADER"] = JSON.parse(JSON.stringify(baseRaw.HEADER));
+	if (baseRaw.VIRTUALKM) iniObj["VIRTUALKM"] = JSON.parse(JSON.stringify(baseRaw.VIRTUALKM));
+	if (baseRaw.COMPOUND_DEFAULT) iniObj["COMPOUND_DEFAULT"] = JSON.parse(JSON.stringify(baseRaw.COMPOUND_DEFAULT));
+
+	// HEADERセクションの存在とVERSION=10の記述を絶対保証
+	if (!iniObj["HEADER"]) iniObj["HEADER"] = {};
+	if (!iniObj["HEADER"].VERSION) iniObj["HEADER"].VERSION = "10";
+
+	// 2. エディタ画面上の最新状態（window.tyreCompoundList）からインデックス順にセクションを再構成
+	window.tyreCompoundList.forEach(comp => {
+		const suffix = comp.index === 0 ? '' : `_${comp.index}`;
+		
+		const fSec = `FRONT${suffix}`;
+		const rSec = `REAR${suffix}`;
+		const tfSec = `THERMAL_FRONT${suffix}`;
+		const trSec = `THERMAL_REAR${suffix}`;
+
+		if (comp.data.FRONT) iniObj[fSec] = JSON.parse(JSON.stringify(comp.data.FRONT));
+		if (comp.data.REAR) iniObj[rSec] = JSON.parse(JSON.stringify(comp.data.REAR));
+		if (comp.data.THERMAL_FRONT) iniObj[tfSec] = JSON.parse(JSON.stringify(comp.data.THERMAL_FRONT));
+		if (comp.data.THERMAL_REAR) iniObj[trSec] = JSON.parse(JSON.stringify(comp.data.THERMAL_REAR));
+
+		// 🌟クリーンアップ：[HEADER] 以外の各タイヤセクションに紛れ込んだ VERSION キーを完全に除去
+		if (iniObj[fSec]) delete iniObj[fSec].VERSION;
+		if (iniObj[rSec]) delete iniObj[rSec].VERSION;
+		if (iniObj[tfSec]) delete iniObj[tfSec].VERSION;
+		if (iniObj[trSec]) delete iniObj[trSec].VERSION;
+	});
+
+	// 3. 再構築したオブジェクトから、アセットコルサ標準の INI テキストに変換
 	let iniContent = "";
-	for (const section in window.currentTyreData) {
+	for (const section in iniObj) {
 		iniContent += `[${section}]\n`;
-		for (const key in window.currentTyreData[section]) {
-			iniContent += `${key}=${window.currentTyreData[section][key]}\n`;
+		for (const key in iniObj[section]) {
+			iniContent += `${key}=${iniObj[section][key]}\n`;
 		}
 		iniContent += "\n";
 	}
-	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+
+	// 一括保存モードの時はテキストデータのみを返して終了
 	if (isExport === true) return iniContent;
-	// === 以下は個別保存ボタン用 ===
+
+	// === 以下は個別保存ボタンが押された場合のフォールバック処理 ===
 	const blob = new Blob([iniContent], {
 		type: 'text/plain'
 	});
