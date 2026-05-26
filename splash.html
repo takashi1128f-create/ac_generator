@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<link rel="stylesheet" href="css/app.css">
+	<link rel="stylesheet" href="css/splash.css">
+</head>
+
+<body>
+	<div class="outer">
+		<div class="logo-container" id="slides-container">
+		</div>
+		<div class="loading-text">Loading System...</div>
+	</div>
+	<script>
+		// ==========================================
+		// 1. 表示したいものを順番に配列に入れます
+		// ==========================================
+		const slides = [
+			`<div class="splash-logo-img-outer_box">
+					<div class="splash-logo-img_box">
+						<img class="splash-logo-img" src="./image/nerusan.png">
+					</div>
+					<p>このジェネレーターは初心者が制作したアプリです。
+							<br>必ず元データをバックアップしてからご使用ください。
+							<br>何が起きても責任は取れません。
+						</p>
+						<p>
+							This generator was made by a beginner.
+							<br>Always back up your original files before use.
+							<br>Use at your own risk.
+						</p>
+				</div>`,
+				`<div class="splash-logo-img-outer_box">
+					<div class="splash-logo-img_box warning-logo">
+						<img class="splash-logo-img" src="./image/warning.jpg">
+					</div>
+					<p>ツール内の物理計算やグラフ表示は、
+						<br>実際のゲーム内の挙動と完全に一致しない場合があります。
+						<br>あくまでセッティングの目安としてお使いください。
+						</p>
+						<p>
+							The physics calculations and graphs in this tool may not perfectly match the actual in-game behavior.
+							<br>Please use them as a reference only.
+						</p>
+				</div>`,
+				`<div class="splash-logo-img-outer_box">
+					<div class="splash-logo-img_box warning-logo">
+						<img class="splash-logo-img" src="./image/kanshya.png">
+					</div>
+					<p>他の作者様が制作したModを無断で改変し、
+						<br>再配布することはトラブルの原因となります。
+						<br>個人的な利用の範囲にとどめるか、
+						<br>必ず元の作者様へ許可を取るようにしてください。
+						</p>
+						<p>
+							Modifying and redistributing mods created by others without permission can cause issues.
+							<br>Please keep modifications strictly for personal use, or obtain permission from the original author.
+						</p>
+				</div>`
+		];
+		const displayTime = 5000; // 1つのスライドを表示する時間（1500 = 1.5秒）
+		const container = document.getElementById('slides-container');
+		let currentIndex = 0;
+		// ==========================================
+		// 2. 順番に切り替える処理
+		// ==========================================
+		function showNextSlide() {
+			if (currentIndex >= slides.length) return; // 全て終わったらストップ
+			// 新しいスライド要素を作成
+			const slideEl = document.createElement('div');
+			slideEl.className = 'slide';
+			slideEl.innerHTML = slides[currentIndex];
+			container.appendChild(slideEl);
+			// ほんの少し遅らせてフェードインさせる
+			setTimeout(() => { slideEl.classList.add('active'); }, 50);
+			// 最後のスライド「以外」は、時間が来たらフェードアウトして次へ
+			if (currentIndex < slides.length - 1) {
+				setTimeout(() => {
+					slideEl.classList.remove('active'); // フェードアウト
+					setTimeout(() => {
+							slideEl.remove(); // 画面から消す
+							currentIndex++;
+							showNextSlide();  // 次のスライドを表示
+					}, 300); // フェードアウトにかかる時間(0.5秒)待つ
+				}, displayTime);
+			}
+		}
+		// スライドショー開始！
+		showNextSlide();
+	</script>
+</body>
+
+</html>

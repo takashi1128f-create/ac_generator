@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="robots" content="noindex, nofollow">
+	<title>AC FILE Editor</title>
+	<link rel="stylesheet" href="css/reset.css">
+	<link rel="stylesheet" href="css/style.css">
+	<link rel="stylesheet" href="css/app.css">
+	<link rel="stylesheet" href="css/tab.css">
+	<link rel="stylesheet" href="css/suspension.css">
+	<link rel="stylesheet" href="css/manual.css">
+	<link rel="icon" href="data:,">
+	<script type="importmap"> {
+		"imports": {
+			"three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+			"three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+			"fflate": "https://unpkg.com/fflate@0.8.2/esm/browser.js"
+		}
+	}
+</script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://www.desmos.com/api/v1.9/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+</head>
+
+<body class="drop-zone">
+	<main id="wrapper">
+		<section class="guide_box">
+			<div class="h2-title_box">
+				<h2 class="h2-title">AC FILE GENERATOR（β版）</h2>
+				<div>
+					<button id="btn-save-project" class="primary">💾 保存</button>
+					<button id="btn-restore-project" class="secondary-btn" title="前回の保存状態に戻す">⏪ 復元</button>
+				</div>
+				<div class="info-icon_box">使い方はこちら　☞ <button type="button" class="info-icon" id="info-btn">📖</button>
+					<button type="button" id="toggle-all-visibility" class="reset-btn" checked>表示/非表示</button>
+				</div>
+			</div>
+			<div class="main-setting-outer_box">
+				<div class="main-setting_box">
+					<div class="import-panel drag-drop-outer_box">
+						<div class="file-input-group">
+							<label for="modelFile">車両モデル (GLB) :</label>
+							<input type="file" id="modelFile" accept=".glb, .fbx">
+						</div>
+						<div class="file-input-group">
+							<label for="importFile">cameras.ini :</label>
+							<input type="file" id="importFile" accept=".ini">
+						</div>
+						<div class="file-input-group">
+							<label for="suspensionFile">suspensions.ini :</label>
+							<input type="file" id="suspensionFile" accept=".ini">
+						</div>
+						<div class="file-input-group">
+							<label for="tyreFile">tyres.ini:</label>
+							<input type="file" id="tyreFile" accept=".ini">
+						</div>
+						<div class="file-input-group">
+							<label for="carFile">car.ini:</label>
+							<input type="file" id="carFile" accept=".ini">
+						</div>
+						<div class="file-input-group">
+							<label for="collidersFile">colliders.ini:</label>
+							<input type="file" id="collidersFile" accept=".ini">
+						</div>
+						<div class="drag-drop_box">
+							<label for="multiFileUpload">ドラッグ&ドロップか <br>選択して下さい </label>
+							<input type="file" id="multiFileUpload" accept=".ini, .glb, .lut, .fbx" multiple>
+						</div>
+					</div>
+					<div class="import-panel">
+						<div class="global-controls">
+							<label for="modelColorPicker">モデルの色：</label>
+							<input type="color" id="modelColorPicker" value="#4d4d4d">
+						</div>
+						<div class="global-controls">
+							<label for="bgColorPicker">背景色：</label>
+							<input type="color" id="bgColorPicker" value="#5fafb9">
+						</div>
+						<div class="global-controls">
+							<label for="earthColorPicker">床色：</label>
+							<input type="color" id="earthColorPicker" value="#5fafb9">
+						</div>
+						<div class="file-input-group">
+							<label for="bgImageFile">背景画像：</label>
+							<input type="file" id="bgImageFile" accept="image/*">
+						</div>
+					</div>
+				</div>
+			</div>
+			<article class="top-toggle-outer_box">
+				<div>
+					<div class="button_box">
+						<button id="openExportModalBtn" class="primary-btn">💾 書き出し</button>
+					</div>
+					<div id="exportModal" class="modal-overlay" style="display: none;">
+						<div class="modal-content export-modal">
+							<h3 class="modal-title">エクスポート設定</h3>
+							<div class="export-name-input-group">
+								<label for="exportProjectName">保存フォルダ名：</label>
+								<input type="text" id="exportProjectName" class="modal-input">
+							</div>
+							<p class="modal-desc">書き出すファイルを選択してください</p>
+							<div id="exportFileList" class="export-file-list"></div>
+							<div class="modal-button-group">
+								<button id="closeExportBtn" class="hub-btn">キャンセル</button>
+								<button id="executeExportBtn" class="hub-btn primary">書き出し</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="extended-physics-switch-container">
+					<span class="switch-label">Extended Physics</span>
+					<label class="toggle-switch">
+						<input type="checkbox" id="extendedPhysicsSwitch">
+						<span class="toggle-slider round"></span>
+					</label>
+					<span id="extendedStatusText" class="status-text off">OFF</span>
+				</div>
+				<div class="extended-physics-switch-container">
+					<span class="switch-label">解説ポップアップ</span>
+					<label class="toggle-switch">
+						<input type="checkbox" id="toggle-tyre-tooltip" checked onchange="window.toggleTyreTooltips()">
+						<span class="toggle-slider round"></span>
+					</label>
+					<span class="status-text on">ON</span>
+				</div>
+			</article>
+			<div class="button_box old-export-button">
+				<button id="saveSuspensionBtn" onclick="window.downloadSuspensionIni()">suspension</button>
+				<button id="" onclick="window.downloadCarIni()">car</button>
+				<button onclick="window.downloadCollidersIni()">colliders</button>
+				<button onclick="window.downloadTyreIni()">tyres</button>
+				<button onclick="window.downloadAeroIni()">aero</button>
+				<button onclick="window.downloadEngineIni()">engine</button>
+				<button onclick="window.downloadPowerLut()">power</button>
+				<button onclick="window.downloadDrivetrainIni()">drivetrain</button>
+				<button onclick="window.downloadSetupIni()">setup</button>
+				<button onclick="window.downloadFinalRto()">💾 final</button>
+				<button id="downloadBtn">cameras</button>
+			</div>
+		</section>
+		<div class="tab-container">
+			<div class="tab-header">
+				<button class="tab-btn active" data-tab="suspension" data-sub="sus-editor">suspensions</button>
+				<button class="tab-btn" data-tab="tire" data-sub="tyre-editor">tyres</button>
+				<button class="tab-btn" data-tab="suspension" data-sub="car-editor">car</button>
+				<button class="tab-btn" data-tab="suspension" data-sub="colliders-editor">colliders</button>
+				<button class="tab-btn" data-tab="suspension" data-sub="wing-editor">aero</button>
+				<button class="tab-btn" data-tab="engine" data-sub="engine-editor">engine</button>
+				<button class="tab-btn" data-tab="gear" data-sub="gear-editor">drivetrain</button>
+				<button class="tab-btn" data-tab="setup" data-sub="setup-editor">setup</button>
+				<button class="tab-btn" data-tab="editor">cameras</button>
+			</div>
+		</div>
+		<div id="camera-content" class="tab-content tab-hidden ">
+			<div class="model-outer_box">
+				<section class="workbench-outer_box">
+					<div id="camera-sections-container" class="workbench_box">
+					</div>
+					<div class="text-data_box">
+						<div>
+							<p>こちらはアセットコルサのカメラエディターのジェネレーターです。</p>
+							<p>カーMODの｢.kn5｣のファイルをKBXに展開して、blenderで｢GLBファイル｣に変換してください。 <br>その｢GLBファイル｣をアップロードする事によって、実際のモデルを対象にカメラエディターを調整し｢cameras.ini｣を作成できます。 </p>
+							<p>また、すでにあるcameras.iniをアップロードして編集しなおすこともできます。</p>
+							<p>他にもモデルの色や背景も変えれるのでいじってみてください。</p>
+						</div>
+					</div>
+				</section>
+				<section class="preview_outer_box">
+					<article class="camera-section" id="section-0">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-0">
+								<div class="loading-label">GLBモデルをアップロードしてください</div>
+								<canvas id="canvas-0">
+								</canvas>
+							</div>
+						</div>
+						<div class="control-panel">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>F6-1</h3>
+									<button class="reset-btn" data-id="0">RESET</button>
+								</div>
+								<div class="control-group">
+									<label for="input-z">前後(Z)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-z" data-id="0" data-prop="z" min="-10" max="10" step="0.000001" value="0">
+										<span class="val-display val-z">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="input-y">上下(Y)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-y" data-id="0" data-prop="y" min="-2" max="5" step="0.000001" value="1">
+										<span class="val-display val-y">1.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="input-x">左右(X)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-x" data-id="0" data-prop="x" min="-5" max="5" step="0.000001" value="0">
+										<span class="val-display val-x">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">PITCH（上下首振）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="0" data-prop="rx">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rx">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">YAW（左右首振り）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="0" data-prop="ry">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-ry">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">ROLL（左右回転）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="0" data-prop="rz">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rz">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">FOV</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-fov" data-id="0" data-prop="fov" min="10" max="120" step="1" value="60">
+										<span class="val-display val-fov">60</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<article class="camera-section" id="section-1">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-1">
+								<div class="loading-label">GLBモデルをアップロードしてください</div>
+								<canvas id="canvas-1">
+								</canvas>
+							</div>
+						</div>
+						<div class="control-panel">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>F6-2</h3>
+									<button class="reset-btn" data-id="1">RESET</button>
+								</div>
+								<div class="control-group">
+									<label for="control-row">前後(Z)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-z" data-id="1" data-prop="z" min="-10" max="10" step="0.000001" value="0">
+										<span class="val-display val-z">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">上下(Y)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-y" data-id="1" data-prop="y" min="-2" max="5" step="0.000001" value="1">
+										<span class="val-display val-y">1.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">左右(X)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-x" data-id="1" data-prop="x" min="-5" max="5" step="0.000001" value="0">
+										<span class="val-display val-x">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">PITCH（上下首振）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="1" data-prop="rx">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rx">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">YAW（左右首振り）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="1" data-prop="ry">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-ry">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">ROLL（左右回転）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="1" data-prop="rz">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rz">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">FOV</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-fov" data-id="1" data-prop="fov" min="10" max="120" step="1" value="60">
+										<span class="val-display val-fov">60</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<article class="camera-section" id="section-2">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-2">
+								<div class="loading-label">GLBモデルをアップロードしてください</div>
+								<canvas id="canvas-2">
+								</canvas>
+							</div>
+						</div>
+						<div class="control-panel">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>F6-3</h3>
+									<button class="reset-btn" data-id="2">RESET</button>
+								</div>
+								<div class="control-group">
+									<label for="control-row">前後(Z)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-z" data-id="2" data-prop="z" min="-10" max="10" step="0.000001" value="0">
+										<span class="val-display val-z">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">上下(Y)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-y" data-id="2" data-prop="y" min="-2" max="5" step="0.000001" value="1">
+										<span class="val-display val-y">1.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">左右(X)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-x" data-id="2" data-prop="x" min="-5" max="5" step="0.000001" value="0">
+										<span class="val-display val-x">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">PITCH（上下首振）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="2" data-prop="rx">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rx">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">YAW（左右首振り）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="2" data-prop="ry">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-ry">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">ROLL（左右回転）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="2" data-prop="rz">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rz">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">FOV</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-fov" data-id="2" data-prop="fov" min="10" max="120" step="1" value="60">
+										<span class="val-display val-fov">60</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<article class="camera-section" id="section-3">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-3">
+								<div class="loading-label">GLBモデルをアップロードしてください</div>
+								<canvas id="canvas-3">
+								</canvas>
+							</div>
+						</div>
+						<div class="control-panel">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>F6-4</h3>
+									<button class="reset-btn" data-id="3">RESET</button>
+								</div>
+								<div class="control-group">
+									<label for="control-row">前後(Z)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-z" data-id="3" data-prop="z" min="-10" max="10" step="0.000001" value="0">
+										<span class="val-display val-z">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">上下(Y)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-y" data-id="3" data-prop="y" min="-2" max="5" step="0.000001" value="1">
+										<span class="val-display val-y">1.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">左右(X)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-x" data-id="3" data-prop="x" min="-5" max="5" step="0.000001" value="0">
+										<span class="val-display val-x">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">PITCH（上下首振）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="3" data-prop="rx">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rx">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">YAW（左右首振り）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="3" data-prop="ry">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-ry">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">ROLL（左右回転）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="3" data-prop="rz">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rz">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">FOV</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-fov" data-id="3" data-prop="fov" min="10" max="120" step="1" value="60">
+										<span class="val-display val-fov">60</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<article class="camera-section" id="section-4">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-4">
+								<div class="loading-label">GLBモデルをアップロードしてください</div>
+								<canvas id="canvas-4">
+								</canvas>
+							</div>
+						</div>
+						<div class="control-panel">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>F6-5</h3>
+									<button class="reset-btn" data-id="4">RESET</button>
+								</div>
+								<div class="control-group">
+									<label for="control-row">前後(Z)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-z" data-id="4" data-prop="z" min="-10" max="10" step="0.000001" value="0">
+										<span class="val-display val-z">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">上下(Y)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-y" data-id="4" data-prop="y" min="-2" max="5" step="0.000001" value="1">
+										<span class="val-display val-y">1.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">左右(X)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-x" data-id="4" data-prop="x" min="-5" max="5" step="0.000001" value="0">
+										<span class="val-display val-x">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">PITCH（上下首振）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="4" data-prop="rx">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rx">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">YAW（左右首振り）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="4" data-prop="ry">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-ry">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">ROLL（左右回転）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="4" data-prop="rz">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rz">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">FOV</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-fov" data-id="4" data-prop="fov" min="10" max="120" step="1" value="60">
+										<span class="val-display val-fov">60</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+					<article class="camera-section" id="section-5">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-5">
+								<div class="loading-label">GLBモデルをアップロードしてください</div>
+								<canvas id="canvas-5">
+								</canvas>
+							</div>
+						</div>
+						<div class="control-panel">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>F6-6</h3>
+									<button class="reset-btn" data-id="5">RESET</button>
+								</div>
+								<div class="control-group">
+									<label for="control-row">前後(Z)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-z" data-id="5" data-prop="z" min="-10" max="10" step="0.000001" value="0">
+										<span class="val-display val-z">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">上下(Y)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-y" data-id="5" data-prop="y" min="-2" max="5" step="0.000001" value="1">
+										<span class="val-display val-y">1.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">左右(X)</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-x" data-id="5" data-prop="x" min="-5" max="5" step="0.000001" value="0">
+										<span class="val-display val-x">0.000</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">PITCH（上下首振）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="5" data-prop="rx">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rx">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">YAW（左右首振り）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="5" data-prop="ry">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-ry">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">ROLL（左右回転）</label>
+									<div class="control-row">
+										<div class="dial-container" data-id="5" data-prop="rz">
+											<div class="dial-marks">
+											</div>
+											<div class="dial-value">0.0°</div>
+										</div>
+										<span class="val-display val-rz">0.0°</span>
+									</div>
+								</div>
+								<div class="control-group">
+									<label for="control-row">FOV</label>
+									<div class="control-row">
+										<input type="range" class="input-range input-fov" data-id="5" data-prop="fov" min="10" max="120" step="1" value="60">
+										<span class="val-display val-fov">60</span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+				</section>
+			</div>
+		</div>
+		<!-- サスペンションエリア -->
+		<div id="suspension-content" class="tab-content suspension-outer-box">
+			<div class="model-outer_box">
+				<div id="camera-preview-container">
+					<article class="camera-section" id="section-suspension">
+						<div class="preview-area_box">
+							<div id="subtab-content-arms" class="subtab-pane">
+								<div class="preview-area" id="preview-suspension">
+									<div class="alignment-preview-group">
+										<div class="loading-label">アライメントプレビュー</div>
+										<canvas id="canvas-suspension"></canvas>
+										<article id="alignment-data-outer_box">
+											<div id="camber_box" class="alignment-inner-data_box">
+												<div class="alignment-data-title_box">
+													<p>キャンバー</p>
+												</div>
+												<div id="camber-data_box" class="alignment-data_box">
+													<div id="camber-front_box">
+														<p>フロント</p>
+														<div id="camber-front-data_box" class="alignment-data">
+															<p id="camber-front-fr"><span>°</span></p>
+															<p>|</p>
+															<p id="camber-front-fl"><span>°</span></p>
+														</div>
+													</div>
+													<div id="camber-rear_box">
+														<p>リア</p>
+														<div id="camber-rear-data_box" class="alignment-data">
+															<p id="camber-rear-rr"><span>°</span></p>
+															<p>|</p>
+															<p id="camber-rear-rl"><span>°</span></p>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div id="toe_box" class="alignment-inner-data_box">
+												<div class="toe-data-title_box">
+													<p>トー</p>
+												</div>
+												<div id="toe-data_box" class="alignment-data_box">
+													<div id="toe-front_box">
+														<p>フロント</p>
+														<div id="toe-front-data_box" class="alignment-data">
+															<p id="toe-front"><span>°</span></p>
+														</div>
+													</div>
+													<div id="toe-rear_box">
+														<p>リア</p>
+														<div id="toe-rear-data_box" class="alignment-data">
+															<p id="toe-rear"><span>°</span></p>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div id="caster_box" class="alignment-inner-data_box">
+												<div class="caster-data-title_box">
+													<p>キャスター</p>
+												</div>
+												<div id="caster-data_box" class="alignment-data_box">
+													<div id="caster-left_box">
+														<p>左</p>
+														<div id="caster-left-data_box" class="alignment-data">
+															<p id="caster-left"><span>°</span></p>
+														</div>
+													</div>
+													<div id="caster-right_box">
+														<p>右</p>
+														<div id="caster-right-data_box" class="alignment-data">
+															<p id="caster-right"><span>°</span></p>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div id="kpi_box" class="alignment-inner-data_box">
+												<div class="kpi-data-title_box">
+													<p>KPI</p>
+												</div>
+												<div id="kpi-data_box" class="alignment-data_box">
+													<div id="kpi-left_box">
+														<p>左</p>
+														<div id="kpi-left-data_box" class="alignment-data">
+															<p id="kpi-left"><span>°</span></p>
+														</div>
+													</div>
+													<div id="kpi-right_box">
+														<p>右</p>
+														<div id="kpi-right-data_box" class="alignment-data">
+															<p id="kpi-right"><span>°</span></p>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div id="tire_box" class="alignment-inner-data_box">
+												<div class="tire-data-title_box">
+													<p>タイヤ</p>
+												</div>
+												<div id="tire-data_box" class="alignment-data_box">
+													<div id="tire-front_box">
+														<p>フロント</p>
+														<div id="tire-front-data_box" class="alignment-data">
+															<p id="tire-front-width"></p>
+															<span>/</span>
+															<p id="tire-front-aspect"></p>
+															<span>R</span>
+															<p id="tire-front-rim"></p>
+														</div>
+													</div>
+													<div id="tire-rear_box">
+														<p>リア</p>
+														<div id="tire-rear-data_box" class="alignment-data">
+															<p id="tire-rear-width"></p>
+															<span>/</span>
+															<p id="tire-rear-aspect"></p>
+															<span>R</span>
+															<p id="tire-rear-rim"></p>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div id="spring-rate_box" class="alignment-inner-data_box">
+												<div class="spring-rate-data-title_box">
+													<p>スプリングレート</p>
+												</div>
+												<div id="spring-rate-data_box" class="alignment-data_box">
+													<div id="spring-rate-front_box">
+														<p>フロント</p>
+														<div id="spring-rate-front-data_box" class="alignment-data">
+															<p id="spring-front-val">
+																<span class="main-rate"></span><span class="unit">kg/mm</span>
+																<span id="spring-front-prog" class="prog-unit"></span>
+															</p>
+														</div>
+													</div>
+													<div id="spring-rate-rear_box">
+														<p>リア</p>
+														<div id="spring-rate-data_box" class="alignment-data">
+															<p id="spring-rear-val">
+																<span class="main-rate"></span><span class="unit">kg/mm</span>
+																<span id="spring-rear-prog" class="prog-unit"></span>
+															</p>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div id="stroke_box" class="alignment-inner-data_box">
+												<div class="spring-rate-data-title_box">
+													<p>ストローク</p>
+												</div>
+												<div id="stroke-data_box" class="alignment-data_box">
+													<div id="spring-rate-front_box">
+														<p>地上高</p>
+														<div id="stroke-tijyou-data_box" class="alignment-data">
+															<p id="stroke-tijyou-val">
+																<span class="main-rate"></span><span class="unit">mm</span>
+																<span id="stroke-tijyou-prog" class="prog-unit"></span>
+															</p>
+														</div>
+													</div>
+													<div id="damper_box">
+														<p>ダンパー</p>
+														<div id="damper-data_box" class="alignment-data">
+															<p id="damper-val">
+																<span class="main-rate"></span><span class="unit">mm</span>
+																<span id="damper-prog" class="prog-unit"></span>
+															</p>
+														</div>
+													</div>
+												</div>
+											</div>
+											<div id="stroke_box" class="alignment-inner-data_box">
+												<div class="spring-rate-data-title_box">
+													<p>アングル</p>
+												</div>
+												<div id="stroke-data_box" class="alignment-data_box">
+													<div id="steering-overlay_left">
+														<div>角度L (t): <span id="overlay-steer-t_left">0.0</span>°</div>
+														<div>str : <span id="overlay-steer-str_left">0.0</span></div>
+													</div>
+												</div>
+												<div id="stroke-data_box" class="alignment-data_box">
+													<div id="steering-overlay_right">
+														<div>角度R (t): <span id="overlay-steer-t_right">0.0</span>°</div>
+														<div>str : <span id="overlay-steer-str_right">0.0</span></div>
+													</div>
+												</div>
+											</div>
+										</article>
+									</div>
+									<div class="damper-graph-outer_box" id="damper-special-ui">
+										<div class="damper-graph-inner_box">
+											<div class="damper-graph_box">
+												<article class="damper-graph-front_box">
+													<div class="graph-label">FRONT DAMPER</div>
+													<canvas id="canvas-front-graph"></canvas>
+												</article>
+												<article class="damper-graph-rear_box">
+													<div class="graph-label">REAR DAMPER</div>
+													<canvas id="canvas-rear-graph"></canvas>
+												</article>
+											</div>
+											<div class="damper-animation_box">
+												<article class="damper-animation-front_box">
+													<div class="sim-side-label">FRONT SIM</div>
+													<div id="desmos-front-sim"></div>
+												</article>
+												<article class="damper-animation-rear_box">
+													<div class="sim-side-label">REAR SIM</div>
+													<div id="desmos-rear-sim"></div>
+												</article>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div id="desc-suspension"></div>
+						</div>
+						<div class="control-panel suspension-editor_box">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3 id="editor-title">Suspension Editor</h3>
+									<button id="downloadSuspensionBtn" class="reset-btn">GENERATE .INI</button>
+								</div>
+								<div class="suspension-data-area">
+									<div id="sus-editor" class="sub-content">
+										<div class="suspension-grid" id="suspension-data-container">
+											<p class="guide-text">suspensions.ini をアップロードして編集を開始してください。</p>
+										</div>
+									</div>
+									<div id="car-editor" class="sub-content tab-hidden">
+										<div class="suspension-grid" id="car-data-container">
+											<p class="guide-text">car.ini をアップロードして編集を開始してください。</p>
+										</div>
+									</div>
+									<div id="colliders-editor" class="sub-content tab-hidden">
+										<div class="suspension-grid" id="colliders-data-container">
+											<p class="guide-text">colliders.ini をアップロードして編集を開始してください。</p>
+										</div>
+									</div>
+									<div id="wing-editor" class="sub-content tab-hidden">
+										<div class="suspension-grid" id="aero-data-container">
+											<p class="guide-text">aero.ini をアップロードして編集を開始してください。</p>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="visibility-controls">
+								<label for="check-arms"><input type="checkbox" id="check-arms"> ARM</label>
+								<label for="check-steer"><input type="checkbox" id="check-steer"> TIE RED</label>
+								<label for="check-wheels"><input type="checkbox" id="check-wheels"> WHEEL</label>
+								<!-- <label for="check-rim-offset"><input type="checkbox" id="check-rim-offset"> RIM</label> -->
+								<label for="check-collider"><input type="checkbox" id="check-collider"> COLLIDER</label>
+								<!-- <label><input type="checkbox" id="steer-safety-lock" checked> STEER</label> -->
+								<label><input type="checkbox" id="check-tank"> TANK</label>
+								<label><input type="checkbox" id="check-wing"> AERO</label>
+							</div>
+						</div>
+					</article>
+				</div>
+			</div>
+		</div>
+		<!-- タイヤエディター -->
+		<section id="tire-content" class="tab-content tab-hidden suspension-outer-box">
+			<div class="model-outer_box">
+				<div id="tire-preview-container">
+					<article class="tire-section" id="section-tire">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-tires">
+								<div class="tire-front-preview">
+									<div class="graph-label tire-switch-outer_box">
+										<p>FRONT</p>
+										<div class="tire-switch_box">
+											<div class="extended-physics-switch-container">
+												<span class="switch-label">Lat FY</span>
+												<label class="toggle-switch">
+													<input type="checkbox" id="toggle-fy-front" checked onchange="window.updateTiresChart()">
+													<span class="toggle-slider round"></span>
+												</label>
+											</div>
+											<div class="extended-physics-switch-container">
+												<span class="switch-label">Lon FX</span>
+												<label class="toggle-switch">
+													<input type="checkbox" id="toggle-fx-front" checked onchange="window.updateTiresChart()">
+													<span class="toggle-slider round"></span>
+												</label>
+											</div>
+										</div>
+									</div>
+									<canvas id="tiresChartFront"></canvas>
+									<div class="indicator_box">
+										<div class="tyre-indicator_box" id="indicator-front">
+											<div class="indicator-item">
+												<div class="indicator-label"><span>💪 FFBの重さ (MZ)</span><span class="indicator-val" id="val-mz-front">0.0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-mz-front" style="background: #f39c12;"></div>
+												</div>
+											</div>
+											<div class="indicator-item">
+												<div class="indicator-label"><span>🏎️ 応答性 (シャープさ)</span><span class="indicator-val" id="val-resp-front">0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-resp-front" style="background: #3498db;"></div>
+												</div>
+											</div>
+											<div class="indicator-item">
+												<div class="indicator-label"><span>🛞 回転慣性 (重さ)</span><span class="indicator-val" id="val-inertia-front">0.0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-inertia-front" style="background: #9b59b6;"></div>
+												</div>
+											</div>
+											<div class="indicator-item">
+												<div class="indicator-label"><span>💨 スライド抵抗感</span><span class="indicator-val" id="val-slip-front">0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-slip-front" style="background: #e74c3c;"></div>
+												</div>
+											</div>
+										</div>
+										<div class="tyre-peak-monitor">
+											<h4>📊 ピークパフォーマンス</h4>
+											<p>横: FY <span id="peak-f-fy">0.00</span> @ <span id="peak-f-sa">0.0</span>°</p>
+											<p>縦: FX <span id="peak-f-fx">0.00</span> @ <span id="peak-f-sr">0.0</span>%</p>
+											<p>手応え MZ: <span id="peak-f-mz">0.0</span></p>
+										</div>
+									</div>
+								</div>
+								<div class="tire-rear-preview">
+									<div class="graph-label tire-switch-outer_box">
+										<p>REAR</p>
+										<div class="tire-switch_box">
+											<div class="extended-physics-switch-container">
+												<span class="switch-label">Lat FY</span>
+												<label class="toggle-switch">
+													<input type="checkbox" id="toggle-fy-rear" checked onchange="window.updateTiresChart()">
+													<span class="toggle-slider round"></span>
+												</label>
+											</div>
+											<div class="extended-physics-switch-container">
+												<span class="switch-label">Lon FX</span>
+												<label class="toggle-switch">
+													<input type="checkbox" id="toggle-fx-rear" checked onchange="window.updateTiresChart()">
+													<span class="toggle-slider round"></span>
+												</label>
+											</div>
+										</div>
+									</div>
+									<canvas id="tiresChartRear"></canvas>
+									<div class="indicator_box">
+										<div class="tyre-indicator_box" id="indicator-rear">
+											<div class="indicator-item">
+												<div class="indicator-label"><span>💪 FFBの重さ (MZ)</span><span class="indicator-val" id="val-mz-rear">0.0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-mz-rear" style="background: #f39c12;"></div>
+												</div>
+											</div>
+											<div class="indicator-item">
+												<div class="indicator-label"><span>🏎️ 応答性 (シャープさ)</span><span class="indicator-val" id="val-resp-rear">0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-resp-rear" style="background: #3498db;"></div>
+												</div>
+											</div>
+											<div class="indicator-item">
+												<div class="indicator-label"><span>🛞 回転慣性 (重さ)</span><span class="indicator-val" id="val-inertia-rear">0.0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-inertia-rear" style="background: #9b59b6;"></div>
+												</div>
+											</div>
+											<div class="indicator-item">
+												<div class="indicator-label"><span>💨 スライド抵抗感</span><span class="indicator-val" id="val-slip-rear">0</span></div>
+												<div class="indicator-bar">
+													<div class="indicator-fill" id="bar-slip-rear" style="background: #e74c3c;"></div>
+												</div>
+											</div>
+										</div>
+										<div class="tyre-peak-monitor">
+											<h4>📊 ピークパフォーマンス</h4>
+											<p>横: FY <span id="peak-r-fy">0.00</span> @ <span id="peak-r-sa">0.0</span>°</p>
+											<p>縦: FX <span id="peak-r-fx">0.00</span> @ <span id="peak-r-sr">0.0</span>%</p>
+											<p>手応え MZ: <span id="peak-r-mz">0.0</span></p>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div id="desc-tire"></div>
+						</div>
+						<div class="control-panel suspension-editor_box tire-editor_box">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3 id="editor-title">Tyres Editor</h3>
+									<button id="downloadtiresBtn" class="reset-btn" onclick="window.downloadTyreIni()">GENERATE .INI</button>
+								</div>
+								<div class="suspension-data-area">
+									<div id="tyre-editor" class="sub-content">
+										<div class="tire-ini_box" id="tyre-data-container">
+											<p class="guide-text">tyres.ini を読み込んでください。</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+				</div>
+			</div>
+		</section>
+		<!-- エンジンエディター -->
+		<section id="engine-content" class="tab-content tab-hidden suspension-outer-box">
+			<div class="model-outer_box">
+				<div id="engine-preview-container" style="display: flex; width: 100%; height: 100%;">
+					<article class="engine-section" id="section-engine" style="display: flex; width: 100%;">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-engine">
+								<canvas id="engineChart"></canvas>
+							</div>
+							<div id="desc-engine"></div>
+						</div>
+						<div class="control-panel suspension-editor_box engine-editor_box">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>Engine Editor</h3>
+									<button id="downloadEngineBtn" class="reset-btn">GENERATE .INI</button>
+								</div>
+								<div class="suspension-data-area">
+									<div id="engine-editor" class="sub-content">
+										<div id="power-lut-data-container"></div>
+										<div class="engine-ini_box" id="engine-data-container">
+											<p class="guide-text">engine.ini と power.lut を読み込んでください。</p>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</article>
+				</div>
+			</div>
+		</section>
+		<section id="gear-content" class="tab-content tab-hidden suspension-outer-box">
+			<div class="model-outer_box">
+				<div id="gear-preview-container" style="display: flex; width: 100%; height: 100%;">
+					<article class="engine-section" id="section-gear" style="display: flex; width: 100%;">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-gear">
+								<canvas id="gearChart"></canvas>
+							</div>
+							<div id="desc-gear"></div>
+						</div>
+						<div class="control-panel suspension-editor_box gear-editor_box">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3 id="editor-title">Drivetrain Editor</h3>
+									<button id="downloadGearBtn" class="reset-btn" onclick="window.downloadDrivetrainIni()">GENERATE .INI</button>
+								</div>
+								<div class="suspension-data-area">
+									<div id="gear-editor" class="sub-content"></div>
+								</div>
+							</div>
+						</div>
+					</article>
+				</div>
+			</div>
+		</section>
+		<section id="setup-content" class="tab-content tab-hidden suspension-outer-box">
+			<div class="model-outer_box">
+				<div id="setup-preview-container" style="display: flex; width: 100%; height: 100%;">
+					<article class="engine-section" style="display: flex; width: 100%;">
+						<div class="preview-area_box">
+							<div class="preview-area" id="preview-setup">
+								<canvas id="canvas-setup"></canvas>
+							</div>
+							<div id="desc-setup"></div>
+						</div>
+						<div class="control-panel suspension-editor_box">
+							<div class="workbench-control-panel">
+								<div class="header-row">
+									<h3>SetUp Editor</h3>
+									<button class="reset-btn" onclick="window.downloadSetupIni()">GENERATE .INI</button>
+								</div>
+								<div id="setup-editor-container" class="suspension-data-area">
+								</div>
+							</div>
+						</div>
+					</article>
+				</div>
+			</div>
+		</section>
+		<div id="footer-tools">
+		</div>
+		<footer>
+			<div class="copyright">
+				<small>&copy; 2026 AC 6-Camera 3D Editor</small>
+			</div>
+		</footer>
+	</main>
+	<div id="info-modal" class="modal-overlay hidden">
+		<div class="modal-content">
+			<button id="modal-close" class="modal-close-btn">&times;</button>
+			<div class="modal-tab-header">
+				<button class="modal-tab-btn active" data-modaltab="manual">マニュアル</button>
+				<button class="modal-tab-btn" data-modaltab="links">外部リンク</button>
+			</div>
+			<div id="modaltab-manual" class="modal-tab-panel active">
+				<div class="manual-pages-container">
+					<article class="manual-page active" data-page="1">
+						<h2 class="manual-title">!!! 注意事項・免責事項 !!!</h2>
+						<p>この「AC MOD GENERATOR」（以下「本アプリ」）は、ゼロから新しいMODを作成するアプリではありません。<br> あくまで、MOD制作やセッティングの過程で<strong>「直感的には分かりづらい .ini ファイルや .lut ファイルの数値調整」を視覚的にサポートする</strong>ためのツールです。</p>
+						<p>ご使用にあたり、以下の点に必ずご注意ください。</p>
+						<ul>
+							<li class="warning-important">
+								<h3 class="warning-title">本アプリの利用条件と二次配布の禁止（重要）</h3>
+								<p>本アプリは、<strong>YouTubeチャンネル「ねるたかちゃん」のメンバーシップ加入者様への限定特典</strong>として提供されている専用ツールです。以下の利用条件を必ずお守りください。</p>
+								<ul class="warning-list">
+									<li><strong>無断配布の禁止：</strong> 本アプリ（実行ファイル等）を、メンバーシップ未加入の他者へ譲渡・共有したり、インターネット上へ無断でアップロード（二次配布）することは固く禁じます。 <br><small>※メンバーシップ未加入では使用不可。</small>
+									</li>
+									<li><strong>利用資格について：</strong> 本アプリは、「ねるたかちゃん」のメンバーシップに加入している方のみがご使用いただけます。</li>
+								</ul>
+							</li>
+							<li>
+								<h3>バックアップの徹底</h3>
+								<p>本アプリは、作成したデータを各プロジェクト毎で保存が出来ます。</p>
+								<p>ですが、ゲーム内での数値の変更により、挙動がおかしくなったりゲームが起動しなくなる可能性があります。必ず本アプリを使用する前に、必ず元の車両データのバックアップを取ることを強くおすすめします。</p>
+							</li>
+							<li>
+								<h3>オンラインサーバーでの使用について</h3>
+								<p>本アプリで数値を改変した車両データを使用してパブリックなオンラインサーバーに参加すると、「Checksum Mismatch（データ不一致）」としてキックされる原因となります。主にオフラインでのテスト走行や、ご自身で管理する専用サーバーでのみご使用ください。</p>
+							</li>
+							<li>
+								<h3>計算・描画の精度について</h3>
+								<p>アプリ内の3Dプレビューや、サスペンションジオメトリの計算、グラフの表示などは、実際の「Assetto Corsa」のゲーム内物理エンジンと100%一致するものではありません。あくまでセッティングの「目安」としてご活用ください。</p>
+							</li>
+							<li>
+								<h3>他者MODの改変・再配布について</h3>
+								<p>他のクリエイター様が制作したMODの数値を改変し、無断で再配布することはトラブルの原因となります。個人的な利用の範囲に留めるか、公開する場合は必ず元の作者様へ許可を取るようにしてください。</p>
+							</li>
+						</ul>
+						<p><small>※ 万が一、本アプリの使用によってデータ損失やトラブルが発生した場合でも、開発者は一切の責任を負いかねます（自己責任でのご利用をお願いいたします）。</small></p>
+					</article>
+					<article class="manual-page" data-page="2">
+						<div>
+							<h2>1. 車両モデルの準備</h2>
+						</div>
+						<ul>
+							<li>
+								<h3>ソフトの準備</h3>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual_download.png" alt="">
+								</div>
+								<p>ACJP LABS（外部リンクに有）にて「KunosSDK」をダウンロードしてください。</p>
+								<p>ダウンロードしたファイルをインストールしたら使用するアセットコルサの3Dモデルの「.kn5」ファイルを「FBXに展開」して下さい。</p>
+							</li>
+							<li>
+								<h3>Blenderでの変換 (FBX → GLB)</h3>
+								<p>展開したFBXファイルをそのままではアプリで読み込めないため、軽量なGLB形式に変換します。</p>
+							</li>
+							<li>
+								<h3>Blenderへインポート</h3>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual-flx-import.png" alt="">
+								</div>
+								<p>書き出したFBXをBlenderで読み込みます。 <br>blenderへはドラック&ドロップでインポートできます。</p>
+							</li>
+							<li>
+								<h3>GLBでエクスポート</h3>
+								<p>ファイル ＞ エクスポート ＞ glTF 2.0 (.glb/.gltf) を選択。設定はデフォルトのままでOKです。</p>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual_model-export.png" alt="">
+								</div>
+							</li>
+						</ul>
+					</article>
+					<article class="manual-page" data-page="3">
+						<div>
+							<h2>2. アプリへのモデル読み込み</h2>
+						</div>
+						<ul>
+							<li>
+								<h3>アプリへ3Dモデルを読み込む</h3>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual-file-import_1.png" alt="">
+								</div>
+								<p>生成したGLBファイルを、本アプリに直接ドラッグ＆ドロップ、またはファイル選択からアップロードしてください。</p>
+							</li>
+							<li>
+								<h3>3Dプレビューの確認</h3>
+								<p>メインビューに車両が表示されれば成功です！</p>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual-preview.png" alt="">
+								</div>
+							</li>
+							<li>
+								<h3>視点操作</h3>
+								<p>左クリックで回転、右クリックで平行移動、ホイールでズームして、サスペンション周辺が見やすい位置に調整してください。</p>
+								<p>赤枠内を操作することによりプレビューのラインの表示非表示を操作できます。</p>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual-preview-control.png" alt="">
+								</div>
+							</li>
+						</ul>
+					</article>
+					<article class="manual-page" data-page="4">
+						<div>
+							<h2>4. 設定ファイル (.ini・.lut) の同期</h2>
+						</div>
+						<ul>
+							<li>
+								<h3>データファイルの読み込み</h3>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual-file-import_2.png" alt="">
+								</div>
+								<p>次に、現在調整したい車両のデータフォルダ（content/cars/車両名/data）から、以下のファイルを読み込ませます。</p>
+								<p>MODによっては「data.acd」になっている場合があります。<br>その場合は右クリックで「展開」をして下さい。</p>
+								<p>展開して「data」フォルダ内のファイルを調整するわけですが、「data.acd」があるので基本的には「data」フォルダ内のファイルを調整しても反映されません。</p>
+								<p>調整を反映させるには「data.acd」を「data.acd_old」など、認識できないようにファイル名を変更するか削除してください。 <br><small>※削除する場合はバックアップを取ってください。</small>
+								</p>
+							</li>
+							<li>
+								<h3>主要なファイルの読み込み</h3>
+								<p>suspensions.ini（足回り）、tyres.ini（タイヤ）、car.ini（車両諸元）などをドラッグ＆ドロップで読み込ませます。 <br>また、新規でも作成することが出来ます。</p>
+								<div class="manual-list_box">
+									<strong>現在読み込ませることが出来るファイル</strong>
+									<ul>
+										<li>suspensions.ini</li>
+										<li>tyres.ini</li>
+										<li>car.ini</li>
+										<li>colliders.ini</li>
+										<li>aero.ini</li>
+										<li>engine.ini</li>
+										<li>power.lut</li>
+										<li>drivetrain.ini</li>
+										<li>final.rto</li>
+										<li>setup.ini</li>
+										<li>cameras.ini</li>
+									</ul>
+								</div>
+								<p>※すべての項目が可視化できているわけではありません。</p>
+							</li>
+							<li>
+								<h3>自動反映</h3>
+								<p>ファイルを読み込むと、エディター上のスライダーや数値ボックスが現在の設定値に自動で書き換わります。</p>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/manual-preview_2.png" alt="">
+								</div>
+							</li>
+						</ul>
+					</article>
+					<article class="manual-page" data-page="5">
+						<div>
+							<h2>5. 視覚的チューニングと書き出し</h2>
+						</div>
+						<p>ここからが本番です！3Dビューに表示されるガイドライン（アームの動きやロールセンター等）を確認しながら、数値をいじってみましょう。</p>
+						<p>「iniデータ」ごとにタブが切り替えられます。 <br>調整したいところのみファイルを読み込ませて調整するのもありです。</p>
+						<ul>
+							<li>
+								<h3>リアルタイム反映</h3>
+								<div class="modal-image-placeholder slider-img_box">
+									<div class="slider-img">
+										<img src="./image/manual/slider1.jpg" alt="">
+									</div>
+									<div class="slider-img">
+										<img src="./image/manual/slider2.jpg" alt="">
+									</div>
+									<div class="slider-img">
+										<img src="./image/manual/slider3.jpg" alt="">
+									</div>
+									<div class="slider-img">
+										<img src="./image/manual/slider4.jpg" alt="">
+									</div>
+									<div class="slider-img">
+										<img src="./image/manual/slider5.jpg" alt="">
+									</div>
+									<div class="slider-img">
+										<img src="./image/manual/slider6.jpg" alt="">
+									</div>
+								</div>
+								<p>数値を変えると、3D上のガイドもリアルタイムに動きます。理想のジオメトリを探ってください。</p>
+							</li>
+							<li>
+								<h3>編集データの｢保存｣</h3>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/save.jpg" alt="">
+								</div>
+								<p>編集中のデータの保存をする場合は左上の｢保存｣を押してください。 <br>｢復元｣は｢保存｣または｢読み込み｣した所までリセットします。 </p>
+							</li>
+							<li>
+								<h3>｢書き出し｣</h3>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/export.jpg" alt="">
+								</div>
+								<p>右上の｢書き出し｣より編集したデータを書き出せます。</p>
+								<div class="modal-image-placeholder">
+									<img src="./image/manual/export-select.jpg" alt="">
+								</div>
+								<p>こちらでは、読込・編集した｢iniデータ｣が分かる様に色が変わります。 <br>書き出したい｢iniデータ｣を選択して｢保存｣を押すとプロジェクトの3Dモデルデータ名のフォルダで書き出しをします。 </p>
+								<p>フォルダの中に選択した｢iniデータ｣が格納されています。</p>
+							</li>
+						</ul>
+					</article>
+				</div>
+				<div class="manual-pagination">
+					<button id="manual-prev" class="pagination-btn" disabled>← 前へ</button>
+					<span id="manual-page-indicator">1 / 5</span>
+					<button id="manual-next" class="pagination-btn">次へ →</button>
+				</div>
+			</div>
+			<div id="modaltab-links" class="modal-tab-panel">
+				<h3>関連ツール・ダウンロード</h3>
+				<ul class="modal-link-list">
+					<li>
+						<a href="https://www.blender.org/download/" target="_blank" rel="noopener"> Blender 公式ダウンロード <span>(外部サイト)</span>
+						</a>
+					</li>
+					<li>
+						<a href="https://assettocorsa.club/content-manager.html" target="_blank" rel="noopener"> Content Manager <span>(外部サイト)</span>
+						</a>
+					</li>
+					<li>
+						<a href="https://labs.assettocorsa.jp/downloads/tools/kunossdk" target="_blank" rel="noopener"> ACJP LABS <span>(外部サイト)</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<section>
+		<div id="security-lock-screen" class="modal-overlay" style="z-index: 10000; background-color: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+			<div style="text-align: center; margin-bottom: 30px;">
+				<h2 style="color: #ff0000; font-family: 'Yusei Magic', sans-serif; letter-spacing: 5px; font-size: 2rem;">MEMBER'S ONLY ACCESS</h2>
+				<p style="color: #888; font-family: 'Shippori Antique B1', sans-serif; margin-top: 10px; line-height: 1.6;"> このツールは「ねるたかちゃん」メンバーシップ限定特典です。<br> YouTubeアカウントと連携済みのDiscordでログインし、認証を行ってください。 </p>
+			</div>
+			<button id="discord-login-btn" style="background: #5865F2; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; display: flex; align-items: center; gap: 10px; transition: 0.2s;">
+				<svg width="24" height="24" viewBox="0 0 127.14 96.36" fill="white">
+					<path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a67.58,67.58,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1,105.25,105.25,0,0,0,32.19-16.14c0,0,.04-.06.05-.09C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.2,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+				</svg> Discordで認証する </button>
+			<p id="auth-status-message" style="color: #888; margin-top: 15px; height: 20px; font-weight: bold;"></p>
+		</div>
+	</section>
+	<section id="startup-hub" class="modal-overlay">
+		<div class="hub-container">
+			<div class="hub-sidebar">
+				<h2>最近のプロジェクト</h2>
+				<div class="projects-scroll-container">
+					<ul id="recent-projects-list"></ul>
+				</div>
+			</div>
+			<div class="hub-main">
+				<div class="hub-logo">
+					<img src="image/icon.png" alt="Logo">
+					<h1>AC FILE GENERATOR</h1>
+					<p id="app-version-display">Version ...</p>
+				</div>
+				<div class="hub-actions">
+					<button id="hub-new-project" class="hub-btn primary">
+						<span class="icon">＋</span>
+						<div class="new-text_box">
+							<strong>新規プロジェクトを作成</strong>
+							<span>新しい車両MODの調整を始めます</span>
+						</div>
+					</button>
+					<button id="hub-open-project" class="hub-btn">
+						<span class="icon">📂</span>
+						<div class="new-text_box">
+							<strong>既存のプロジェクトを開く</strong>
+							<span></span>
+						</div>
+					</button>
+				</div>
+			</div>
+		</div>
+		<div id="name-input-modal" class="modal-overlay hidden project-name-modal-overlay">
+			<div class="modal-content project-name-modal">
+				<h3 class="modal-title">新規プロジェクト作成</h3>
+				<p class="modal-guide">プロジェクト名を入力してください：</p>
+				<input type="text" id="new-project-name" class="modal-input" placeholder="例: My_AE86_Grip">
+				<div class="modal-button-group">
+					<button id="btn-cancel-create" class="hub-btn modal-btn-cancel">キャンセル</button>
+					<button id="btn-execute-create" class="hub-btn primary modal-btn-execute">作成</button>
+				</div>
+			</div>
+		</div>
+	</section>
+	<script src="js/step.js"></script>
+	<script src="js/camera.js"></script>
+	<script src="js/collider.js"></script>
+	<script src="js/overlay.js"></script>
+	<script src="js/car.js"></script>
+	<script src="js/suspension.js"></script>
+	<script src="js/tires.js"></script>
+	<script src="js/model_app.js"></script>
+	<script src="js/tab.js"></script>
+	<script type="module" src="js/import.js"></script>
+	<script src="js/export.js"></script>
+	<script type="module" src="js/model.js"></script>
+	<script type="module">
+		import { handleMultiFileUpload } from './js/import.js';
+		document.addEventListener('DOMContentLoaded', () => {
+			const multiInput = document.getElementById('multiFileUpload');
+			if (multiInput) {
+				multiInput.addEventListener('change', (e) => {
+					if (e.target.files.length > 0) {
+						handleMultiFileUpload(e.target.files);
+					}
+				});
+			}
+		});
+	</script>
+	<script src="js/aero.js"></script>
+	<script src="js/engine.js"></script>
+	<script src="js/drivetrain.js"></script>
+	<script src="js/setup.js"></script>
+	<script src="js/storage.js"></script>
+	<script src="js/parser.js"></script>
+	<script src="js/editorTexts.js"></script>
+	<script src="main.js"></script>
+	<!-- <script src="main_test.js"></script> -->
+</body>
+
+</html>

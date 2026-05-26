@@ -1,0 +1,377 @@
+@charset "utf-8";
+/*Chrome, Safari・Firefox・IE, Edge・標準でテキストデータを選択させない
+開発が終了後オンにする*/
+/* h3,
+p,
+label,
+.no-select {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+} */
+html {
+	font-size: 16px;
+}
+body {
+	margin: 0;
+	font-family: sans-serif;
+	/* padding-bottom: 160px; */
+}
+/*基本テキスト始まり*/
+h2 {
+	font-size: 32px;
+}
+h3 {
+	font-size: 24px;
+}
+h4 {
+	font-size: 18px;
+}
+h5 {
+	font-size: 16px;
+}
+.ce-between {
+	align-items: baseline;
+}
+#wrapper section:not(:last-child) {
+	margin-bottom: 50px;
+}
+.main-setting-title_box p:not(:last-child) {
+	margin-bottom: 1em;
+}
+.h2-title_box {
+	margin-bottom: 30px;
+}
+.main-setting-title_box {
+	border: #333 solid 5px;
+	padding: 2rem;
+	margin-bottom: 30px;
+}
+.main-setting_box {
+	display: flex;
+	justify-content: space-around;
+	padding: 2rem 0;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+	border-radius: 1rem;
+}
+.import-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+.h2-title_box {
+	width: 21rem;
+}
+.h2-title-text {
+	text-align: end;
+}
+.file-input-group,
+.global-controls {
+	display: flex;
+	gap: 5px;
+	align-items: center;
+	justify-content: space-between;
+}
+.global-controls input {
+	width: 30%;
+}
+#camera-preview-container,
+#camera-sections-container {
+	display: flex;
+	flex-direction: column;
+	gap: 40px;
+}
+.camera-section {
+	display: flex;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+	overflow: hidden;
+	border: 1px solid #eee;
+	justify-content: space-between;
+}
+.preview-area_box {
+	padding: 1rem;
+	width: 100%;
+}
+.preview-area {
+	width: 100%;
+	background: #bdddff;
+	position: relative;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	aspect-ratio: 16 / 9;
+	border: 5px #333 solid;
+	border-radius: 0.5rem;
+	box-sizing: border-box;
+}
+canvas {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+.control-panel {
+	width: 40%;
+	padding: 15px;
+	background: #fff;
+	padding: 1rem 1.5rem;
+}
+.header-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 2px solid #007bff;
+	margin-bottom: 10px;
+	padding-bottom: 5px;
+}
+h3 {
+	margin: 0;
+	color: #333;
+}
+.reset-btn {
+	padding: 4px 8px;
+	font-size: 0.7em;
+	cursor: pointer;
+	background: #6c757d;
+	color: #fff;
+	border: none;
+	border-radius: 4px;
+}
+.control-group {
+	margin-bottom: 12px;
+}
+.control-row {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	margin-bottom: 4px;
+}
+label {
+	display: block;
+	font-weight: bold;
+	color: #555;
+}
+.val-display {
+	font-family: monospace;
+	color: #007bff;
+	width: 3rem;
+	text-align: right;
+	font-size: 0.8em;
+	border: #333 solid 1px;
+	padding: 0.3em;
+	border-radius: 0.3em;
+}
+#footer-tools {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	background: rgba(51, 51, 51, 0.9);
+	padding: 15px;
+	display: flex;
+	justify-content: center;
+	z-index: 100;
+}
+.button_box button {
+	padding: 0.2rem 0px;
+	color: #333333;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	font-weight: bold;
+	font-size: 0.8em;
+	background: #dbdbdb;
+	border: 1px solid #333333;
+	box-sizing: border-box;
+}
+.loading-label {
+	position: absolute;
+	color: white;
+	font-size: 0.8em;
+	pointer-events: none;
+	z-index: 10;
+}
+.dial-container {
+	display: inline-block;
+	width: 120px;
+	height: 24px;
+	background: #387BFF;
+	position: relative;
+	overflow: hidden;
+	border: 1px solid #555;
+	border-radius: 3px;
+	cursor: ew-resize;
+	user-select: none;
+	vertical-align: middle;
+	flex: 2;
+}
+.dial-marks {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 1000%;
+	background-image: linear-gradient(90deg, #444 1px, transparent 1px);
+	background-size: 10px 100%;
+	pointer-events: none;
+}
+.dial-value {
+	position: absolute;
+	width: 100%;
+	text-align: center;
+	line-height: 24px;
+	color: #fff;
+	font-family: monospace;
+	font-size: 12px;
+	text-shadow: 1px 1px 2px #000;
+	pointer-events: none;
+	z-index: 2;
+}
+.input-range {
+	flex: 2;
+	vertical-align: middle;
+}
+@media (max-width: 1199.98px) {}
+@media (max-width: 991.98px) {}
+@media (max-width: 767.98px) {}
+@media (max-width: 575.98px) {}
+
+.hub-container {
+	display: flex;
+	width: 900px;
+	height: 600px;
+	background: #252525;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+.hub-sidebar {
+	width: 300px;
+	background: #1e1e1e;
+	padding: 30px;
+	border-right: 1px solid #333;
+}
+.hub-main {
+	flex: 1;
+	padding: 60px;
+	display: flex;
+	flex-direction: column;
+	/* justify-content: flex-start; */
+	/* align-items: center; */
+	gap: 2rem;
+}
+.hub-btn {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	padding: 20px;
+	margin-bottom: 15px;
+	background: #333;
+	border: 1px solid #444;
+	border-radius: 8px;
+	color: #ccc;
+	cursor: pointer;
+	transition: all 0.2s;
+	text-align: left;
+}
+.hub-btn:hover { background: #444; color: #fff; }
+.hub-btn.primary { border-color: #5fafb9; }
+.hub-btn .icon { font-size: 24px; margin-right: 20px; }
+.hub-sidebar{
+	color: #fff;
+}
+.hub-sidebar h2{
+	font-size: 1.5rem;
+}
+.hub-logo{
+	display: flex;
+	gap: 1rem;
+	color: #fff;
+	/* justify-content: flex-start; */
+	align-items: center;
+}
+.hub-logo img{
+	width: 100px;
+}
+/* .hub-actions{
+	margin-top: auto;
+} */
+/* アクションボタンのエリア（スクロール対応） */
+.hub-actions {
+	width: 100%;
+	max-height: 250px;
+	/* overflow-y: auto;
+	padding-right: 10px; */
+}
+/* 🎨 おまけ：スクロールバーをダークテーマに合わせてカッコよくする（Chrome/Edge/Safari用） */
+.hub-actions::-webkit-scrollbar {
+	width: 8px;
+}
+.hub-actions::-webkit-scrollbar-track {
+	background: #252525;
+	border-radius: 4px;
+}
+.hub-actions::-webkit-scrollbar-thumb {
+	background: #444;
+	border-radius: 4px;
+}
+.hub-actions::-webkit-scrollbar-thumb:hover {
+	background: #5fafb9; /* ホバー時にテーマカラーに光る */
+}
+
+/* ==========================================
+	★ 新規プロジェクト作成モーダル
+	========================================== */
+.project-name-modal-overlay {
+		z-index: 10001; /* ロック画面などより手前に出す */
+}
+
+.project-name-modal {
+		width: 400px;
+		text-align: center;
+		padding: 30px;
+}
+
+.project-name-modal .modal-title {
+		margin-bottom: 15px;
+		color: #5fafb9;
+}
+
+.project-name-modal .modal-guide {
+		margin-bottom: 15px;
+		font-size: 14px;
+		color: #ccc;
+}
+
+.project-name-modal .modal-input {
+		width: 90%;
+		padding: 12px;
+		margin-bottom: 25px;
+		background: #222;
+		border: 1px solid #444;
+		border-radius: 4px;
+		color: #fff;
+		font-size: 16px;
+}
+
+.project-name-modal .modal-input:focus {
+		outline: none;
+		border-color: #5fafb9;
+}
+
+.project-name-modal .modal-button-group {
+		display: flex;
+		gap: 15px;
+		justify-content: center;
+}
+
+/* ハブボタンのスタイルを上書き調整 */
+.project-name-modal .modal-btn-cancel,
+.project-name-modal .modal-btn-execute {
+		width: auto;
+		padding: 10px 20px;
+		margin: 0;
+		justify-content: center;
+}

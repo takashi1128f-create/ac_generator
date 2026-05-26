@@ -1,0 +1,735 @@
+// js/export.js
+if (window.electronAPI && window.electronAPI.onMenuRequestExport) {
+	window.electronAPI.onMenuRequestExport(() => {
+		// 個別にリストを作らず、import.js 側の「名前セット機能付き」関数を呼び出す
+		if (typeof window.openExportModal === 'function') {
+			window.openExportModal();
+		}
+	});
+}
+document.addEventListener('DOMContentLoaded', () => {
+	const closeBtn = document.getElementById('closeExportBtn');
+	const execBtn = document.getElementById('executeExportBtn');
+	if (closeBtn) {
+		closeBtn.onclick = () => {
+			document.getElementById('exportModal').style.display = 'none';
+		};
+	}
+	if (execBtn) {
+		execBtn.onclick = window.executeBulkExport;
+	}
+});
+/**
+ * まとめて書き出し実行（新・司令塔）
+ * Electron側のフォルダ選択・ファイル生成APIと連携します。
+ */
+window.executeBulkExport = async function() {
+	console.log("🚀 [DEBUG] executeBulkExport が開始されました");
+
+	// --- 1. プロジェクト名（フォルダ名）を入力欄から取得 ---
+	const nameInput = document.getElementById('exportProjectName');
+	const projectName = nameInput ? nameInput.value.trim() : "Unknown-Car";
+	
+	// フォルダ名に使用できない禁止文字をアンダースコアに置換
+	const safeProjectName = projectName.replace(/[\\/:*?"<>|]/g, "_");
+	const exportFolderName = safeProjectName; // -data-file を削除
+
+	// --- 2. 保存先のベースとなるフォルダを選択させる ---
+	const baseDir = await window.electronAPI.openDirectoryDialog();
+	if (!baseDir) {
+		console.log("⚠️ [DEBUG] フォルダ選択がキャンセルされました");
+		return;
+	}
+	const filesToExport = [];
+	// --- 3. 選択されたファイルのデータを順番に収集 ---
+	for (const file of window.EXPORT_CONFIG) {
+		const checkbox = document.getElementById(`check-${file.id}`);
+		if (checkbox && checkbox.checked) {
+
+			// 🔒 安全ガード：インポートされていない空欄のデータは、チェックが入っていても書き出し対象から除外
+			if (file.id === 'tyres' && (!window.tyreCompoundList || window.tyreCompoundList.length === 0)) continue;
+			if (file.id === 'suspension' && !window.currentSuspensionData) continue;
+			if (file.id === 'car' && !window.currentCarData) continue;
+			if (file.id === 'engine' && !window.currentEngineData) continue;
+			if (file.id === 'aero' && !window.currentAeroData) continue;
+			if (file.id === 'setup' && !window.currentSetupData) continue;
+
+			const getFunc = window[file.func];
+			console.log(`📄 [DEBUG] ファイル収集中: ${file.name} (関数: ${file.func})`);
+			if (typeof getFunc === 'function') {
+				try {
+					// 引数に true を渡して文字列を取得
+					const content = getFunc(true);
+					if (content) {
+						filesToExport.push({
+							name: file.name,
+							content: content
+						});
+						console.log(`   └ ✅ データ取得成功 (${content.length} 文字)`);
+					} else {
+						console.warn(`   └ ⚠️ 関数から空のデータが返されました: ${file.func}`);
+					}
+				} catch (err) {
+					console.error(`   └ ❌ [ERROR] ${file.name} のデータ収集中に失敗しました:`, err);
+				}
+			} else {
+				console.error(`   └ ❌ 関数が見つかりません: ${file.func}`);
+			}
+		}
+	}
+
+	// ★ タイヤのLUTファイルを書き出すかどうかの選択確認ポップアップ
+	// ★ タイヤのLUTファイルを動的に生成して書き出しリストに追加（全自動スマート判定仕様）
+	if (window.tyreCompoundList && window.tyreCompoundList.length > 0) {
+		
+		// 🕵️ アップロードされた元のファイル群に最初から記載されていた「本物の既存のLUTファイル名」をすべて集めて記憶する
+		const originalLutNames = new Set();
+		window.tyreCompoundList.forEach(c => {
+			if (c.raw_ini) {
+				for (let sec in c.raw_ini) {
+					if (c.raw_ini[sec].WEAR_CURVE) originalLutNames.add(c.raw_ini[sec].WEAR_CURVE.trim().toLowerCase());
+					if (c.raw_ini[sec].PERFORMANCE_CURVE) originalLutNames.add(c.raw_ini[sec].PERFORMANCE_CURVE.trim().toLowerCase());
+				}
+			}
+		});
+
+		window.tyreCompoundList.forEach(comp => {
+			const suffix = comp.index === 0 ? '' : `_${comp.index}`;
+			const fSec = `FRONT${suffix}`;
+			const rSec = `REAR${suffix}`;
+			const tfSec = `THERMAL_FRONT${suffix}`;
+			const trSec = `THERMAL_REAR${suffix}`;
+
+			const fData = comp.data[fSec] || {};
+			const rData = comp.data[rSec] || {};
+			const tfData = comp.data[tfSec] || {};
+			const trData = comp.data[trSec] || {};
+
+			const power = comp.wizardPower || 300;
+			const pattern = document.getElementById('wiz-lut-pattern') ? document.getElementById('wiz-lut-pattern').value : 'A';
+			const nameSuffix = (pattern === 'A') ? `_${comp.name.toLowerCase()}` : '';
+
+			// 1️⃣ FRONTの摩耗LUT
+			let fWearName = fData.WEAR_CURVE ? fData.WEAR_CURVE.trim() : "";
+			// 💡 入力欄が「空欄」または「既存リストに無い新しい名前」の時だけ、デフォルトデータを当てて新規書き出しをします。
+			// ユーザーが既存のLUT名（_wear1.lutなど）を【選んだ場合】は、新規書き出しを完全にスキップします（要らない）。
+			if (!fWearName || !originalLutNames.has(fWearName.toLowerCase())) {
+				if (!fWearName) {
+					fWearName = `wcurve_front${nameSuffix}.lut`;
+					fData.WEAR_CURVE = fWearName; // INIファイル側にも名前を登録
+				}
+				const fWearContent = `0|100\n0.005|95\n0.008|98\n0.015|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
+				filesToExport.push({ name: fWearName, content: fWearContent });
+			}
+
+			// ② REARの摩耗LUT
+			let rWearName = rData.WEAR_CURVE ? rData.WEAR_CURVE.trim() : "";
+			if (!rWearName || !originalLutNames.has(rWearName.toLowerCase())) {
+				if (!rWearName) {
+					rWearName = `wcurve_rear${nameSuffix}.lut`;
+					rData.WEAR_CURVE = rWearName;
+				}
+				const peak = (0.015 + (power / 600) * 0.655).toFixed(3);
+				const rWearContent = `0|100\n0.005|95\n0.008|98\n${peak}|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
+				filesToExport.push({ name: rWearName, content: rWearContent });
+			}
+
+			// ③ FRONTの温度熱ダレLUT
+			let fPerfName = tfData.PERFORMANCE_CURVE ? tfData.PERFORMANCE_CURVE.trim() : "";
+			if (!fPerfName || !originalLutNames.has(fPerfName.toLowerCase())) {
+				if (!fPerfName) {
+					fPerfName = `tcurve_front${nameSuffix}.lut`;
+					tfData.PERFORMANCE_CURVE = fPerfName;
+				}
+				const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
+				filesToExport.push({ name: fPerfName, content: tContent });
+			}
+
+			// ④ REARの温度熱ダレLUT
+			let rPerfName = trData.PERFORMANCE_CURVE ? trData.PERFORMANCE_CURVE.trim() : "";
+			if (!rPerfName || !originalLutNames.has(rPerfName.toLowerCase())) {
+				if (!rPerfName) {
+					rPerfName = `tcurve_rear${nameSuffix}.lut`;
+					trData.PERFORMANCE_CURVE = rPerfName;
+				}
+				const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
+				filesToExport.push({ name: rPerfName, content: tContent });
+			}
+		});
+	}
+	if (filesToExport.length === 0) {
+		alert("書き出し可能なデータがありませんでした。F12のログを確認してください。");
+		return;
+	}
+
+	// ★追加：ギアセットが1つの時だけ、自動で ratios.rto を生成して追加する
+	if (window.gearSetList && window.gearSetList.length === 1) {
+		console.log("⚙️ ギアセットが1つのため、固定の ratios.rto を自動生成します。");
+		filesToExport.push({
+			name: 'ratios.rto',
+			content: "V160 1st|3.827\r\nR154 1st|3.251\r\nV160 2nd|2.360\r\nR154 2nd|1.955\r\nV160 3rd|1.685\r\nR154 3rd|1.310\r\nV160 4th|1.312\r\nR154 4th|1.000\r\nV160 5th|1.000\r\nR154 5th|0.753\r\nV160 6th|0.793\r\n\r\n"
+		});
+	}
+
+	console.log("📤 [DEBUG] Electronへ送信するファイルリスト:", filesToExport);
+	const folderExists = await window.electronAPI.checkFolderExists(baseDir, exportFolderName);
+	if (folderExists) {
+		const confirmOverwrite = confirm(`警告：既にフォルダ「${exportFolderName}」が存在します。\n中身を上書きしてもよろしいですか？`);
+		if (!confirmOverwrite) {
+			console.log("⚠️ [DEBUG] ユーザーにより上書きがキャンセルされました");
+			return; // 処理を中断
+		}
+	}
+	// --- 4. Electronのメインプロセスに「フォルダ作成」と「一括保存」を依頼 ---
+	const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport);
+	console.log("🏁 [DEBUG] 書き出し結果:", result);
+	if (result && result.success) {
+		alert(`「${exportFolderName}」フォルダに ${filesToExport.length} 個のファイルを書き出しました。\n場所: ${result.path}`);
+		document.getElementById('exportModal').style.display = 'none';
+	} else {
+		alert("書き出しに失敗しました。\n" + (result ? result.error : "不明なエラー"));
+	}
+};
+// =========================================================
+// ★ 欠落していたボタンのイベント紐付け（超重要）
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+	const openBtn = document.getElementById('openExportModalBtn');
+	const closeBtn = document.getElementById('closeExportBtn');
+	const execBtn = document.getElementById('executeExportBtn');
+
+	// window.openExportModal は import.js 側で定義されているものを使用します
+	if (openBtn) {
+		openBtn.onclick = () => {
+			if (typeof window.openExportModal === 'function') {
+				window.openExportModal();
+			} else {
+				console.error("openExportModal function not found.");
+			}
+		};
+	}
+	if (closeBtn) {
+		closeBtn.onclick = () => {
+			const modal = document.getElementById('exportModal');
+			if (modal) modal.style.display = 'none';
+		};
+	}
+	if (execBtn) {
+		execBtn.onclick = window.executeBulkExport;
+	}
+});
+window.downloadFinalRto = function(isExport = false) {
+	let res = "\n";
+	window.finalRtoList.forEach(item => {
+		if (item.label && item.value) {
+			res += `${item.label}|${item.value}\n`;
+		}
+	});
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキスト(res)を返して終わらせる
+	if (isExport === true) return res;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([res], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'final.rto';
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => {
+		document.body.removeChild(a);
+		window.URL.revokeObjectURL(url);
+	}, 0);
+};
+window.downloadDrivetrainIni = function(isExport = false) {
+	const activeSet = window.gearSetList[window.mainGearIdx] || window.gearSetList[window.activeGearIdx] || window.gearSetList[0];
+	if (!activeSet || !activeSet.data) {
+		alert("ドライブトレインデータが存在しません。");
+		return;
+	}
+	let baseExportData = window.currentDrivetrainData ? JSON.parse(JSON.stringify(window.currentDrivetrainData)) : {};
+	// =========================================================
+	// ★ ユーザー要件に基づく条件分岐ロジック
+	// =========================================================
+	let isSetupUploaded = window.isSetupIniUploaded === true;
+	// 現在のUIのギア状態と、保存しておいた初期状態を比較して「編集されたか」を判定
+	let currentGearStr = JSON.stringify(activeSet.data.GEARS);
+	let isGearEdited = window.baseGearSnapshot && (window.baseGearSnapshot !== currentGearStr);
+	if (!isSetupUploaded && !isGearEdited) {
+		// 【要件】setup.iniアップロードなし ＆ 編集なし
+		// ➡️ drivetrain.ini のデータを完全にパススルーする（baseExportDataのGEARSはそのまま維持）
+		console.log("パススルー出力: drivetrain.iniの元データを維持します");
+	} else {
+		// 【要件】setup.iniあり、または 編集ありの場合
+		if (!baseExportData.GEARS) baseExportData.GEARS = {};
+		// ➡️ 編集されたギアレシオを書き出すが、「FINALはそのままで」の要件を満たす
+		for (let key in activeSet.data.GEARS) {
+			if (key !== 'FINAL') { // FINALは drivetrain.ini 側の元数値を維持する
+				baseExportData.GEARS[key] = activeSet.data.GEARS[key];
+			}
+		}
+	}
+	// ギア(GEARS)以外の全セクション（GEARBOX、AUTOCLUTCHなど）は、UIの編集結果を全て反映させる
+	for (const section in activeSet.data) {
+		if (section !== 'GEARS') {
+			baseExportData[section] = JSON.parse(JSON.stringify(activeSet.data[section]));
+		}
+	}
+	// =========================================================
+	// 以下、テキスト生成とダウンロード処理
+	// =========================================================
+	let res = "";
+	for (const section in baseExportData) {
+		res += `[${section}]\n`;
+		let keys = Object.keys(baseExportData[section]);
+		if (section === 'GEARS') {
+			keys.sort((a, b) => {
+				const getWeight = (k) => {
+					if (k === 'COUNT') return 0;
+					if (k === 'GEAR_R') return 1;
+					if (k.startsWith('GEAR_')) return 10 + parseInt(k.replace('GEAR_', ''));
+					if (k === 'FINAL') return 999;
+					return 500;
+				};
+				return getWeight(a) - getWeight(b);
+			});
+		}
+		const countVal = parseInt(baseExportData.GEARS?.COUNT) || 7;
+		keys.forEach(key => {
+			if (section === 'GEARS' && key.startsWith('GEAR_') && key !== 'GEAR_R') {
+				const gearNum = parseInt(key.replace('GEAR_', ''));
+				if (gearNum > countVal) return;
+			}
+			const val = baseExportData[section][key];
+			if (val !== undefined && val !== "") {
+				res += `${key}=${val}\n`;
+			}
+		});
+		res += "\n";
+	}
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、完成したテキスト(res)を返して終わらせる
+	if (isExport === true) return res;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([res], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'drivetrain.ini';
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => {
+		document.body.removeChild(a);
+		window.URL.revokeObjectURL(url);
+	}, 0);
+};
+/**
+ * cameras.ini の書き出し
+ */
+window.downloadCamerasIni = function(isExport = false) {
+	let res = "";
+	// originalRawData に格納されている各カメラのデータをループ
+	window.originalRawData.forEach((config, idx) => {
+		res += `[CAMERA_${idx}]\n`;
+		// window.cameraConfigs[idx] に編集後の値（position, target 等）が入っていると想定
+		// 編集後のデータがあればそれを使い、なければ元のデータ(config)を使う
+		const editData = window.cameraConfigs && window.cameraConfigs[idx] ? window.cameraConfigs[idx] : {};
+		// 保存されている全てのキーを書き出す
+		for (const key in config) {
+			let val = config[key];
+			// もし特定のキー（POSITIONなど）が編集データ側にある場合は、そちらを優先して文字列化
+			if (key === 'POSITION' && editData.position) {
+				val = `${editData.position.x},${editData.position.y},${editData.position.z}`;
+			} else if (key === 'FORWARD' && editData.target) {
+				// targetから計算が必要な場合はここにロジックを入れる
+			}
+			res += `${key}=${val}\n`;
+		}
+		res += "\n";
+	});
+	// ★ 重要：一括書き出し時はここでテキストを返して終了
+	if (isExport === true) return res;
+	// 個別保存用（一応残しておきます）
+	if (res === "") {
+		alert("書き出すカメラデータがありません。");
+		return;
+	}
+	const blob = new Blob([res], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'cameras.ini';
+	a.click();
+	URL.revokeObjectURL(url);
+};
+/**
+ * aero.ini の書き出し
+ */
+window.downloadAeroIni = function(isExport = false) {
+	const data = window.currentAeroData;
+	if (!data) {
+		alert("エアロデータが存在しません。");
+		return;
+	}
+	let iniContent = "";
+	// 現在保持している全セクション（WING_0, WING_1など）を出力
+	for (const section in data) {
+		// 拡張物理がOFFの時、[FIN_0] セクションは書き出さない[cite: 29, 30]
+		if (section === 'FIN_0' && !window.isExtendedPhysicsEnabled) continue;
+
+		iniContent += `[${section}]\n`;
+		for (const key in data[section]) {
+			// 拡張物理がOFFの時、ZONE_ で始まるダメージ項目は書き出さない[cite: 29, 30]
+			if (key.startsWith('ZONE_') && !window.isExtendedPhysicsEnabled) continue;
+
+			iniContent += `${key}=${data[section][key]}\n`;
+		}
+		iniContent += "\n";
+	}
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return iniContent;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([iniContent], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'aero.ini';
+	a.click();
+	URL.revokeObjectURL(url);
+};
+window.downloadEngineIni = function(isExport = false) {
+	const data = window.currentEngineData;
+	if (!data) {
+		alert("エンジンデータが存在しません。");
+		return;
+	}
+	let iniContent = "";
+	for (const section in data) {
+		iniContent += `[${section}]\n`;
+		for (const key in data[section]) {
+			iniContent += `${key}=${data[section][key]}\n`;
+		}
+		iniContent += "\n";
+	}
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return iniContent;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([iniContent], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'engine.ini';
+	a.click();
+	URL.revokeObjectURL(url);
+};
+/**
+ * power.lut の書き出し
+ */
+window.downloadPowerLut = function(isExport = false) {
+	const rawData = window.currentPowerLutRaw;
+	if (!rawData) {
+		alert("LUTデータが存在しません。");
+		return;
+	}
+	// ★ 重要：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return rawData;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([rawData], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'power.lut';
+	a.click();
+	URL.revokeObjectURL(url);
+};
+// 3. setup.ini のダウンロード機能（ギアの自動合流つき）
+window.downloadSetupIni = function(isExport = false) {
+	const data = window.currentSetupData;
+	if (!data) return alert("セットアップデータが存在しません。");
+	let iniContent = "";
+	// ★追加：drivetrain.js側で作成したギアデータ群を、強制的にセットアップの先頭に合流させる
+	iniContent += "[DISPLAY_METHOD]\nSHOW_CLICKS=1\n\n";
+	const currentUseGearset = (data['GEARS'] && data['GEARS']['USE_GEARSET'] !== undefined) ? data['GEARS']['USE_GEARSET'] : '1';
+	iniContent += `[GEARS]\nUSE_GEARSET=${currentUseGearset}\n\n`;
+
+	// ★修正：ギアセットの数によって出力を切り替える
+	if (window.gearSetList && window.gearSetList.length === 1) {
+		// 1つの時：協議した通りの「固定ギア(rto)」用ブロックを書き出す
+		iniContent += `[GEAR_1]\nRATIOS=ratios.rto\nNAME=First Gear\nPOS_X=0.5\nPOS_Y=0\nHELP=HELP_REAR_GEAR\n\n`;
+		iniContent += `[GEAR_2]\nRATIOS=ratios.rto\nNAME=Second Gear\nPOS_X=0.5\nPOS_Y=1.5\nHELP=HELP_REAR_GEAR\n\n`;
+		iniContent += `[GEAR_3]\nRATIOS=ratios.rto\nNAME=Third Gear\nPOS_X=0.5\nPOS_Y=3\nHELP=HELP_REAR_GEAR\n\n`;
+		iniContent += `[GEAR_4]\nRATIOS=ratios.rto\nNAME=Fourth Gear\nPOS_X=0.5\nPOS_Y=4.5\nHELP=HELP_REAR_GEAR\n\n`;
+		iniContent += `[GEAR_5]\nRATIOS=ratios.rto\nNAME=Fifth Gear\nPOS_X=0.5\nPOS_Y=6\nHELP=HELP_REAR_GEAR\n\n`;
+		iniContent += `[GEAR_6]\nRATIOS=ratios.rto\nNAME=Sixth Gear\nPOS_X=0.5\nPOS_Y=7.5\nHELP=HELP_REAR_GEAR\n\n`;
+	} else if (window.gearSetList && window.gearSetList.length > 1) {
+		// 2つ以上の時：現状通りの [GEAR_SET_X] を順番に書き出す
+		window.gearSetList.forEach((set, idx) => {
+			iniContent += `[GEAR_SET_${idx}]\n`;
+			iniContent += `NAME=${set.name}\n`;
+			const gears = set.data.GEARS || {};
+			let keys = Object.keys(gears).filter(k => k.startsWith('GEAR_') && k !== 'GEAR_R');
+			keys.sort((a, b) => parseInt(a.replace('GEAR_', '')) - parseInt(b.replace('GEAR_', '')));
+			keys.forEach(k => {
+				if (gears[k] !== undefined && gears[k] !== "") {
+					iniContent += `${k}=${gears[k]}\n`;
+				}
+			});
+			iniContent += "\n";
+		});
+	}
+
+	iniContent += "[FINAL_GEAR_RATIO]\nRATIOS=final.rto\nNAME=Final Gear Ratio\nPOS_X=1\nPOS_Y=0\nHELP=HELP_REAR_GEAR\n\n";
+	// 元々のセットアップデータ（足回り・エアロ等）を書き出す
+	for (const section in data) {
+		// ギア関連は上で合流させたのでスキップ
+		if (section === 'GEARS' || section.startsWith('GEAR_SET_') || section === 'FINAL_GEAR_RATIO' || section === 'DISPLAY_METHOD') {
+			continue;
+		}
+		// ★追加：ギアセットが2つ以上ある時は、rto用の [GEAR_1] ～ [GEAR_6] を二重に書き出さないようスキップさせる
+		if (window.gearSetList.length > 1 && section.startsWith('GEAR_')) {
+			continue;
+		}
+		if (data[section].__is_active === false) continue;
+		iniContent += `[${section}]\n`;
+		let keys = Object.keys(data[section]);
+		keys.forEach(key => {
+			if (['__is_active'].includes(key)) return;
+			if (data[section][key] !== undefined && data[section][key] !== "") {
+				iniContent += `${key}=${data[section][key]}\n`;
+			}
+		});
+		iniContent += "\n";
+	}
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return iniContent;
+	const blob = new Blob([iniContent], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'setup.ini';
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => {
+		document.body.removeChild(a);
+		window.URL.revokeObjectURL(url);
+	}, 0);
+};
+window.downloadCollidersIni = function(isExport = false) {
+	if (!window.currentCarData) {
+		alert("コライダーデータが存在しません。");
+		return;
+	}
+	let iniContent = "";
+	let hasCollider = false;
+	for (const section in window.currentCarData) {
+		// COLLIDER_ から始まる設定のみを抽出する
+		if (section.startsWith('COLLIDER_')) {
+			hasCollider = true;
+			iniContent += `[${section}]\n`;
+			for (const key in window.currentCarData[section]) {
+				iniContent += `${key}=${window.currentCarData[section][key]}\n`;
+			}
+			iniContent += "\n";
+		}
+	}
+	if (!hasCollider) {
+		alert("書き出すコライダーデータがありません。");
+		return;
+	}
+	// ★ 重要：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return iniContent;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([iniContent], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'colliders.ini';
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => {
+		document.body.removeChild(a);
+		window.URL.revokeObjectURL(url);
+	}, 0);
+}; /** suspension.ini の書き出し */
+window.downloadSuspensionIni = function(isExport = false) {
+	const data = window.currentSuspensionData;
+	if (!data) {
+		alert("データが存在しません。");
+		return;
+	}
+	let iniContent = "";
+	// 出力するセクションの順番
+	const sectionOrder = [{
+		id: 'HEADER',
+		type: 'FIXED'
+	}, {
+		id: 'BASIC',
+		type: 'FIXED'
+	}, {
+		id: 'ARB',
+		type: 'FIXED'
+	}, {
+		id: 'FRONT',
+		type: 'DYNAMIC'
+	}, {
+		id: 'REAR',
+		type: 'DYNAMIC'
+	}, {
+		id: 'AXLE',
+		type: 'AXLE_SPECIAL'
+	},
+	{
+		id: '_EXTENSION',
+		type: 'FIXED'
+	},
+	{
+		id: '_EXTENSION_FLEX',
+		type: 'FIXED'
+	},
+	{
+		id: 'GRAPHICS_OFFSETS',
+		type: 'FIXED'
+	}, {
+		id: 'DAMAGE',
+		type: 'FIXED'
+	}];
+	sectionOrder.forEach(secDef => {
+		const secName = secDef.id;
+		// AXLEセクション専用の出力処理
+		if (secDef.type === 'AXLE_SPECIAL') {
+			if (data.REAR && data.REAR.TYPE === 'AXLE' && data.AXLE) {
+				iniContent += `[${secName}]\n`;
+				const axleKeys = window.SUSPENSION_EXTRA_SCHEMA['AXLE'].arms;
+				axleKeys.forEach(key => {
+					if (data.AXLE[key] !== undefined) {
+						iniContent += `${key}=${data.AXLE[key]}\n`;
+					}
+				});
+				iniContent += `\n`;
+			}
+			return;
+		}
+		if (!data[secName]) return;
+		iniContent += `[${secName}]\n`;
+		if (secDef.type === 'FIXED') {
+			for (const [key, val] of Object.entries(data[secName])) {
+				iniContent += `${key}=${val}\n`;
+			}
+		} else if (secDef.type === 'DYNAMIC') {
+			const currentType = data[secName].TYPE || 'DWB';
+			const baseKeys = [...SUSPENSION_BASE_KEYS];
+			
+			// すべての形式（DWB, STRUT, AXLE）に対して、スキーマに定義された
+			// 'extended' カテゴリのキーを書き出し対象に加える
+			if (window.SUSPENSION_EXTRA_SCHEMA[currentType]) {
+				const extras = window.SUSPENSION_EXTRA_SCHEMA[currentType];
+				// 既存のアーム等のキーを追加
+				Object.keys(extras).forEach(cat => {
+					if (cat !== 'extended' || window.isExtendedPhysicsEnabled) {
+						baseKeys.push(...extras[cat]);
+					}
+				});
+			}
+			
+			const finalKeys = [...new Set(baseKeys)];
+			finalKeys.forEach(key => {
+				if (data[secName][key] !== undefined) {
+					iniContent += `${key}=${data[secName][key]}\n`;
+				}
+			});
+		}
+		iniContent += `\n`;
+	});
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return iniContent;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([iniContent], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'suspensions.ini';
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => {
+		document.body.removeChild(a);
+		window.URL.revokeObjectURL(url);
+	}, 0);
+};
+// --- ここから追加：各INIの書き出し機能 ---
+window.downloadTyreIni = function(isExport = false) {
+	if (!window.currentTyreData) {
+		alert("タイヤデータが存在しません。");
+		return;
+	}
+	let iniContent = "";
+	for (const section in window.currentTyreData) {
+		iniContent += `[${section}]\n`;
+		for (const key in window.currentTyreData[section]) {
+			iniContent += `${key}=${window.currentTyreData[section][key]}\n`;
+		}
+		iniContent += "\n";
+	}
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return iniContent;
+	// === 以下は個別保存ボタン用 ===
+	const blob = new Blob([iniContent], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'tyres.ini';
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => {
+		document.body.removeChild(a);
+		window.URL.revokeObjectURL(url);
+	}, 0);
+};
+window.downloadCarIni = function(isExport = false) {
+	if (!window.currentCarData) {
+		alert("車両データが存在しません。");
+		return;
+	}
+	let iniContent = "";
+	for (const section in window.currentCarData) {
+		// COLLIDER_ から始まる設定は colliders.ini 用なので弾く
+		if (section.startsWith('COLLIDER_')) continue;
+		iniContent += `[${section}]\n`;
+		for (const key in window.currentCarData[section]) {
+			iniContent += `${key}=${window.currentCarData[section][key]}\n`;
+		}
+		iniContent += "\n";
+	}
+	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
+	if (isExport === true) return iniContent;
+	const blob = new Blob([iniContent], {
+		type: 'text/plain'
+	});
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = 'car.ini';
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(() => {
+		document.body.removeChild(a);
+		window.URL.revokeObjectURL(url);
+	}, 0);
+};

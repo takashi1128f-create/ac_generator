@@ -1,0 +1,120 @@
+@charset "utf-8";
+/* ==========================================
+		1. 自分でダウンロードしたフォントを読み込む
+		（※font-familyの名前をGoogle公式に合わせました）
+		========================================== */
+@font-face {
+	font-family: "Yusei Magic";
+	src: url('../fonts/YuseiMagic-Regular.ttf') format('truetype');
+}
+@font-face {
+	font-family: "Shippori Antique";
+	src: url('../fonts/ShipporiAntique-Regular.ttf') format('truetype');
+}
+@font-face {
+	font-family: "Shippori Antique B1";
+	src: url('../fonts/ShipporiAntiqueB1-Regular.ttf') format('truetype');
+}
+body {
+	margin: 0;
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: transparent;
+	overflow: hidden;
+	/* 全体の基本フォントを「しっぽりアンチック」に設定 */
+	font-family: "Shippori Antique", sans-serif;
+	font-weight: 400;
+	font-style: normal;
+}
+.outer{
+	display: flex;
+	align-items: center;
+	width: 100%;
+	height: 60vh;
+	background-color: #fff;
+	justify-content: center;
+	border-radius: 1rem;
+}
+.logo-container {
+	position: relative;
+	width: 100%;
+	height: 150px;
+	display: flex;
+	align-items: center;
+	justify-content: center; 
+}
+.slide {
+	position: absolute;
+	opacity: 0;
+	transition: opacity 0.5s ease-in-out;
+	text-align: center;
+}
+.slide.active {
+	opacity: 1;
+}
+/* == ねるさんロゴの設定 == */
+/* == メインロゴの設定（油性マジックを使用！）== */
+.logo-text {
+	font-family: "Yusei Magic", sans-serif;
+	font-weight: 400;
+	font-style: normal;
+	color: #4dabf7;
+	font-size: 32px;
+	letter-spacing: 5px;
+	text-shadow: 0 0 20px rgba(77, 171, 247, 0.5);
+}
+/* ==========================================
+			4. ローディング文字の設定（しっぽりアンチックB1を使用！）
+			========================================== */
+.loading-text {
+	font-weight: 400;
+	font-style: normal;
+	position: absolute;
+	bottom: 22%;
+	width: 100%;
+	text-align: center;
+	color: #888;
+	font-size: 14px;
+}
+.logo-text,
+.logo-text-loading,
+.loading-text {
+	font-family: "Yusei Magic", sans-serif;
+}
+.logo-text-loading {
+	font-size: 2rem;
+}
+.logo-text {
+	font-size: 2rem;
+}
+.loading-text {
+	font-size: 1rem;
+}
+.splash-logo-img_box,
+.splash-logo-img_box img {
+	aspect-ratio: 1;
+}
+.warning-logo,
+.warning-logo img {
+	aspect-ratio: 4 / 3;
+}
+/* .splash-logo-img_box,
+.splash-logo-img_box img{
+	aspect-ratio: 3 / 2 ;
+} */
+.splash-logo-img_box {
+	max-width: 200px;
+	width: 100%;
+	margin: 0 auto;
+}
+.splash-logo-img_box img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.splash-logo-img-outer_box p {
+	color: #000000;
+	font-size: 1.5rem;
+}

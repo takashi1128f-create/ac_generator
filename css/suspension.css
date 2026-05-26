@@ -1,0 +1,368 @@
+@charset "utf-8";
+.suspension-outer-box .model-outer_box {
+	display: block;
+}
+#section-suspension .control-panel .workbench-control-panel {
+	min-width: 448px;
+}
+/* サスペンションタブ内のコントロールパネルのみクリックを透過させる */
+div#suspension-content .preview_outer_box .control-panel {
+	pointer-events: none;
+	z-index: 1;
+}
+/* パネル内のボタンやヘッダー（GENERATEボタンなど）は操作できるように戻す */
+div#suspension-content .preview_outer_box .control-panel .header-row,
+div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
+	pointer-events: auto;
+}
+/* 1. ラベルがクリックを邪魔しないようにする */
+#preview-suspension .loading-label {
+	pointer-events: none;
+}
+/* suspension.css に追記 */
+/* キャンバスを確実に触れるようにする */
+#canvas-suspension {
+	position: relative;
+	z-index: 10;
+	/* パネルより前面に出す（必要に応じて） */
+	cursor: grab;
+}
+/* もしパネルを前面に出したままにしたい場合は、以下の設定を徹底する */
+#suspension-data-panel {
+	pointer-events: none !important;
+}
+.preview-area_box {
+	pointer-events: none;
+}
+/* --- マウス操作を確実にキャンバスへ通すための設定 --- */
+/* 1. キャンバスを最前面に持ってくる */
+#canvas-suspension {
+	position: relative;
+	z-index: 100;
+	/* 確実に一番上へ */
+	pointer-events: auto;
+	cursor: grab;
+}
+#canvas-suspension:active {
+	cursor: grabbing;
+}
+/* 2. キャンバスを覆っている可能性のある透明な箱を「完全にスルー」させる */
+.preview-area_box,
+.model-outer_box,
+.suspension-outer-box {
+	pointer-events: none;
+}
+/* 3. 右側の設定数値パネル（SUSPENSION EDITOR）は操作できるように戻す */
+.suspension-data-area,
+.control-panel,
+.header-row {
+	pointer-events: auto;
+	font-size: 12px;
+}
+/*サスペンションのエディター部分*/
+/* タブメニュー全体のコンテナ */
+.suspension-tab-menu {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 1px;
+	border-bottom: 1px solid #d1d1d1;
+	margin-bottom: 0.3rem;
+}
+.suspension-tab-btn.active {
+	background: #333;
+	color: #fff;
+}
+/* パネル制御 */
+.suspension-tab-panel {
+	display: none;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 0.5rem;
+}
+.suspension-tab-panel.active {
+	display: grid;
+}
+/* 入力項目 */
+.suspension-item label {
+	display: block;
+	font-size: 11px;
+	color: #333;
+}
+.suspension-item input {
+	width: 100%;
+	background: #ffffff;
+	color: #333;
+	border: 1px solid #bdbdbd;
+	padding: 2px 4px;
+	font-size: 0.9rem;
+	border-radius: 0.2em;
+}
+/* すべての要素でサイズ計算を「余白・境界線込み」にする */
+.suspension-item * {
+	box-sizing: border-box;
+	margin-bottom: 0.2rem;
+}
+.input-with-range {
+	display: flex;
+	flex-direction: row;
+	gap: 5px;
+}
+.input-with-range .text-input {
+	min-width: 70px;
+	flex: 1;
+}
+.suspension-item {
+	width: 100%;
+	overflow: hidden;
+	/* はみ出しを隠す（念のため） */
+}
+.suspension-item input {
+	width: 100%;
+	/* 親の幅いっぱいに広げる */
+	display: block;
+	/* ブロック要素にすることで前後の隙間をなくす */
+	margin: 0;
+	/* 余計な外白を消す */
+}
+.guide-line_box {
+	position: absolute;
+	left: 20px;
+	top: 100px;
+	z-index: 100;
+	background: rgba(0, 0, 0, 0.7);
+	color: white;
+	padding: 15px;
+	border-radius: 8px;
+	font-family: monospace;
+	font-size: 13px;
+	pointer-events: none;
+	border: 1px solid #444;
+}
+.guide-line_box h3 {
+	margin: 0 0 10px 0;
+	font-size: 14px;
+	border-bottom: 1px solid #666;
+	padding-bottom: 5px;
+}
+.visibility-controls {
+	padding: 0;
+	/* border: 1px solid #333; */
+	margin-bottom: 0.5rem;
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0.1em 0em;
+}
+.visibility-controls label {
+	line-height: 1;
+}
+/* 親要素 .preview-area_box を指定して優先率を上げる */
+.preview-area_box .subtab-pane.tab-hidden {
+	display: none;
+}
+/* --- ダンパータブ切り替え時のプレビュー制御 --- */
+/* ダンパーモードが「無効」な時（:not使用）、ダンパーUIを構造的に隠す */
+#preview-suspension:not(.mode-damper) .damper-ui-container {
+	display: none;
+}
+/* ダンパーモードが「有効」な時、3Dキャンバス側を隠す */
+#preview-suspension.mode-damper .alignment-preview-group {
+	display: none;
+}
+/* ダンパーモードが「有効」な時、ダンパー専用UIを詳細度を高めて表示 */
+/* 250行目付近から差し替え */
+/* ダンパーモードが有効な時、親コンテナがはみ出さないように制御 */
+#preview-suspension.mode-damper {
+	display: block !important;
+	/* flexを解除して縦並びを正常化 */
+	overflow: hidden;
+}
+.suspension-tab-panel article .damper-btn-outer_box .damper-btn_box {
+	display: none;
+}
+#panel-damper article .damper-btn-outer_box .damper-btn_box {
+	display: block;
+}
+#preview-suspension.mode-damper div.damper-ui-container {
+	display: block;
+	width: 100%;
+	height: 100%;
+	background: #d8d8d8;
+	overflow-y: auto;
+	/* コンテンツが多い場合はこの中でスクロール */
+	box-sizing: border-box;
+}
+.damper-graph-inner_box {
+	display: block;
+	/* flexを解除 */
+	width: 100%;
+	padding: 10px;
+	box-sizing: border-box;
+}
+.damper-graph-front_box,
+.damper-graph-rear_box {
+	width: 100%;
+	height: 100%;
+	background: #fff;
+	border: 1px solid #999;
+	border-radius: 4px;
+	margin-bottom: 15px;
+	/* グラフ間の余白 */
+	position: relative;
+	box-sizing: border-box;
+}
+.damper-graph-rear_box {
+	margin-bottom: 0;
+}
+.suspension-item .range-slider {
+	padding: 2px 0;
+}
+.damper-graph-inner_box.damper-chart-canvas {
+	width: 100%;
+	height: 100%;
+}
+.alignment-preview-group .damper-graph-outer_box {
+	display: none;
+}
+/* 初期状態では非表示にする */
+#damper-special-ui {
+	display: none;
+	width: 100%;
+	/* margin-bottom: auto; */
+	height: 100%;
+}
+.damper-btn-outer_box {
+	display: flex;
+	justify-content: space-between;
+}
+.damper-btn_box {
+	padding-right: 0.5rem;
+}
+.damper-control-btn {
+	font-size: 0.2em;
+	line-height: 1;
+	padding: 0.1rem 0.5em;
+	font-family: sans-serif;
+}
+/* サスペンションタブがアクティブな時だけ表示する */
+.tab-content.active #damper-special-ui {
+	display: block;
+}
+.damper-graph-inner_box {
+	display: flex;
+	padding: 1rem;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 15px;
+	height: 100%;
+}
+.damper-graph-inner_box>* {
+	flex: 1;
+}
+/* アニメーションボックス全体を横並びにする */
+.damper-animation_box {
+	display: flex;
+	gap: 10px;
+	/* 前後のシミュレーター間の隙間 */
+	width: 100%;
+	justify-content: space-between;
+	height: auto;
+}
+/* 各シミュレーターの箱（FRONT / REAR） */
+.damper-animation-front_box,
+.damper-animation-rear_box {
+	flex: 1;
+	/* 均等な幅にする */
+	min-width: 0;
+	/* flexアイテムの縮小を許可 */
+	background-color: #f8f8f8;
+	/* 視認性向上のための背景色（任意） */
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 5px;
+	text-align: center;
+}
+/* ラベルのスタイル */
+.sim-side-label {
+	font-size: 12px;
+	font-weight: bold;
+	margin-bottom: 5px;
+	color: #555;
+}
+/* キャンバスのサイズ調整 */
+#canvas-front-sim,
+#canvas-rear-sim {
+	width: 100%;
+	/* 親要素の幅いっぱいに広げる */
+	height: auto;
+	/* アスペクト比を維持 */
+	max-height: 300px;
+	/* 必要に応じて高さを制限 */
+	display: block;
+}
+/* ID指定で詳細度を高めてサイズを固定 */
+#desmos-front-sim,
+#desmos-rear-sim {
+	width: 100%;
+	height: 100%;
+	background-color: #ffffff;
+	border: 1px solid #333;
+	margin-top: 10px;
+}
+/* 親コンテナのflex収縮を防止 */
+.damper-animation-front_box,
+.damper-animation-rear_box {
+	flex: 1 0 auto;
+	height: auto;
+	display: flex;
+	flex-direction: column;
+}
+/*ボタンで数値の増減をする*/
+#steer-tester {
+	padding: 0;
+}
+#steer-value {
+	margin: 0;
+	margin-left: 0px;
+}
+.damper-graph_box {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start;
+	height: 100%;
+}
+.dcg-calculator-api-container .touchtracking_id_1 .dcg-grapher,
+.dcg-calculator-api-container .touchtracking_id_1 .dcg-grapher-2d {
+	visibility: visible;
+	pointer-events: auto;
+	overflow: hidden;
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width: 100%;
+	height: 100%;
+}
+/* --- 前のコード（省略） --- */
+/* --- タイヤインジケーター用（最小構成） --- */
+.tire-front-preview, .tire-rear-preview {
+	display: flex;
+	flex-direction: column; /* グラフとインジケーターを縦に並べる */
+}
+#tiresChartFront, #tiresChartRear {
+	flex: 1;
+	min-height: 0; /* グラフが自動で縮むことを許可する */
+	align-self: center;
+	width: auto;
+	height: auto;
+	aspect-ratio: 1;
+}
+.tyre-indicator_box {
+	margin-top: 10px;
+	padding: 8px 12px;
+	background: rgba(30, 30, 30, 0.8);
+	border: 1px solid #444;
+	border-radius: 6px;
+	flex-shrink: 0; /* メーターが潰れないように保護 */
+}
+.indicator-item { margin-bottom: 4px; }
+.indicator-label { display: flex; justify-content: space-between; font-size: 11px; color: #ccc; }
+.indicator-val { font-family: monospace; font-weight: bold; color: #fff; }
+.indicator-bar { width: 100%; height: 6px; background: #222; border-radius: 3px; }
+.indicator-fill { height: 100%; border-radius: 3px; transition: width 0.2s; width: 0%; }
