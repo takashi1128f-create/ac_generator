@@ -1,0 +1,129 @@
+@charset "utf-8";
+/* 1. メインタブ（カメラ/サスペ）の切り替え用 */
+.tab-content.tab-hidden {
+	display: none;
+}
+/* タブボタンの見た目（調整用） */
+.suspension-tab-btn,
+.tab-btn {
+	cursor: pointer;
+	padding: 0.25rem 0.8rem 0.1rem;
+	background: #dbdbdb;
+	color: #333;
+	transition: background 0.3s;
+	border-radius: 0.5rem 0.5rem 0 0;
+	line-height: 1;
+	font-size: 0.8rem;
+	transition: 0.3s;
+	border: 1px #333 solid;
+	border-bottom: none;
+	background-color: transparent;
+}
+.tab-btn.active {
+	background: #333;
+	border: 1px #333 solid;
+	border-bottom: none;
+	color: #fff;
+}
+/* ワークベンチなどの表示が切り替わる際の親要素の高さ維持（任意） */
+.workbench-outer_box,
+.model-outer_box,
+#suspension-content {
+	width: 100%;
+}
+/* 2. サブタブ（アーム類/サス）の切り替え用 */
+/* 親要素 .preview-area_box を含めることで優先率を確保 */
+.suspension-data-area .sub-content.tab-hidden,
+.preview-area_box .subtab-pane.tab-hidden {
+	display: none;
+}
+/* タブボタンの親要素の操作を有効にする */
+.preview_outer_box .preview-area_box .suspension-tab-nav {
+	pointer-events: auto;
+	position: relative;
+	z-index: 101;
+	display: flex;
+	gap: 5px;
+	margin-bottom: 5px;
+}
+/* サブタブボタン自体のスタイル（未設定の場合） */
+.subtab-btn {
+	cursor: pointer;
+	padding: 5px 15px;
+	background: #444;
+	color: #fff;
+	border: 1px solid #666;
+}
+.subtab-btn.active {
+	background: #2b62ff;
+	border-color: #2b62ff;
+}
+/* ★追加：拡張物理マスタースイッチのスタイル */
+.extended-physics-switch-container {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 0px;
+	background-color: transparent;
+	border-radius: 8px;
+	margin-bottom: 0;
+	justify-content: flex-end;
+}
+
+.switch-label {
+	color: #8d8d8d;
+	font-weight: bold;
+	font-size: 0.8rem;
+}
+
+.status-text {
+	font-weight: bold;
+	font-size: 14px;
+	width: 30px; /* ON/OFFの文字幅を固定してガタツキ防止 */
+}
+.status-text.off { color: #888; }
+.status-text.on { color: #4CAF50; } /* ONの時は緑色 */
+
+/* トグルスイッチ本体のスタイル */
+.toggle-switch {
+	position: relative;
+	display: inline-block;
+	width: 2.2rem;
+	height: 1.2rem;
+}
+.toggle-switch input { 
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+.toggle-slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0; left: 0; right: 0; bottom: 0;
+	background-color: #ccc;
+	transition: .4s;
+}
+.toggle-slider:before {
+	position: absolute;
+	content: "";
+	width: 0.85rem;
+	left: 2px;
+	bottom: 3px;
+	background-color: white;
+	transition: .4s;
+	aspect-ratio: 1;
+	box-shadow: 1px 1px 4px 0px rgba(0, 0, 0, 0.35);
+}
+input:checked + .toggle-slider {
+	background-color: #2196F3;
+	box-shadow: inset 1px 0px 2px 2px rgba(0, 0, 0, 0.3);
+}
+input:checked + .toggle-slider:before {
+	transform: translateX(1rem);
+}
+.toggle-slider.round {
+	border-radius: 24px;
+}
+.toggle-slider.round:before {
+	border-radius: 50%;
+}

@@ -1,0 +1,369 @@
+@charset "utf-8";
+
+/* ==========================================
+   マニュアル：メンバーシップ注意事項（重要項目）
+   ========================================== */
+
+img{
+	display: block;
+	width: 100%;
+}
+.warning-important {
+	border: 2px solid #e74c3c;
+	padding: 15px;
+	border-radius: 5px;
+	background: rgba(231, 76, 60, 0.1);
+	margin-bottom: 20px;
+}
+.warning-important .warning-title {
+	color: #e74c3c;
+	margin-top: 0;
+	margin-bottom: 10px;
+	font-size: 1.1em;
+}
+.warning-important .warning-list {
+	margin-top: 10px;
+	padding-left: 20px;
+}
+.warning-important .warning-list li {
+	margin-bottom: 5px;
+	font-size: 0.95em;
+}
+/* モーダルの背景（画面全体を暗くする） */
+/* 親要素（タブパネル全体） */
+#modaltab-manual {
+	/* display: flex; */
+	flex-direction: column;
+	height: 60vh;
+	overflow: hidden;
+}
+.manual-pages-container {
+	flex-grow: 1;
+	/* 余った縦のスペースを全て使い切る */
+	overflow-y: auto;
+	/* はみ出した場合のみ縦スクロールバーを出す */
+	padding-right: 10px;
+	/* スクロールバーがコンテンツに被らないようにする余白 */
+}
+/* 下に固定するページネーション */
+.manual-pagination {
+	flex-shrink: 0;
+	padding-top: 15px;
+	padding-bottom: 10px;
+	border-top: 1px solid #444;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 20px;
+}
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.6);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 9999;
+	/* 一番手前に表示 */
+	opacity: 1;
+	transition: opacity 0.2s ease;
+}
+/* 隠す用のクラス */
+.modal-overlay.hidden {
+	opacity: 0;
+	pointer-events: none;
+}
+/* モーダル本体の箱 */
+.modal-content {
+	background-color: #2c2c2c;
+	color: #e0e0e0;
+	padding: 30px;
+	border-radius: 8px;
+	width: 80%;
+	max-width: 800px;
+	max-height: 80vh;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+/* 閉じるボタン (×) */
+.modal-close-btn {
+	position: absolute;
+	top: 15px;
+	right: 20px;
+	background: none;
+	border: none;
+	color: #aaa;
+	font-size: 28px;
+	cursor: pointer;
+	line-height: 1;
+}
+.modal-close-btn:hover {
+	color: #fff;
+}
+/* モーダル内タブのデザイン */
+.modal-tab-header {
+	display: flex;
+	gap: 10px;
+	border-bottom: 1px solid #444;
+	margin-bottom: 20px;
+}
+.modal-tab-btn {
+	background: none;
+	border: none;
+	color: #888;
+	padding: 10px 20px;
+	cursor: pointer;
+	font-size: 14px;
+	border-bottom: 2px solid transparent;
+}
+.modal-tab-btn.active {
+	color: #fff;
+	border-bottom: 2px solid #5fafb9;
+}
+/* パネルは基本すべて非表示 */
+.modal-tab-panel {
+	display: none;
+	height: 60vh;
+}
+/* リンクパネル（通常のブロック）がactiveになった時 */
+#modaltab-links.active {
+	display: block;
+}
+/* マニュアルパネルがactiveになった時（ここで初めてflexを発動させる！） */
+#modaltab-manual.active {
+	display: flex;
+}
+/* スクロールエリアと画像 */
+.modal-scroll-area {
+	max-height: 400px;
+	overflow-y: auto;
+	padding-right: 10px;
+}
+.modal-image-placeholder {
+	width: 80%;
+	min-height: 150px;
+	background: #444;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 0.5em;
+	color: #777;
+	border: 1px #fff solid;
+	box-sizing: border-box;
+	overflow: hidden;
+	margin: 2em auto;
+}
+/* リンク集のリスト */
+.modal-link-list {
+	list-style: none;
+	padding: 0;
+}
+.modal-link-list li {
+	margin-bottom: 12px;
+}
+.modal-link-list a {
+	display: block;
+	padding: 12px;
+	background: #3d3d3d;
+	color: #5fafb9;
+	text-decoration: none;
+	border-radius: 4px;
+	transition: background 0.2s;
+}
+.modal-link-list a:hover {
+	background: #4a4a4a;
+}
+.modal-link-list span {
+	font-size: 11px;
+	color: #888;
+	margin-left: 10px;
+}
+/* ページ切り替えナビゲーション */
+.manual-page-nav {
+	display: flex;
+	gap: 5px;
+	margin-bottom: 15px;
+}
+.manual-page h3 {
+	color: #fff;
+}
+.manual-page-btn {
+	flex: 1;
+	background: #444;
+	border: none;
+	color: #bbb;
+	padding: 8px;
+	cursor: pointer;
+	font-size: 12px;
+	border-radius: 4px;
+	transition: all 0.2s;
+}
+.manual-page-btn.active {
+	background: #5fafb9;
+	color: #fff;
+}
+.manual-page-btn:hover:not(.active) {
+	background: #555;
+}
+/* 各ページの内容（初期状態は非表示） */
+.manual-page-content {
+	display: none;
+	animation: fadeIn 0.3s ease;
+}
+.manual-page-content.active {
+	display: block;
+}
+.manual-title {
+	font-weight: bold;
+	color: red;
+	font-size: 1.5rem;
+	margin-bottom: 1rem;
+}
+.manual-page p:not(:last-of-type) {
+	margin-bottom: 0.5rem;
+}
+.manual-page h3::before {
+	content: "■";
+	font-size: 1rem;
+	margin-right: 0.5rem;
+}
+.manual-page h3 {
+	border-bottom: 1px solid #fff;
+	margin-bottom: 0.5rem;
+}
+.manual-page ul li p {
+	padding-left: 1.5rem;
+}
+.manual-page ul li {
+	margin-bottom: 1rem;
+}
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(5px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+/* 各ページ（スライド）の設定 */
+.manual-page {
+	display: none;
+	animation: fadeIn 0.3s ease;
+	/* 必要に応じて高さを固定すると、切り替え時のガタつきがなくなります */
+	min-height: 300px;
+}
+.manual-page ul li:not(:last-of-type){
+	margin-bottom: 2em;
+}
+.manual-page.active {
+	display: block;
+}
+/* 下部ナビゲーションのレイアウト */
+.manual-pagination {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 20px;
+	padding-top: 15px;
+	border-top: 1px solid #444;
+}
+/* 前へ・次へボタンのデザイン */
+.pagination-btn {
+	background: #5fafb9;
+	color: #fff;
+	border: none;
+	padding: 8px 20px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background 0.2s;
+}
+.pagination-btn:hover:not(:disabled) {
+	background: #4a98a1;
+}
+/* 押せない状態のボタン */
+.pagination-btn:disabled {
+	background: #444;
+	color: #888;
+	cursor: not-allowed;
+}
+/* 真ん中の「1 / 3」などのテキスト */
+#manual-page-indicator {
+	color: #aaa;
+	font-size: 14px;
+	letter-spacing: 2px;
+}
+/* マニュアル内のCSS */
+.manual-list_box strong{
+	margin-bottom: 0.5em;
+	color: #000;
+}
+.manual-list_box ul li p small{
+	color: red;
+	font-weight: bold;
+}
+.manual-list_box ul li{
+	list-style: none;
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin-bottom: 0em!important;
+	line-height: 1;
+	border-bottom: 1px #333 solid;
+	font-weight: bold;
+	padding-bottom: 2px;
+}
+.manual-list_box ul li::before{
+	content: "●";
+	font-size: 0.8em;
+}
+.manual-list_box{
+	background-color: rgb(255 255 255 / 70%);
+	border: 2px solid #f00;
+	border-radius: 0.5em;
+	padding: 1em;
+	margin: 1em auto;
+	width: 80%;
+}
+.manual-list_box ul {
+	display: flex;
+	flex-wrap: wrap;
+	color: #333;
+	gap: 0.5em 1em;
+}
+.manual-page > p:last-of-type{
+	margin-bottom: 1.5rem;
+}
+/* スライダーの枠組み（横スクロールさせる設定） */
+.slider-img_box {
+	overflow-x: auto;
+	scroll-snap-type: x mandatory; /* ピタッと止まるようにする */
+	gap: 0.5em; /* 画像と画像の隙間 */
+	justify-content: flex-start;
+}
+
+/* スクロールバーを隠す（スタイリッシュにするため） */
+.slider-img_box::-webkit-scrollbar {
+	display: none;
+}
+
+/* 個別の画像枠（1枚ずつ100%の幅を取る） */
+.slider-img {
+	flex: 0 0 100%;
+	scroll-snap-align: center; /* 中央でピタッと止まる */
+}
+
+/* 画像自体のサイズ調整 */
+.slider-img img {
+	width: 100%;
+	height: auto;
+	display: block;
+	border-radius: 8px; /* お好みで角丸に */
+}

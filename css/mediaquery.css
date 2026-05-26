@@ -1,0 +1,39 @@
+@charset "utf-8";
+/* ==========================================
+	PC・全体共通の設定（1200px以上）
+	========================================== */
+.header-logo,
+#wrapper {
+	width: 1140px;
+	margin: 0 auto;
+	padding-right: 15px;
+	padding-left: 15px;
+}
+/* 1200px未満（デスクトップ中サイズ以下） */
+@media (max-width: 1199.98px) {
+	.header-logo,
+	#wrapper {
+		width: 960px;
+	}
+}
+/* 992px未満（タブレット以下 / Lightningのモバイルナビ切り替わり） */
+@media (max-width: 991.98px) {
+	.header-logo,
+	#wrapper {
+		width: 720px;
+	}
+}
+/* 768px未満（スマホ横持ち・タブレット縦以下） */
+@media (max-width: 767.98px) {
+	.header-logo,
+	#wrapper {
+		width: 540px;
+	}
+}
+/* 576px未満（スマホ縦持ち） */
+@media (max-width: 575.98px) {
+	.header-logo,
+	#wrapper {
+		width: 100%;
+	}
+}

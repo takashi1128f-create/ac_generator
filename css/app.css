@@ -1,0 +1,1509 @@
+@charset "utf-8";
+/* ==========================================
+		1. 自分でダウンロードしたフォントを読み込む
+		（※font-familyの名前をGoogle公式に合わせました）
+		========================================== */
+@font-face {
+	font-family: "Yusei Magic";
+	src: url('../fonts/YuseiMagic-Regular.ttf') format('truetype');
+}
+@font-face {
+	font-family: "Shippori Antique";
+	src: url('../fonts/ShipporiAntique-Regular.ttf') format('truetype');
+}
+@font-face {
+	font-family: "Shippori Antique B1";
+	src: url('../fonts/ShipporiAntiqueB1-Regular.ttf') format('truetype');
+}
+html, body {
+	overflow: hidden;
+	height: auto;
+	margin: 0;
+}
+body {
+	margin: 0;
+	padding: 0.5rem;
+}
+/* 1. 共通の設定：オーバーレイの定義 */
+#preview-engine,
+#preview-gear,
+#preview-setup,
+.preview-area {
+	/* --overlay という変数にグラデーションを格納 */
+	--overlay: linear-gradient(#000000cc, #000000e0);
+	/* 共通の背景設定。画像部分は変数 --bg-image で受け取る */
+	background: var(--overlay), var(--bg-image) center / cover no-repeat;
+}
+/* 2. 個別の設定：画像だけを指定 */
+#preview-engine {
+	--bg-image: url(../image/rb26.jpg);
+}
+#preview-gear {
+	--bg-image: url(../image/transmission.jpg);
+}
+#setup-preview-container .engine-section .preview-area_box .preview-area {
+	--bg-image: url(../image/tool.jpg);
+}
+#preview-gear,
+#preview-engine {
+	padding: 1rem;
+}
+.header-logo {
+	display: flex;
+	justify-content: space-between;
+}
+h3 {
+	font-size: 18px;
+}
+.info-icon_box {
+	text-align: end;
+	line-height: 1;
+}
+.info-icon {
+	display: inline-block;
+	background-color: transparent;
+	border: none;
+	font-size: 1.3em;
+}
+.copyright,
+#footer-tools {
+	display: none;
+}
+.drop-zone #wrapper .guide_box {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.5rem;
+	margin-bottom: 0.5rem;
+}
+.drag-drop-outer_box {
+	position: relative;
+}
+#multiFileUpload,
+.drag-drop_box {
+	border-radius: 0.5rem;
+}
+.drag-drop_box {
+	display: flex;
+	height: 100%;
+}
+.drag-drop_box label {
+	margin: auto;
+}
+#multiFileUpload {
+	position: absolute;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0.3;
+	cursor: pointer;
+	z-index: 10;
+	background-color: #ffa7a7;
+}
+.file-input-group {
+	display: none;
+}
+.import-panel {
+	gap: 0.25rem;
+	width: 220px;
+}
+input, textarea {
+	margin: 0;
+	padding: 0;
+	font-size: 0.5em;
+}
+/* .global-controls input {
+	margin-right: 5em;
+} */
+.top-toggle-outer_box{
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+}
+.top-toggle-outer_box .extended-physics-switch-container .switch-label{
+	color: #333;
+}
+.tyres_select-outer_box{
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+}
+.tyres_select-explain_box{
+	padding: 0.5em;
+	border-radius: 0.5em;
+	border: 1px #333 solid;
+	min-height: 9em;
+}
+/*全体*/
+.h2-title_box {
+	margin-bottom: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+.main-setting-outer_box {
+	padding: 0.5rem 1rem;
+	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+	border-radius: 0.5rem;
+	gap: 1rem;
+}
+.h2-title {
+	line-height: 1;
+	font-size: 1.5rem;
+	font-weight: bold;
+	font-family: "Yusei Magic";
+}
+.main-setting_box {
+	display: flex;
+	justify-content: space-around;
+	padding: 0;
+	box-shadow: none;
+	border-radius: 0;
+	gap: 0.5rem;
+}
+#camera-preview-container,
+#camera-sections-container {
+	gap: 0px;
+}
+.text-data_box {
+	/* box-shadow: inset -5px -5px 10px 0px rgba(255, 255, 255, 0.5), inset 5px 5px 10px 0px rgba(0, 0, 0, 0.3); */
+	margin: 1rem;
+	border-radius: 0.5rem;
+	height: 100%;
+	flex-grow: 1;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	padding: 0.5rem;
+	margin-bottom: 0;
+}
+.button_box {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	width: 450px;
+	/* justify-content: flex-start; */
+	justify-content: flex-end;
+	gap: 0.5rem;
+}
+.button_box button {
+	/* width: 95px; */
+	width: 165px;
+	display: block;
+}
+.button_box #downloadBtn {
+	padding: 0.2rem 0px;
+}
+.tab-container {
+	padding: 0rem 0;
+}
+.tab-header {
+	display: flex;
+	gap: 1px;
+}
+.global-controls {
+	line-height: 1;
+}
+.global-controls label {
+	margin: 0;
+	font-size: 0.8rem;
+}
+/*プレビューのモデル枠*/
+.preview-area_box {
+	padding: 0;
+	width: 100%;
+	min-width: 0;
+	min-height: 0;
+}
+.model-outer_box {
+	display: flex;
+	flex-direction: row-reverse;
+	justify-content: space-between;
+	/* gap: 0.5rem; */
+}
+/*作業台*/
+.drop-zone #wrapper .workbench-outer_box {
+	flex: 7;
+	margin: 0;
+	background-color: #fff;
+	border-radius: 0.5rem;
+	height: 100%;
+}
+.workbench-outer_box .camera-section {
+	box-shadow: none;
+	border: none;
+	border-radius: 0;
+	gap: 0.5rem;
+}
+.workbench_box .camera-section .preview-area_box {
+	box-shadow: none;
+	flex: 5;
+	padding-top: 0.5rem;
+}
+#camera-sections-container .camera-section .control-panel {
+	flex: 2;
+	display: flex;
+	flex-direction: column;
+	gap: 3rem;
+	padding: 0;
+	padding-right: 0.5rem;
+}
+/*見学ゾーン*/
+.preview_outer_box {
+	flex: 1.1;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding-right: 0.5rem;
+	padding-top: 0.5rem;
+	gap: 0.5rem;
+}
+.preview_outer_box .camera-section {
+	flex-direction: row-reverse;
+	position: relative;
+}
+.preview_outer_box .control-panel {
+	padding: 0.5rem 0.5rem;
+	padding-right: 0;
+	flex-shrink: 0;
+	width: auto;
+	position: absolute;
+	left: 0;
+	background: none;
+}
+.preview_outer_box .camera-section .preview-area_box {
+	/* padding: 0.5rem 0.3rem 0.3rem 0.5rem; */
+	width: 100%;
+}
+.preview_outer_box .camera-section .control-panel .header-row h3,
+.preview_outer_box .camera-section .control-panel .header-row {
+	border-radius: 0.5rem;
+}
+.preview_outer_box .camera-section .control-panel .header-row {
+	display: block;
+	border-bottom: none;
+	margin-bottom: 0px;
+	padding-bottom: 0px;
+	border: 1px solid #333;
+}
+.preview_outer_box .camera-section .control-panel .header-row h3 {
+	line-height: 1;
+	font-weight: bold;
+	background-color: rgba(0, 0, 0, 0.575);
+	padding: 0.2em;
+	color: #fff;
+}
+.preview_outer_box .camera-section .preview-area_box .preview-area .loading-label {
+	display: none;
+}
+/*切り替え時に表示・非表示*/
+.preview_outer_box .control-panel .control-group,
+.preview_outer_box .control-panel .header-row button {
+	display: none;
+}
+/* suspension.css の修正箇所 */
+/* 2. キャンバスを覆っている可能性のある透明な箱 */
+.preview-area_box,
+.model-outer_box,
+.suspension-outer-box {
+	pointer-events: none;
+}
+/* 3. 右側の設定数値パネルやボタンを操作できるように明示的に指定 */
+.suspension-data-area,
+.control-panel,
+.header-row,
+.camera-section,
+.reset-btn,
+#downloadBtn {
+	pointer-events: auto;
+	/* pointer-events: auto !important; */
+	padding: 0;
+}
+.reset-btn {
+	padding: 2px 8px;
+}
+.alignment-preview-group {
+	position: relative;
+}
+#alignment-data-outer_box {
+	position: absolute;
+	top: 0.5rem;
+	left: 0.5rem;
+	background-color: #ffffffbb;
+	z-index: 100;
+	/* pointer-events: none; */
+	font-size: 13px;
+	padding: 0.5rem;
+	border-radius: 0.5rem;
+	border: 1px #333 solid;
+	display: flex;
+	flex-direction: column;
+	gap: 0.3em;
+	z-index: 200;
+	font-size: 10px;
+	line-height: 1;
+	width: 150px;
+}
+.alignment-inner-data_box {
+	border-bottom: #333 1px solid;
+}
+.alignment-data_box {
+	background-color: transparent;
+}
+.alignment-data_box>div {
+	display: flex;
+	justify-content: space-between;
+	gap: 0.5rem;
+	color: #333;
+}
+.alignment-data {
+	display: flex;
+}
+.alignment-inner-data_box div {
+	margin-bottom: 0.1rem;
+}
+/*エディター部分*/
+.tab-content {
+	/* box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); */
+	border: 1px solid #eee;
+	border-radius: 0 8px 8px 8px;
+	/* padding: 0.5rem 0.5rem; */
+	border-bottom: none;
+	border-right: none;
+	border-left: none;
+}
+.tab-content .camera-section {
+	display: flex;
+	background: #fff;
+	border-radius: 0;
+	box-shadow: none;
+	overflow: hidden;
+	border: none;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+.control-group {
+	margin-bottom: 0.3rem;
+}
+label {
+	font-size: 13px;
+	line-height: 1;
+}
+.dial-container {
+	height: 1rem;
+}
+.dial-value {
+	line-height: 1rem;
+	font-family: monospace;
+	font-size: 12px;
+}
+.text-data_box {
+	margin: 0;
+	margin-top: 0.5rem;
+	line-height: 1.2;
+	font-size: 0.8rem;
+}
+/*サスペンション*/
+.alignment-preview-group {
+	width: 100%;
+}
+#preview-suspension {
+	position: relative;
+}
+#section-suspension .preview-area_box {
+	padding-top: 0.5rem;
+}
+.control-panel {
+	pointer-events: auto;
+	font-size: 12px;
+	padding-right: 0.5rem;
+}
+.header-row {
+	margin-bottom: 6px;
+}
+.checkbox-outer_box,
+.suspension-editor_box {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+.damper-graph-front_box .damper-chart-canvas {
+	height: auto;
+	width: auto;
+}
+.wing-select_box {
+	display: flex;
+	flex-direction: row;
+	height: 25px;
+	justify-content: space-around;
+}
+.wing-radio-group {
+	display: flex;
+	gap: 1.5rem;
+}
+/* タイヤ */
+.tire-section .preview-area_box{
+	pointer-events: auto;
+}
+.tire-switch_box,
+.tire-switch-outer_box{
+	display: flex;
+	gap: 0.5em;
+}
+.tyre-input-fy {
+	background-color: rgba(255, 0, 255, 0.08); /* 薄いマゼンタの背景 */
+	border-radius: 4px;
+}
+.tyre-input-fx {
+	background-color: rgba(0, 0, 0, 0.05); /* 薄いグレーの背景 */
+	border-radius: 4px;
+}
+.tyre-help-icon {
+	cursor: help;
+	color: #aaa;
+	font-size: 11px;
+	margin-left: 6px;
+}
+.tyre-help-icon.hidden {
+	display: none;
+}
+#tyre-main-editor #tyre-tab-content{
+	padding: 0.5em;
+	display: flex;
+	gap: 0.5em
+}
+.tyre-editor_box{
+	flex: 1;
+	min-width: 0;
+}
+.tyre-editor_box .suspension-item-title_box{
+	margin-bottom:10px;
+}
+#tire-preview-container{
+	display: flex;
+	width: 100%;
+	height: 100%;
+}
+.tire-section{
+	display: flex;
+	width: 100%;
+	align-items: flex-start;
+}
+#tyre-compound-list{
+	margin-bottom: 0.5em;
+}
+#tyre-compound-list > div:not(:last-of-type){
+	margin-bottom: 0.5em;
+}
+.tire-section .preview-area{
+	display: flex;
+	width: 100%;
+	height: 100%;
+	background-color: black;
+}
+.tire-section .preview-area .tire-rear-preview,
+.tire-section .preview-area .tire-front-preview{
+	width: 50%;
+	box-sizing: border-box;
+	height: 100%;
+	padding: 0.5em;
+	padding-top: 3rem;
+}
+.tire-section .preview-area .tire-front-preview{
+	flex: 1;
+	border-right:
+	1px solid #444;
+	position: relative;
+}
+.tire-section .preview-area .tire-rear-preview{
+	flex: 1;
+	position: relative;
+}
+.tire-front-preview .graph-label,
+.tire-rear-preview .graph-label{
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	color: #fff;
+	z-index: 10;
+	width: 90%;
+	justify-content: space-between;
+}
+/* エンジン */
+#engine-editor {
+	display: flex;
+	background: #fff;
+	border-radius: 0;
+	box-shadow: none;
+	overflow: hidden;
+	border: none;
+	justify-content: space-between;
+	gap: 0.5rem;
+}
+.tab-content .engine-editor_box {
+	padding-left: 0.5rem;
+}
+.engine-section .preview-area_box {
+	padding-top: 0.5rem;
+}
+/* #engine-editor > div,
+.engine-section > div{
+	width: 50%;
+} */
+.preview-area_box {
+	flex: 3;
+}
+.engine-editor_box {
+	flex: 2;
+}
+#power-lut-data-container {
+	width: 100%;
+}
+.engine-ini_box {
+	display: flex;
+	gap: 0.5rem;
+}
+#power-lut-data-container article {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+#power-lut-data-container .suspension-item_box {
+	flex: 1;
+	display: flex;
+}
+#engine-data-container article {
+	width: 50%;
+	flex: 1;
+}
+#power-lut-textarea {
+	width: 100%;
+	background-color: #333;
+	color: #4ade80;
+	font-size: 0.9rem;
+	resize: vertical;
+	overflow: auto;
+	box-sizing: border-box;
+	flex-shrink: 0;
+}
+#engine-preview-container .engine-section .preview-area_box {
+	pointer-events: auto;
+}
+#power-lut-textarea {
+	/* height: 500px; */
+	width: 100%;
+	max-height: 475px;
+}
+#power-lut-data-container {
+	width: 38%;
+}
+#engine-data-container {
+	width: 58%;
+}
+/* ギア */
+.engine-section {
+	width: 100%;
+}
+.workbench-control-panel,
+#gear-preview-container .workbench-control-panel {
+	padding-left: 0.5rem;
+}
+/* #gear-preview-container .engine-section .preview-area_box {
+	aspect-ratio: 16 / 9;
+} */
+.drivetrain-editor-layout {
+	display: flex;
+	gap: 0.5rem;
+}
+.drivetrain-editor-layout>article {
+	width: 50%;
+}
+.gear-set-list .set-name-input {
+	height: 1.2rem;
+	padding-left: 0.1rem;
+	font-size: 1em;
+}
+.add-set-btn,
+.gear-set-item button {
+	font-size: 0.8rem;
+	line-height: 1.5em;
+	display: block;
+	box-shadow: inset -2px -2px 1px 0px rgba(71, 71, 71, 0.7), inset 2px 2px 2px 0px rgba(255, 255, 255, 0.7);
+}
+.add-set-btn {
+	margin: 0 auto;
+	display: block;
+}
+.suspension-item-title_box {
+	margin-bottom: 0.2rem;
+}
+#gear-set-list {
+	margin-bottom: 0.5rem;
+}
+#gear-set-list div:not(:last-of-type) {
+	margin-bottom: 0.5rem;
+}
+.gear-set-item {
+	display: flex;
+	gap: 0.3rem;
+	align-items: center;
+	justify-content: space-between;
+}
+/* 通常時のボタン（すでにあれば不要です） */
+.select-set-btn {
+	cursor: pointer;
+	width: 3.5rem;
+	box-shadow: inset -2px -2px 2px 0px rgba(71, 71, 71, 0.7), inset 2px 2px 2px 0px rgb(255 255 255 / 90%);
+}
+.set-name-input {
+	flex-grow: 1;
+}
+/* 選択中（色が反転した状態）のボタン */
+.active .is-selected {
+	background-color: #e3e3e3;
+	color: #333;
+	font-weight: bold;
+	pointer-events: none;
+	border-radius: 0.2rem;
+	border: 1px #333 solid;
+	box-shadow: inset 2px 2px 2px 0px rgba(71, 71, 71, 0.7), inset 2px 2px 2px 0px rgba(255, 255, 255, 0.7);
+}
+.preview-area #diffChart,
+.preview-area #gearboxChart,
+.preview-area #gearboxInfo {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	box-sizing: border-box;
+	overflow-y: auto;
+}
+/* スクロールバーのデザイン（お好みで） */
+.preview-area #gearboxInfo::-webkit-scrollbar {
+	width: 8px;
+}
+.preview-area #gearboxInfo::-webkit-scrollbar-thumb {
+	background-color: #555;
+	border-radius: 4px;
+}
+.input-with-range .text-input {
+	width: 100%;
+	cursor: pointer;
+	font-size: 0.9rem;
+	padding: 0.2rem;
+	border: 1px solid #c1c1c1;
+	border-radius: 3px;
+}
+.info-gear {
+	color: #eee;
+	line-height: 1.6;
+	font-family: sans-serif;
+	padding: 1rem;
+}
+.info-gear h2 {
+	font-size: 1.5em;
+}
+.info-gear>div:not(:last-of-type) {
+	margin-bottom: 1em;
+}
+/* セットアップ */
+/* --- AC風ピット画面シミュレーターのスタイル --- */
+.setup-preview-container {
+	display: flex;
+	justify-content: space-between;
+	padding: 20px;
+	background-color: rgba(30, 30, 30, 0.85);
+	color: #eee;
+	max-width: 600px;
+	width: 100%;
+	height: 100%;
+	min-height: 440px;
+	max-height: 440px;
+	font-family: sans-serif;
+	box-sizing: border-box;
+	overflow-y: auto;
+}
+/* 3カラムレイアウト（左・中央・右） */
+.setup-col {
+	width: 32%;
+	display: flex;
+	flex-direction: column;
+	position: relative;
+}
+/* AC風スライダー全体のコンテナ */
+.ac-slider-wrapper {
+	display: flex;
+	align-items: center;
+	background-color: rgba(40, 40, 45, 0.8);
+	border-radius: 2px;
+	height: 40px;
+	position: absolute;
+	/* POS_Yで縦位置を絶対指定するため */
+	width: 100%;
+}
+/* ◀ ▶ ボタン */
+.ac-slider-btn {
+	background: #bf0000;
+	border: none;
+	color: #ffffff;
+	font-size: 14px;
+	width: 25px;
+	cursor: pointer;
+	line-height: 40px;
+	padding: 0;
+	z-index: 10;
+}
+.ac-slider-btn:hover {
+	color: #bf0000;
+	background-color: rgb(255 255 255 / 70%);
+}
+/* 中央のトラック領域 */
+.ac-slider-track-area {
+	flex-grow: 1;
+	position: relative;
+	height: 100%;
+	border-left: 1px solid #222;
+	border-right: 1px solid #222;
+	overflow: hidden;
+}
+/* 割合を示す背景のグレーのバー */
+.ac-slider-fill {
+	position: absolute;
+	top: 0;
+	left: 0;
+	height: 100%;
+	background-color: #555;
+	pointer-events: none;
+	/* 下の透明スライダーにクリックを貫通させる */
+}
+/* 項目名と数値のテキスト */
+.ac-slider-text {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	pointer-events: none;
+	text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+.ac-slider-name {
+	font-size: 11px;
+	color: #ccc;
+	margin-bottom: 2px;
+}
+.ac-slider-value {
+	font-size: 13px;
+	font-weight: bold;
+	color: #fff;
+}
+/* GEARのエディター部分 */
+.suspension-tab-content .setup-panel-GEAR {
+	grid-template-columns: repeat(4, 1fr);
+}
+/* .setup-panel-GEAR article .suspension-item_box .suspension-item .input-unit{
+	display: flex;
+	justify-content: space-between;
+	flex-direction: column;
+} */
+.GEAR_SET_select {
+	flex-direction: column;
+}
+.setup-panel-GEAR article .suspension-item_box .suspension-item .input-unit .input-with-range,
+.setup-panel-GEAR article .suspension-item_box .suspension-item .input-unit .input-with-range span {
+	margin: 0;
+	padding: 0;
+}
+.setup-panel-GEAR article .suspension-item_box .suspension-item .input-unit .input-with-range {
+	font-size: 1em;
+}
+.setup-panel-GEAR article .suspension-item_box .suspension-item .input-unit .input-with-range .text-input {
+	cursor: pointer;
+	padding: 0px 0px;
+	/* width: 100%; */
+	font-size: 1em;
+}
+.GEAR_SET_name {
+	display: flex;
+	flex-direction: column;
+}
+.GEAR_SET_data {
+	opacity: 0.6;
+	pointer-events: none;
+}
+.GEAR_SET_gear_data {
+	display: flex;
+	justify-content: space-between;
+}
+.setup-panel-GEAR article .suspension-item_box .suspension-item .input-unit .input-with-range span {
+	color: #aaa;
+	padding-left: 10px;
+}
+/* 本物のレンジスライダー（完全透明にして一番上に被せる） */
+.ac-slider-input {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	opacity: 0;
+	/* 透明化 */
+	cursor: ew-resize;
+	z-index: 5;
+}
+#setup-preview-container .preview-area_box {
+	pointer-events: auto;
+}
+.suspension-tab-content .setup-panel-SUSPENSION,
+.suspension-tab-content .setup-panel-TYRES,
+.suspension-tab-content .setup-panel-DAMPERS,
+.suspension-tab-content .setup-panel-ALIGNMENT {
+	grid-template-columns: repeat(4, 1fr);
+}
+.suspension-tab-content .setup-panel-AERO,
+.suspension-tab-content .setup-panel-DRIVETRAIN {
+	grid-template-columns: repeat(3, 1fr);
+}
+.suspension-tab-content .setup-panel-DAMPERS {
+	grid-template-columns: repeat(4, 1fr);
+}
+/* ==========================================
+	サブタブ（カプセル型ボタン）のスタイル
+	========================================== */
+/* サブタブ全体を囲う枠 */
+.setup-subtab-menu {
+	display: flex;
+	gap: 2px;
+	padding: 0px 0px;
+	border-bottom: 1px solid #333;
+}
+/* ボタンの基本スタイル（非選択時） */
+.setup-subtab-btn {
+	padding: 0px 8px;
+	font-size: 0.9em;
+	border-radius: 0.3em 0.3em 0 0;
+	cursor: pointer;
+	transition: background-color 0.2s, color 0.2s, border 0.2s;
+	background-color: transparent;
+	color: #333;
+	border: 1px solid #555;
+	border-bottom: none;
+}
+/* マウスを乗せた時のホバー効果 */
+.setup-subtab-btn:hover {
+	background-color: rgba(255, 255, 255, 0.1);
+	color: #fff;
+}
+/* ボタンが選択されている時（アクティブ状態） */
+.setup-subtab-btn.active {
+	background-color: #3498db;
+	color: #fff;
+	border: 1px solid #2980b9;
+}
+/* シフターとアシストの文章 */
+.info-gear h2 {
+	border-bottom: 1px solid #555;
+	padding-bottom: 8px;
+	margin-top: 0;
+}
+.info-gear div h3 {
+	color: #e74c3c;
+	margin-bottom: 4px;
+	font-size: 16px;
+}
+.info-gear div p {
+	margin: 0;
+	font-size:
+		14px;
+	color: #ccc;
+}
+.info-gear div p span {
+	color: #e74c3c;
+	font-weight: bold;
+}
+/* ファイナルギアの調整 */
+.final-editor-ui-title {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.final-editor-ui-title p {
+	margin: 0;
+}
+.final-editor-ui-title button {
+	padding: 2px 8px;
+	cursor: pointer;
+	font-size: 0.8em;
+	background: #dbdbdb;
+	border: 1px solid #333333;
+	line-height: 1.5em;
+	border-radius: 0.5em;
+}
+.final-editor-ui-edit_box>div:first-of-type {
+	padding: 10px;
+	color: #858585;
+	font-size: 12px;
+	border-bottom: 1px solid #333;
+	margin-bottom: 10px;
+	padding-top: 0;
+}
+.final-editor-ui-edit_box .suspension-item {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	margin-bottom: 0.3em;
+}
+.final-editor-ui-edit_box .suspension-item>input {
+	cursor: pointer;
+	width: 1em;
+	aspect-ratio: 1;
+}
+.final-editor-ui-edit_box .suspension-item .input-unit {
+	flex: 1;
+}
+.final-editor-ui-edit_box .suspension-item>button {
+	padding: 0px 12px;
+	background: #e74c3c;
+	color: #fff;
+	border: none;
+	border-radius: 3px;
+	cursor: pointer;
+	line-height: 1.5em;
+}
+.drivetrain-editor-layout .drivetrain-editor-ui_box {
+	width: 100%;
+}
+.setup-gear-preview_box {
+	background: rgba(30, 30, 30, 0.85);
+	width: 100%;
+	max-width: 550px;
+	margin: 0px auto;
+	padding: 0em 1.5rem;
+	border-radius: 2px;
+	font-family: sans-serif;
+	user-select: none;
+}
+.setup-gear-preview-title_box {
+	text-align: center;
+	color: #888;
+	font-size: 11px;
+	margin-bottom: 5px;
+}
+.final-gear-rate_box,
+.transmission-name_box {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: #444;
+}
+.transmission-name_box button {
+	background: transparent;
+	color: #fff;
+	border: none;
+	cursor: pointer;
+	width: 40px;
+	height: 100%;
+}
+.transmission-name_box div {
+	color: #fff;
+	font-size: 14px;
+	flex-grow: 1;
+	text-align: center;
+}
+/* ファイナルギア */
+.final-gear-title_box {
+	text-align: center;
+	color: #888;
+	font-size: 11px;
+	margin-bottom: 0.5em;
+}
+.final-gear-rate_box button {
+	background: transparent;
+	color: #fff;
+	border: none;
+	cursor: pointer;
+	width: 2em;
+	height: 100%;
+}
+.final-gear-rate_box div {
+	color: #fff;
+	font-size: 14px;
+	flex-grow: 1;
+	text-align: center;
+}
+.gear-table_box {
+	height: 170px !important;
+	width: 100%;
+	margin-top: 0.5em;
+	position: relative;
+}
+.transmission-gear-ratio_box {
+	display: table;
+	width: 70%;
+	margin: 0.5em auto;
+	color: #ccc;
+	text-align: center;
+	font-family: sans-serif;
+}
+.transmission-gear-ratio-title_box {
+	display: table-row;
+	font-size: 12px;
+	color: #888;
+}
+.transmission-gear-ratio-title {
+	display: table-cell;
+	padding-bottom: 0px;
+	width: 50%;
+}
+.transmission-gear-ratio-speed {
+	display: table-cell;
+	padding-bottom: 0px;
+	width: 50%;
+}
+#setupGearChart {
+	display: block;
+	box-sizing: border-box;
+	height: 170px !important;
+	width: 550px;
+}
+.transmission-gear-ratio-data_box {
+	display: table-row;
+	font-size: 14px;
+}
+.transmission-gear-ratio-data_box>div {
+	display: table-cell;
+	padding: 0em 0;
+}
+.setup-item-title_box {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	line-height: 1;
+}
+/* --- 追加：説明文のフェードアニメーション用 --- */
+#desc-suspension, #desc-engine, #desc-gear, #desc-setup {
+	transition: opacity 0.2s ease-in-out;
+}
+.secondary-btn,
+.primary {
+	background-color: #5fafb9;
+	color: #fff;
+	font-weight: bold;
+	border: none;
+	padding: 5px 15px;
+	cursor: pointer;
+	border-radius: 4px;
+	line-height: 1.3;
+}
+#hub-new-project{
+	padding: 20px;
+}
+/* サイドバー全体のレイアウト */
+.hub-sidebar {
+	display: flex;
+	flex-direction: column;
+	/* 縦に並べる */
+	overflow: hidden;
+}
+/* ★ 新しく作った親divの設定 */
+.projects-scroll-container {
+	flex: 1;
+	overflow-y: auto;
+}
+/* ul 自体の設定はシンプルでOK */
+#recent-projects-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+.primary:hover,
+.secondary-btn:hover {
+	background: #555;
+	color: #fff;
+}
+@media screen and (max-width: 1440px) {
+	.info-gear h2 {
+		font-size: 1em;
+	}
+	.info-gear div h3 {
+		font-size: 0.8em;
+		margin-bottom: 0em;
+	}
+	.info-gear div p {
+		line-height: 1.3em;
+		font-size: 0.8em !important;
+	}
+	.info-gear>div:not(:last-of-type) {
+		margin-bottom: 0.5em;
+	}
+	.suspension-tab-content .setup-panel-GEAR {
+		grid-template-columns: repeat(3, 1fr);
+	}
+}
+
+/* =========================================
+	カスタムプロンプト（別名保存用ダイアログ）
+	========================================= */
+
+/* 背景の暗幕 */
+.custom-prompt-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background-color: rgba(0, 0, 0, 0.7);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	z-index: 9999;
+}
+
+/* ダイアログ本体 */
+.custom-prompt-dialog {
+	background-color: #2c2c2cdb;
+	padding: 20px;
+	border-radius: 8px;
+	box-shadow: 0 4px 15px rgb(0 0 0 / 63%);
+	min-width: 300px;
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+}
+
+/* メッセージテキスト */
+.custom-prompt-message {
+	color: #fff;
+}
+
+/* 入力欄 */
+.custom-prompt-input {
+	padding: 8px;
+	border-radius: 4px;
+	border: 1px solid #555;
+	background-color: #1e1e1e;
+	color: #fff;
+	outline: none;
+}
+.custom-prompt-input:focus {
+	border-color: #4CAF50; /* フォーカス時に緑の枠線 */
+}
+
+/* ボタンエリア */
+.custom-prompt-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+/* ボタン共通設定 */
+.custom-prompt-btn {
+	padding: 8px 15px;
+	border: none;
+	border-radius: 4px;
+	cursor: pointer;
+	color: #fff;
+	transition: background-color 0.2s; /* ホバー時のアニメーション */
+}
+
+/* キャンセルボタン */
+.custom-prompt-cancel {
+	background-color: #555;
+}
+.custom-prompt-cancel:hover {
+	background-color: #666;
+}
+
+/* 保存(OK)ボタン */
+.custom-prompt-ok {
+	background-color: #4CAF50;
+}
+.custom-prompt-ok:hover {
+	background-color: #45a049;
+}
+
+/* 1. 大枠：縦並びにして、はみ出しを隠す */
+.preview-area_box {
+		display: flex;
+		flex-direction: column;      /* 高さを指定 */
+		/* overflow: hidden; */
+}
+
+/* 2. グラフの直接の親：ここが一番重要！ */
+.preview-area {
+		flex: 1;            /* 残りの高さをすべて埋める */
+		min-height: 0;
+}
+
+/* まとめて書き出しモーダル用のスタイル */
+.old-export-button{
+	display: none;
+}
+.export-modal {
+	max-width: 600px;
+	background: #1e1e1e;
+	border: 1px solid #444;
+	border-radius: 8px;
+	padding: 20px;
+}
+
+.export-file-list {
+	max-height: 400px;
+	overflow-y: auto;
+	margin: 15px 0;
+	background: #121212;
+	padding: 10px;
+	border-radius: 4px;
+	display: grid;
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 0.5rem;
+}
+
+.export-item {
+	display: flex;
+	align-items: center;
+	padding: 12px;
+	background: #2a2a2a;
+	border-radius: 4px;
+	transition: background 0.2s;
+	border-left: 4px solid transparent;
+}
+
+/* 編集済みファイルの色（オレンジ系） */
+.export-item.is-modified {
+	background: #3d2b0f;
+	border-left: 4px solid #f39c12;
+}
+.modal-title{
+	color: #fff;
+	font-size: 1.3rem;
+	margin-bottom: 0.5rem;
+}
+.export-item input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+	cursor: pointer;
+}
+
+.export-item label {
+	flex: 1;
+	margin-left: 12px;
+	color: #eee;
+	cursor: pointer;
+	font-size: 14px;
+}
+
+.export-item .modified-badge {
+	font-size: 10px;
+	background: #f39c12;
+	color: #000;
+	padding: 2px 6px;
+	border-radius: 2px;
+	font-weight: bold;
+}
+.new-text_box{
+	display: flex;
+	flex-direction: column;
+}
+.modal-button-group{
+	display: flex;
+	gap: 1rem;
+}
+.modal-button-group .hub-btn{
+	justify-content: center;
+	margin: 0;
+	padding: 0.5rem;
+}
+.hub-btn .icon {
+	font-size: 24px;
+	margin-right: 0px;
+	width: 3rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+.hub-btn {
+	gap: 0.5rem;
+}
+.tab-content{
+	transition: 0.3s;
+}
+	#desc-gear,
+.text-data_box,
+#desc-setup,
+#desc-engine,
+#desc-engine,
+#desc-suspension{
+	opacity: 1;
+	padding: 0.5rem;
+	border: 1px #333 solid;
+	margin-top: 0.5rem;
+	border-radius: 0.5rem;
+	transition: 0.3s;
+}
+#desc-gear,
+.text-data_box div p,
+#desc-setup,
+#desc-engine,
+#desc-engine,
+#desc-suspension{
+	font-size: 1rem;
+}
+
+.modal-button-group .modal-btn-execute,
+.modal-button-group .modal-btn-cancel{
+	justify-content: center;
+	margin: 0;
+	padding: 0.5rem 0;
+	width: 6.5rem;
+}
+#auth-status-message{
+	text-align: center;
+	white-space: pre-wrap;
+}
+.export-name-input-group{
+	display: flex;
+	font-size: 1rem;
+	align-items: center;
+	margin-bottom: 0.5rem;
+}
+.export-name-input-group label{
+	color: #fff;
+}
+.export-name-input-group input,
+.export-name-input-group label{
+	font-size: 1em;
+}
+.export-name-input-group input{
+	padding: 0.2em;
+}
+/* --- タイヤウィザード：スペック入力エリアのスタイル --- */
+.tyre-wizard-specs {
+	padding: 10px;
+	border-radius: 4px;
+	margin-bottom: 20px;
+}
+.wiz-spec-row {
+	display: flex;
+	gap: 10px;
+	margin-bottom: 10px;
+}
+.wiz-spec-col {
+	flex: 1;
+}
+.wiz-spec-label {
+	display: block;
+	font-size: 10px;
+	color: #888;
+	margin-bottom: 4px;
+}
+.wiz-spec-input, .wiz-spec-select {
+	width: 100%;
+	border: 1px solid #555;
+	padding: 4px;
+	box-sizing: border-box;
+	border-radius: 0.5em;
+	font-size: 1em;
+}
+.wiz-spec-footer {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+/* --- タイヤテスター（DNAグラフ）のレイアウト --- */
+.tyre-dna-tester-container {
+	display: flex;
+	gap: 10px;
+	margin-top: 10px;
+	height: 120px;
+}
+
+.tester-chart-box {
+	flex: 1;
+	position: relative;
+	background: #111;
+	border-radius: 4px;
+	border: 1px solid #333;
+	overflow: hidden;
+}
+
+.tester-chart-label {
+	position: absolute;
+	top: 2px;
+	left: 5px;
+	font-size: 9px;
+	color: #888;
+	z-index: 5;
+	pointer-events: none;
+}
+
+.tester-canvas {
+	width: 100%;
+	height: 100%;
+	display: block;
+}
+.indicator_box{
+	display: flex;
+	gap: 0.5em;
+}
+.indicator_box > div{
+	width: 50%;
+}
+.indicator_box .tyre-peak-monitor{
+	font-family: monospace;
+	color: #fff;
+	padding: 10px;
+}
+/* =========================================
+	タイヤエディター (tires.js) 用の追加スタイル
+========================================= */
+
+/* グループ分けのカラーライン（左端のボックスシャドウ） */
+.tyre-graph-item {
+		box-shadow: inset 4px 0 0 0 rgba(255, 165, 0, 0.7); /* オレンジ色 */
+		padding-left: 8px;
+		border-radius: 4px;
+}
+.tyre-feel-item {
+		box-shadow: inset 4px 0 0 0 rgba(0, 150, 255, 0.7); /* ブルー色 */
+		padding-left: 8px;
+		border-radius: 4px;
+}
+
+/* 入力枠とアイコンのレイアウト調整 */
+.tyre-input-wrapper {
+		position: relative; /* アイコンを絶対配置するための基準 */
+}
+
+/* 入力欄の右側にアイコン用の余白を確保 */
+.tyre-text-input {
+		padding-right: 32px !important;
+}
+
+/* 入力欄の右端に浮かぶアイコンのコンテナ */
+.tyre-indicator-icons {
+		position: absolute;
+		right: 6px;
+		top: 50%;
+		transform: translateY(-50%);
+		pointer-events: none; /* アイコンの上をクリックしても入力欄が反応するようにする */
+		display: flex;
+		gap: 2px;
+}
+
+/* アイコン自体の透明度とサイズ調整 */
+.tyre-indicator-icons span {
+		font-size: 1.1em;
+		opacity: 0.8;
+}
+/* グラフ用マーク(📊)だけは少し薄くする */
+.tyre-graph-item .tyre-indicator-icons span[title*="グラフ"] {
+		opacity: 0.5;
+}

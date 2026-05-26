@@ -1,0 +1,34 @@
+{
+	"name": "ac-file-generator",
+	"version": "0.0.1",
+	"description": "Assetto Corsa File Generator",
+	"author": "nerutakachan",
+	"main": "main-electron.js",
+	"scripts": {
+		"start": "nodemon --watch main-electron.js --watch preload.js --exec electron .",
+		"build": "electron-builder --win"
+	},
+	"devDependencies": {
+		"electron": "^28.0.0",
+		"electron-builder": "^24.13.3",
+		"electron-reload": "^2.0.0-alpha.1",
+		"nodemon": "^3.1.14"
+	},
+	"build": {
+    "appId": "com.example.ac-file-generator",
+    "productName": "AC FILE GENERATOR",
+    "win": {
+      "target": "nsis",
+      "icon": "image/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "AC FILE GENERATOR"
+    }
+	}
+}

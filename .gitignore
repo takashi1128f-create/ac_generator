@@ -1,0 +1,18 @@
+# 外部ライブラリ
+node_modules/
+
+# ビルドファイル・完成品アプリのフォルダ
+dist/
+build/
+out/
+
+# システムファイル・実行ファイル関連
+*.exe
+*.dll
+*.pak
+*.bin
+*.dat
+*.json
+!package.json
+!package-lock.json
+!vk_swiftshader_icd.json
