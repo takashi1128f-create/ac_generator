@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkAutoLogin: () => ipcRenderer.invoke('check-auto-login'),
   // 裏側からのスプラッシュ終了の合図を受け取る窓口
   onMainWindowShown: (callback) => ipcRenderer.on('main-window-shown', () => callback()),
-  saveProject: (payload) => ipcRenderer.invoke('save-project', payload),
+  readModelFile: (filePath) => ipcRenderer.invoke('read-model-file', filePath),
   
   // ★重複を整理：終了用と保存終了用の窓口をここにまとめました
   forceQuit: () => ipcRenderer.send('force-quit'),

@@ -579,3 +579,15 @@ ipcMain.handle('set-window-title', (event, projectName) => {
 function sendDiscordLog() {
     // Webhookなどは行わないが、呼び出されてもエラーにならないようにする
 }
+// 【追加】フロントエンドからの要求に応じて安全にモデルファイルを読み込む処理
+ipcMain.handle('read-model-file', async (event, filePath) => {
+	const fs = require('fs');
+	try {
+		// 指定された絶対パスからファイルをバイナリ（Buffer）としてダイレクトに読み込む
+		const buffer = fs.readFileSync(filePath);
+		return buffer; // レンダラープロセス側には自動的に Uint8Array として渡されます
+	} catch (error) {
+		console.error('【裏側】モデルファイルの読み込みに失敗しました:', error);
+		throw error;
+	}
+});
