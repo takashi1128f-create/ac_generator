@@ -648,27 +648,40 @@ window.setupSuspensionReferences = function(model) {
 };
 window.loadModelByPath = async function(path) {
 	if (!path) return;
-	// パスをブラウザが読み込める形式に変換
-	const fileUrl = `file:///${path.replace(/\\/g, '/')}`;
-	console.log("[MODEL] プロジェクトからモデルを復元します:", fileUrl);
+
+	console.log("[MODEL] プロジェクトからモデルを復元します（安全ルート）:", path);
+	
 	try {
-		// ★ 1. ローカルファイルを直接フェッチして、擬似的な「アップロードファイル(File)」を作る
-		const response = await fetch(fileUrl);
-		const blob = await response.blob();
+		// 1. preload.js 経由で裏側にファイルの読み込みを依頼する（ブラウザの防壁を回避）
+		if (!window.electronAPI || typeof window.electronAPI.readModelFile !== 'function') {
+			throw new Error("window.electronAPI.readModelFile が定義されていません。preload.jsを確認してください。");
+		}
+		
+		const arrayBuffer = await window.electronAPI.readModelFile(path);
+		
+		// 2. 取得したバイナリデータからBlobを生成
+		const blob = new Blob([arrayBuffer]);
 		const fileName = path.split('\\').pop().split('/').pop();
+		
+		// 3. 元のロジックと同じ「擬似的なアップロードファイル」を再現
 		const file = new File([blob], fileName, {
 			type: "model/gltf-binary"
 		});
-		// ★ 2. model.js 本来の「7画面すべてにモデルを配置する処理」を呼び出す
+
+		// 4. model.js 本来の「7画面すべてにモデルを配置する処理」を呼び出す
 		if (typeof handleModelFile === 'function') {
 			handleModelFile(file);
 		}
-		// ★ 3. import.js 本来の「パーツの仕分け・解析処理」を呼び出す
-		// （※ファイル上部で load3DModel がインポートされているので使えます）
+
+		// 5. import.js 本来の「パーツの仕分け・解析処理」を呼び出す
 		if (typeof load3DModel === 'function') {
 			await load3DModel(file);
+		} else {
+			console.warn("[MODEL] load3DModel が見つかりません。");
 		}
-		console.log("[MODEL] すべてのシーンへの3Dモデル完全復元が完了しました。");
+
+		console.log("🏎️ [MODEL] 3Dモデルの安全な復元に成功しました！");
+
 		// 描画の安定化のため、少し待ってからサスペンションの見た目を最新状態にガチャン！と合わせる
 		setTimeout(() => {
 			if (typeof window.updateSuspensionVisuals === 'function' && window.currentSuspensionData) {
@@ -676,7 +689,8 @@ window.loadModelByPath = async function(path) {
 			}
 			if (typeof window.requestRender === 'function') window.requestRender();
 		}, 500);
+
 	} catch (error) {
-		console.error("[MODEL] モデルデータのフェッチ、または復元処理に失敗しました:", error);
+		console.error("[MODEL] モデルデータの復元処理に失敗しました:", error);
 	}
 };
