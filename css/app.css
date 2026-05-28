@@ -178,11 +178,9 @@ input, textarea {
 }
 .button_box {
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	flex-wrap: wrap;
 	align-items: flex-start;
-	width: 450px;
-	/* justify-content: flex-start; */
 	justify-content: flex-end;
 	gap: 0.5rem;
 }

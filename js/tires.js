@@ -191,12 +191,21 @@ window.renderTyreUI = function() {
 	const tyreTabs = [
 		{ id: 'GLOBAL', label: 'GLOBAL', keys: ['VERSION','INDEX', 'USE_LOAD', 'MAX_KM', 'CAMBER_WEAR'] },
 		{ id: 'BASIC', label: 'BASIC', keys: ['NAME', 'SHORT_NAME', 'DESCRIPTION', 'WIDTH', 'RADIUS', 'RIM_RADIUS', 'ANGULAR_INERTIA', 'DAMP', 'RATE', 'FLEX', 'XMU', 'FZ0'] },
-		{ id: 'LON_GRIP', label: 'LON 縦', keys: ['DX_REF', 'DX0', 'DX1', 'LS_EXPX', 'CX_MULT', 'RADIUS_ANGULAR_K', 'BRAKE_DX_MOD'] },
-		{ id: 'LAT_GRIP', label: 'LAT 横', keys: ['DY_REF', 'DY0', 'DY1', 'LS_EXPY', 'CAMBER_GAIN', 'DCAMBER_0', 'DCAMBER_1', 'FRICTION_LIMIT_ANGLE', 'COMBINED_FACTOR'] },
+		// { id: 'LON_GRIP', label: 'LON 縦', keys: ['DX_REF', 'DX0', 'DX1', 'LS_EXPX', 'CX_MULT', 'RADIUS_ANGULAR_K', 'BRAKE_DX_MOD'] },
+		// { id: 'LAT_GRIP', label: 'LAT 横', keys: ['DY_REF', 'DY0', 'DY1', 'LS_EXPY', 'CAMBER_GAIN', 'DCAMBER_0', 'DCAMBER_1', 'FRICTION_LIMIT_ANGLE', 'COMBINED_FACTOR'] },
+		{ id: 'GRIP', label: 'GRIP', groups: [
+			{ keys: ['DX_REF', 'DX0', 'DX1', 'LS_EXPX', 'CX_MULT', 'RADIUS_ANGULAR_K', 'BRAKE_DX_MOD'] },
+			{	// title: 'LAT 横',
+				keys: ['DY_REF', 'DY0', 'DY1', 'LS_EXPY', 'CAMBER_GAIN', 'DCAMBER_0', 'DCAMBER_1', 'FRICTION_LIMIT_ANGLE', 'COMBINED_FACTOR'] }
+		]},
 		{ id: 'SLIDE', label: 'SLIDE', keys: ['FLEX_GAIN', 'FLEX_GAIN_LOAD', 'FALLOFF_LEVEL', 'FALLOFF_SPEED', 'SPEED_SENSITIVITY', 'RELAXATION_LENGTH', 'ROLLING_RESISTANCE_0', 'ROLLING_RESISTANCE_1', 'ROLLING_RESISTANCE_SLIP'] },
 		{ id: 'PRESSURE', label: 'PRESS', keys: ['PRESSURE_STATIC', 'PRESSURE_SPRING_GAIN', 'PRESSURE_FLEX_GAIN', 'PRESSURE_RR_GAIN', 'PRESSURE_D_GAIN', 'PRESSURE_IDEAL'] },
-		{ id: 'THERMAL', label: 'TEMP', keys: ['PERFORMANCE_CURVE', 'SURFACE_TRANSFER', 'PATCH_TRANSFER', 'CORE_TRANSFER', 'INTERNAL_CORE_TRANSFER', 'FRICTION_K', 'ROLLING_K', 'SURFACE_ROLLING_K', 'COOL_FACTOR'] },
-		{ id: 'WEAR', label: 'WEAR', keys: ['WEAR_CURVE', 'GRAIN_GAMMA', 'GRAIN_GAIN', 'BLISTER_GAMMA', 'BLISTER_GAIN', 'TYRE_RND', 'RIM_RND'] }
+		{ id: 'THERMAL-WEAR', label: 'THERMAL-WEAR', groups: [
+			{ keys: ['PERFORMANCE_CURVE', 'SURFACE_TRANSFER', 'PATCH_TRANSFER', 'CORE_TRANSFER', 'INTERNAL_CORE_TRANSFER', 'FRICTION_K', 'ROLLING_K', 'SURFACE_ROLLING_K', 'COOL_FACTOR'] },
+			{ keys: ['WEAR_CURVE', 'GRAIN_GAMMA', 'GRAIN_GAIN', 'BLISTER_GAMMA', 'BLISTER_GAIN', 'TYRE_RND', 'RIM_RND'] }
+		]},
+		// { id: 'THERMAL', label: 'TEMP', keys: ['PERFORMANCE_CURVE', 'SURFACE_TRANSFER', 'PATCH_TRANSFER', 'CORE_TRANSFER', 'INTERNAL_CORE_TRANSFER', 'FRICTION_K', 'ROLLING_K', 'SURFACE_ROLLING_K', 'COOL_FACTOR'] },
+		// { id: 'WEAR', label: 'WEAR', keys: ['WEAR_CURVE', 'GRAIN_GAMMA', 'GRAIN_GAIN', 'BLISTER_GAMMA', 'BLISTER_GAIN', 'TYRE_RND', 'RIM_RND'] }
 	];
 
 	// タブ用の解説文
@@ -412,42 +421,76 @@ window.renderTyreUI = function() {
 
 	// 入力欄の生成コンテナをリセット（ダブり防止）
 	const inputContainer = document.getElementById('tyre-side-inputs');
-	if (inputContainer) inputContainer.innerHTML = '';
+	if (inputContainer) {
+		inputContainer.innerHTML = '';
+		// スタイルをリセット
+		inputContainer.style.display = '';
+		inputContainer.style.gridTemplateColumns = '';
+		inputContainer.style.gap = '';
+	}
 
-	activeTabDef.keys.forEach(key => {
-		let secName = '';
-		let secData = {};
+	// 項目を生成・追加するための内部関数
+	const renderKeys = (keys, parentNode) => {
+		keys.forEach(key => {
+			let secName = '';
+			let secData = {};
 
-		// ① 全体設定（GLOBAL）項目の場合
-		if (globalSectionMap[key] !== undefined) {
-			secName = globalSectionMap[key];
-			// インポート時に同梱された raw_ini から直接全体セクションのデータを引き出す
-			secData = currentCompound.raw_ini ? (currentCompound.raw_ini[secName] || {}) : {};
-		} 
-		// ② 通常のコンパウンド（FRONT/REAR/THERMAL）項目の場合
-		else {
-			const isThermalKey = thermalKeys.includes(key);
-			// FRONT_1 や REAR_1 のようなインデックス番号サフィックスを処理
-			const suffix = currentCompound.index === 0 ? '' : `_${currentCompound.index}`;
-			
-			if (isThermalKey) {
-				secName = `THERMAL_${window.activeTyreSide}${suffix}`;
-				if (currentCompound.raw_ini && !currentCompound.raw_ini[secName]) {
-					currentCompound.raw_ini[secName] = {};
+			// ① 全体設定（GLOBAL）項目の場合
+			if (globalSectionMap[key] !== undefined) {
+				secName = globalSectionMap[key];
+				secData = currentCompound.raw_ini ? (currentCompound.raw_ini[secName] || {}) : {};
+			} 
+			// ② 通常のコンパウンド（FRONT/REAR/THERMAL）項目の場合
+			else {
+				const isThermalKey = thermalKeys.includes(key);
+				const suffix = currentCompound.index === 0 ? '' : `_${currentCompound.index}`;
+				
+				if (isThermalKey) {
+					secName = `THERMAL_${window.activeTyreSide}${suffix}`;
+					if (currentCompound.raw_ini && !currentCompound.raw_ini[secName]) {
+						currentCompound.raw_ini[secName] = {};
+					}
+					secData = currentCompound.raw_ini ? (currentCompound.raw_ini[secName] || {}) : {};
+				} else {
+					secName = `${window.activeTyreSide}${suffix}`;
+					secData = currentCompound.raw_ini ? (currentCompound.raw_ini[secName] || {}) : {};
 				}
-				secData = currentCompound.raw_ini ? (currentCompound.raw_ini[secName] || {}) : {};
-			} else {
-				secName = `${window.activeTyreSide}${suffix}`;
-				secData = currentCompound.raw_ini ? (currentCompound.raw_ini[secName] || {}) : {};
 			}
-		}
 
-		// ファイル内に値があれば取得、なければ空欄
-		const val = secData[key] !== undefined ? secData[key] : "";
-		
-		// 画面に正しい入力欄を生成して配置
-		window.addTyreInputField(inputContainer, currentCompound, secName, key, val);
-	});
+			const val = secData[key] !== undefined ? secData[key] : "";
+			window.addTyreInputField(parentNode, currentCompound, secName, key, val);
+		});
+	};
+
+	if (activeTabDef.groups) {
+		// グループ（2列表示）が設定されている場合
+		inputContainer.style.display = 'grid';
+		inputContainer.style.gridTemplateColumns = '1fr 1fr';
+		inputContainer.style.gap = '15px';
+
+		activeTabDef.groups.forEach(group => {
+			const colDiv = document.createElement('div');
+			
+			// ★ group.title がある場合だけタイトルを追加するよう変更 ★
+			if (group.title) {
+				const title = document.createElement('h4');
+				title.innerText = group.title;
+				title.style.color = '#ccc';
+				title.style.marginBottom = '10px';
+				title.style.paddingBottom = '5px';
+				title.style.borderBottom = '1px solid #444';
+				colDiv.appendChild(title);
+			}
+			
+			// キーをレンダリングして追加
+			renderKeys(group.keys, colDiv);
+			
+			inputContainer.appendChild(colDiv);
+		});
+	} else {
+		// 通常の単一リスト表示の場合
+		renderKeys(activeTabDef.keys, inputContainer);
+	}
 
 	// UI描画後にスイッチの状態を見て解説ボックスの表示/非表示を同期
 	if (typeof window.toggleTyreTooltips === 'function') {

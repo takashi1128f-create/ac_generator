@@ -33,7 +33,6 @@
 					<button id="btn-save-project" class="primary">💾 保存</button>
 					<button id="btn-restore-project" class="secondary-btn" title="前回の保存状態に戻す">⏪ 復元</button>
 					<button id="btn-import-folder">📂 data一括</button>
-					<button id="btn-export-folder">💾 dataフォルダへ安全に上書き保存</button>
 				</div>
 				<div class="info-icon_box">使い方はこちら　☞ <button type="button" class="info-icon" id="info-btn">📖</button>
 					<button type="button" id="toggle-all-visibility" class="reset-btn" checked>表示/非表示</button>
@@ -91,11 +90,14 @@
 					</div>
 				</div>
 			</div>
+			<article>
+				<div class="button_box">
+					<button id="openExportModalBtn" class="primary-btn">💾 書き出し</button>
+					<button id="btn-export-folder">💾 dataへ上書き保存</button>
+				</div>
+			</article>
 			<article class="top-toggle-outer_box">
 				<div>
-					<div class="button_box">
-						<button id="openExportModalBtn" class="primary-btn">💾 書き出し</button>
-					</div>
 					<div id="exportModal" class="modal-overlay" style="display: none;">
 						<div class="modal-content export-modal">
 							<h3 class="modal-title">エクスポート設定</h3>
