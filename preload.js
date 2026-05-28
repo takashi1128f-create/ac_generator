@@ -10,7 +10,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 引数名をurlからauthResultに修正（実際のデータに合わせるため）
   onDiscordCallback: (callback) => ipcRenderer.on('discord-auth-callback', (event, authResult) => callback(authResult)),
   checkAutoLogin: () => ipcRenderer.invoke('check-auto-login'),
-  // 裏側からのスプラッシュ終了の合図を受け取る窓口
   onMainWindowShown: (callback) => ipcRenderer.on('main-window-shown', () => callback()),
   readModelFile: (filePath) => ipcRenderer.invoke('read-model-file', filePath),
   
