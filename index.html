@@ -93,7 +93,6 @@
 			<article>
 				<div class="button_box">
 					<button id="openExportModalBtn" class="primary-btn">💾 書き出し</button>
-					<button id="btn-export-folder">💾 dataへ上書き保存</button>
 				</div>
 			</article>
 			<article class="top-toggle-outer_box">
@@ -101,11 +100,18 @@
 					<div id="exportModal" class="modal-overlay" style="display: none;">
 						<div class="modal-content export-modal">
 							<h3 class="modal-title">エクスポート設定</h3>
-							<div class="export-name-input-group">
+							<div class="settings-item">
+								<span class="settings-label">💾 現在の data フォルダへ上書き保存する (安全バックアップ付)</span>
+								<label class="toggle-switch">
+									<input type="checkbox" id="overwriteToggleBtn">
+									<span class="toggle-slider round"></span>
+								</label>
+							</div>
+							<div class="export-name-input-group" id="exportNameContainer">
 								<label for="exportProjectName">保存フォルダ名：</label>
 								<input type="text" id="exportProjectName" class="modal-input">
 							</div>
-							<p class="modal-desc">書き出すファイルを選択してください</p>
+							<p class="modal-desc" id="exportDesc">書き出すファイルを選択してください</p>
 							<div id="exportFileList" class="export-file-list"></div>
 							<div class="modal-button-group">
 								<button id="closeExportBtn" class="hub-btn">キャンセル</button>
