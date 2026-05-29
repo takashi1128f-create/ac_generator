@@ -7,70 +7,18 @@ if (window.electronAPI && window.electronAPI.onMenuRequestExport) {
 		}
 	});
 }
-
-// =========================================================
-// ★ ボタンのイベント紐付け（トグルスイッチ連動追加）
-// =========================================================
 document.addEventListener('DOMContentLoaded', () => {
-	const openBtn = document.getElementById('openExportModalBtn');
 	const closeBtn = document.getElementById('closeExportBtn');
 	const execBtn = document.getElementById('executeExportBtn');
-	const overwriteToggle = document.getElementById('overwriteToggleBtn');
-	
-	// UI連動用の要素
-	const nameInputContainer = document.getElementById('exportNameContainer');
-	const nameInput = document.getElementById('exportProjectName');
-	const fileListContainer = document.getElementById('exportFileList');
-	const exportDesc = document.getElementById('exportDesc');
-
-	if (openBtn) {
-		openBtn.onclick = () => {
-			if (typeof window.openExportModal === 'function') {
-				window.openExportModal();
-			}
-		};
-	}
-
 	if (closeBtn) {
 		closeBtn.onclick = () => {
-			const modal = document.getElementById('exportModal');
-			if (modal) modal.style.display = 'none';
+			document.getElementById('exportModal').style.display = 'none';
 		};
 	}
-
 	if (execBtn) {
 		execBtn.onclick = window.executeBulkExport;
 	}
-
-	// ★ トグルスイッチを切り替えた時の動作
-	if (overwriteToggle) {
-		overwriteToggle.addEventListener('change', (e) => {
-			const isOverwriteMode = e.target.checked;
-			if (isOverwriteMode) {
-				// 上書きモード：フォルダ名入力と個別ファイル選択をグレーアウト（無効化）
-				if (nameInputContainer) nameInputContainer.style.opacity = '0.5';
-				if (nameInput) nameInput.disabled = true;
-				if (fileListContainer) {
-					fileListContainer.style.opacity = '0.5';
-					fileListContainer.style.pointerEvents = 'none';
-				}
-				if (exportDesc) exportDesc.textContent = "※すべての対象ファイルが現在の data フォルダに上書きされます";
-				if (execBtn) execBtn.textContent = "上書き保存を実行";
-			} else {
-				// 通常モード：元に戻す
-				if (nameInputContainer) nameInputContainer.style.opacity = '1';
-				if (nameInput) nameInput.disabled = false;
-				if (fileListContainer) {
-					fileListContainer.style.opacity = '1';
-					fileListContainer.style.pointerEvents = 'auto';
-				}
-				if (exportDesc) exportDesc.textContent = "書き出すファイルを選択してください";
-				if (execBtn) execBtn.textContent = "書き出し";
-			}
-		});
-	}
 });
-
 /**
  * まとめて書き出し実行（新・司令塔）
  * Electron側のフォルダ選択・ファイル生成APIと連携します。
@@ -78,38 +26,25 @@ document.addEventListener('DOMContentLoaded', () => {
 window.executeBulkExport = async function() {
 	console.log("🚀 [DEBUG] executeBulkExport が開始されました");
 
-	const overwriteToggle = document.getElementById('overwriteToggleBtn');
-	const isOverwriteMode = overwriteToggle ? overwriteToggle.checked : false;
-
-	let baseDir = null;
-	let exportFolderName = "";
-
-	// --- 1. 通常モード時のみ、保存先のベースとなるフォルダを選択させる ---
-	if (!isOverwriteMode) {
-		const nameInput = document.getElementById('exportProjectName');
-		const projectName = nameInput ? nameInput.value.trim() : "Unknown-Car";
-		
-		// フォルダ名に使用できない禁止文字をアンダースコアに置換
-		const safeProjectName = projectName.replace(/[\\/:*?"<>|]/g, "_");
-		exportFolderName = safeProjectName;
-
-		baseDir = await window.electronAPI.openDirectoryDialog();
-		if (!baseDir) {
-			console.log("⚠️ [DEBUG] フォルダ選択がキャンセルされました");
-			return;
-		}
-	}
-
-	const filesToExport = [];
+	// --- 1. プロジェクト名（フォルダ名）を入力欄から取得 ---
+	const nameInput = document.getElementById('exportProjectName');
+	const projectName = nameInput ? nameInput.value.trim() : "Unknown-Car";
 	
-	// --- 2. 選択されたファイルのデータを順番に収集 ---
+	// フォルダ名に使用できない禁止文字をアンダースコアに置換
+	const safeProjectName = projectName.replace(/[\\/:*?"<>|]/g, "_");
+	const exportFolderName = safeProjectName; // -data-file を削除
+
+	// --- 2. 保存先のベースとなるフォルダを選択させる ---
+	const baseDir = await window.electronAPI.openDirectoryDialog();
+	if (!baseDir) {
+		console.log("⚠️ [DEBUG] フォルダ選択がキャンセルされました");
+		return;
+	}
+	const filesToExport = [];
+	// --- 3. 選択されたファイルのデータを順番に収集 ---
 	for (const file of window.EXPORT_CONFIG) {
 		const checkbox = document.getElementById(`check-${file.id}`);
-		
-		// ★ 上書きモードなら強制的に全て収集、通常ならチェック状態を見る
-		const isSelected = isOverwriteMode || (checkbox && checkbox.checked);
-
-		if (isSelected) {
+		if (checkbox && checkbox.checked) {
 
 			// 🔒 安全ガード：インポートされていない空欄のデータは、チェックが入っていても書き出し対象から除外
 			if (file.id === 'tyres' && (!window.tyreCompoundList || window.tyreCompoundList.length === 0)) continue;
@@ -130,15 +65,15 @@ window.executeBulkExport = async function() {
 							name: file.name,
 							content: content
 						});
-						console.log(`  └ ✅ データ取得成功 (${content.length} 文字)`);
+						console.log(`   └ ✅ データ取得成功 (${content.length} 文字)`);
 					} else {
-						console.warn(`  └ ⚠️ 関数から空のデータが返されました: ${file.func}`);
+						console.warn(`   └ ⚠️ 関数から空のデータが返されました: ${file.func}`);
 					}
 				} catch (err) {
-					console.error(`  └ ❌ [ERROR] ${file.name} のデータ収集中に失敗しました:`, err);
+					console.error(`   └ ❌ [ERROR] ${file.name} のデータ収集中に失敗しました:`, err);
 				}
 			} else {
-				console.error(`  └ ❌ 関数が見つかりません: ${file.func}`);
+				console.error(`   └ ❌ 関数が見つかりません: ${file.func}`);
 			}
 		}
 	}
@@ -250,7 +185,12 @@ window.executeBulkExport = async function() {
 			}
 		});
 	}
+	if (filesToExport.length === 0) {
+		alert("書き出し可能なデータがありませんでした。F12のログを確認してください。");
+		return;
+	}
 
+	// ★追加：ギアセットが1つの時だけ、自動で ratios.rto を生成して追加する
 	if (window.gearSetList && window.gearSetList.length === 1) {
 		console.log("⚙️ ギアセットが1つのため、固定の ratios.rto を自動生成します。");
 		filesToExport.push({
@@ -259,53 +199,53 @@ window.executeBulkExport = async function() {
 		});
 	}
 
-	if (filesToExport.length === 0) {
-		alert("書き出し可能なデータがありませんでした。F12のログを確認してください。");
-		return;
+	console.log("📤 [DEBUG] Electronへ送信するファイルリスト:", filesToExport);
+	const folderExists = await window.electronAPI.checkFolderExists(baseDir, exportFolderName);
+	if (folderExists) {
+		const confirmOverwrite = confirm(`警告：既にフォルダ「${exportFolderName}」が存在します。\n中身を上書きしてもよろしいですか？`);
+		if (!confirmOverwrite) {
+			console.log("⚠️ [DEBUG] ユーザーにより上書きがキャンセルされました");
+			return; // 処理を中断
+		}
 	}
-
-	// --- 4. 実行モードによる Electron API の呼び出し分岐 ---
-	if (isOverwriteMode) {
-		// ★【上書きモード】既存の current data フォルダに上書き保存する
-		console.log("📤 [DEBUG] Electronへ上書き保存を依頼:", filesToExport);
-		
-		if (window.electronAPI && typeof window.electronAPI.overwriteCurrentData === 'function') {
-			const result = await window.electronAPI.overwriteCurrentData(filesToExport);
-			console.log("🏁 [DEBUG] 上書き保存結果:", result);
-			
-			if (result && result.success) {
-				alert(`✅ 現在の data フォルダに上書き保存しました。\n（バックアップ: ${result.backupPath || '作成済'}）`);
-				document.getElementById('exportModal').style.display = 'none';
-			} else {
-				alert("上書き保存に失敗しました。\n" + (result ? result.error : "不明なエラー"));
-			}
-		} else {
-			alert("上書き保存用のAPIが見つかりません。main-electron.js を確認してください。");
-		}
-
+	// --- 4. Electronのメインプロセスに「フォルダ作成」と「一括保存」を依頼 ---
+	const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport);
+	console.log("🏁 [DEBUG] 書き出し結果:", result);
+	if (result && result.success) {
+		alert(`「${exportFolderName}」フォルダに ${filesToExport.length} 個のファイルを書き出しました。\n場所: ${result.path}`);
+		document.getElementById('exportModal').style.display = 'none';
 	} else {
-		// ★【通常モード】指定したフォルダへ書き出す
-		console.log("📤 [DEBUG] Electronへ送信するファイルリスト:", filesToExport);
-		const folderExists = await window.electronAPI.checkFolderExists(baseDir, exportFolderName);
-		if (folderExists) {
-			const confirmOverwrite = confirm(`警告：既にフォルダ「${exportFolderName}」が存在します。\n中身を上書きしてもよろしいですか？`);
-			if (!confirmOverwrite) {
-				console.log("⚠️ [DEBUG] ユーザーにより上書きがキャンセルされました");
-				return; // 処理を中断
-			}
-		}
-		
-		const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport);
-		console.log("🏁 [DEBUG] 書き出し結果:", result);
-		if (result && result.success) {
-			alert(`「${exportFolderName}」フォルダに ${filesToExport.length} 個のファイルを書き出しました。\n場所: ${result.path}`);
-			document.getElementById('exportModal').style.display = 'none';
-		} else {
-			alert("書き出しに失敗しました。\n" + (result ? result.error : "不明なエラー"));
-		}
+		alert("書き出しに失敗しました。\n" + (result ? result.error : "不明なエラー"));
 	}
 };
+// =========================================================
+// ★ 欠落していたボタンのイベント紐付け（超重要）
+// =========================================================
+document.addEventListener('DOMContentLoaded', () => {
+	const openBtn = document.getElementById('openExportModalBtn');
+	const closeBtn = document.getElementById('closeExportBtn');
+	const execBtn = document.getElementById('executeExportBtn');
 
+	// window.openExportModal は import.js 側で定義されているものを使用します
+	if (openBtn) {
+		openBtn.onclick = () => {
+			if (typeof window.openExportModal === 'function') {
+				window.openExportModal();
+			} else {
+				console.error("openExportModal function not found.");
+			}
+		};
+	}
+	if (closeBtn) {
+		closeBtn.onclick = () => {
+			const modal = document.getElementById('exportModal');
+			if (modal) modal.style.display = 'none';
+		};
+	}
+	if (execBtn) {
+		execBtn.onclick = window.executeBulkExport;
+	}
+});
 window.downloadFinalRto = function(isExport = false) {
 	let res = "\n";
 	window.finalRtoList.forEach(item => {
@@ -652,8 +592,7 @@ window.downloadCollidersIni = function(isExport = false) {
 		document.body.removeChild(a);
 		window.URL.revokeObjectURL(url);
 	}, 0);
-};
-/** suspension.ini の書き出し */
+}; /** suspension.ini の書き出し */
 window.downloadSuspensionIni = function(isExport = false) {
 	const data = window.currentSuspensionData;
 	if (!data) {

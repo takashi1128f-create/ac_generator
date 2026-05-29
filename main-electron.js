@@ -563,32 +563,10 @@ ipcMain.handle('open-directory-dialog', async () => {
 ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files) => {
 	try {
 		const targetDir = path.join(baseDir, folderName);
-		if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {
-			recursive: true
-		});
-		for (const file of files) {
-			// ★【追加】配列やオブジェクトで届いたデータを、書き込めるテキスト(文字列)に翻訳する
-			let writeData = file.content;
-			if (Array.isArray(file.content)) {
-				writeData = file.content.join('\n');
-			} else if (typeof file.content === 'object' && file.content !== null) {
-				writeData = JSON.stringify(file.content, null, 2);
-			} else {
-				writeData = String(file.content);
-			}
-			// ★翻訳済みの writeData を使ってファイルに書き込む
-			fs.writeFileSync(path.join(targetDir, file.name), writeData, 'utf8');
-		}
-		return {
-			success: true,
-			path: targetDir
-		};
-	} catch (error) {
-		return {
-			success: false,
-			error: error.message
-		};
-	}
+		if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+		for (const file of files) fs.writeFileSync(path.join(targetDir, file.name), file.content, 'utf8');
+		return { success: true, path: targetDir };
+	} catch (error) { return { success: false, error: error.message }; }
 });
 ipcMain.handle('check-folder-exists', async (event, baseDir, folderName) => fs.existsSync(path.join(baseDir, folderName)));
 ipcMain.handle('set-window-title', (event, projectName) => {
@@ -616,7 +594,6 @@ ipcMain.handle('read-model-file', async (event, filePath) => {
 // 【追加】dataフォルダ内の指定されたini/lutファイルを一括で読み込む処理
 // 【追加】ACのdataフォルダ内から、指定された主要ファイルと、tyres.iniに書かれたLUTを自動で芋づる式に読み込む処理
 ipcMain.handle('read-ac-data-folder', async (event, folderPath) => {
-	global.currentDataDir = folderPath;
 	const fs = require('fs');
 	const path = require('path');
 	const result = { success: true, files: {} };
@@ -678,81 +655,34 @@ ipcMain.handle('read-ac-data-folder', async (event, folderPath) => {
 });
 
 // 【追加】元データを「backup_data」フォルダに1世代だけ安全に退避させてから、新しいデータを上書き保存する処理
-ipcMain.handle('overwriteCurrentData', async (event, filesToExport) => {
+ipcMain.handle('save-ac-data-folder', async (event, folderPath, fileDataMap) => {
 	const fs = require('fs');
 	const path = require('path');
-	
-	console.log("=== 📥 【裏側】overwriteCurrentData が呼び出されました ===");
-	console.log("🔎 送られてきたファイル数:", filesToExport ? filesToExport.length : 0);
-
-	// アプリがインポート時に記憶している「今開いているdataフォルダのパス」を使用
-	const folderPath = global.currentDataDir;
-	console.log("📂 現在メモリに記憶されている data フォルダのパス:", folderPath);
-
-	if (!folderPath) {
-		console.error("❌ 【エラー】currentDataDir が空っぽ(nullまたはundefined)です。インポート処理を通っていません。");
-		return { success: false, error: "有効な data フォルダが開かれていません。(パスが記憶されていません)" };
-	}
-
-	if (!fs.existsSync(folderPath)) {
-		console.error(`❌ 【エラー】記憶されているパス 「${folderPath}」 が、パソコン上に実在しません。`);
-		return { success: false, error: "有効な data フォルダが開かれていません。(フォルダが実在しません)" };
-	}
 	
 	try {
 		// 1. dataフォルダの中に「backup_data」フォルダがあるか確認し、無ければ自動で作る
 		const backupFolderPath = path.join(folderPath, 'backup_data');
-		console.log("📁 バックアップを保存する予定の場所:", backupFolderPath);
-
 		if (!fs.existsSync(backupFolderPath)) {
 			fs.mkdirSync(backupFolderPath, { recursive: true });
-			console.log("🆕 バックアップフォルダを新規作成しました。");
-		} else {
-			console.log("✅ バックアップフォルダは既に存在します。");
 		}
 
 		// 2. 画面側から送られてきた各ファイルを書き出す前に、元のファイルを1世代だけコピー（退避）する
-		for (const file of filesToExport) {
-			const fileName = file.name;
-			const fileContent = file.content;
-
+		for (const fileName in fileDataMap) {
 			const targetFilePath = path.join(folderPath, fileName);
 			const backupFilePath = path.join(backupFolderPath, fileName);
 
-			console.log(`--- 💾 ファイル処理開始: ${fileName} ---`);
-
 			// 元のファイルがすでに存在する場合のみバックアップ領域へ退避
 			if (fs.existsSync(targetFilePath)) {
-				// ★【追加】バックアップ用の金庫に「まだそのファイルが無い場合」だけコピーする（2回目以降の上書きロック）
-				if (!fs.existsSync(backupFilePath)) {
-					fs.copyFileSync(targetFilePath, backupFilePath);
-					console.log(`  └ 📁 【安全装置】初期ファイルを金庫にロック保存しました`);
-				} else {
-					console.log(`  └ 🔒 【安全装置】金庫は既にロックされています（上書きスキップ）`);
-				}
-			} else {
-				console.log(`  └ ⚠️ 元のファイルが存在しないため、バックアップをスキップします`);
+				fs.copyFileSync(targetFilePath, backupFilePath);
 			}
 
-			// ★【修正の核心】データが配列（リスト）で届いた場合、改行で繋いで1つのテキストにする
-			let writeData = fileContent;
-			if (Array.isArray(fileContent)) {
-				writeData = fileContent.join('\n');
-			} else if (typeof fileContent === 'object' && fileContent !== null) {
-				writeData = JSON.stringify(fileContent, null, 2);
-			} else {
-				writeData = String(fileContent);
-			}
-
-			// 3. 画面から届いた最新の編集データを、本物のファイルに上書き保存
-			fs.writeFileSync(targetFilePath, writeData, 'utf8');
-			console.log(`  └ 📝 【完了】ファイルに正常に上書き保存しました。`);
+			// 3. 安全装置が働いたのを確認して、新しいデータを元の場所に上書き保存する
+			fs.writeFileSync(targetFilePath, fileDataMap[fileName], 'utf-8');
 		}
 
-		console.log("=== 🎉 【裏側】すべてのファイルの上書き保存が正常に完了しました ===");
-		return { success: true, backupPath: backupFolderPath };
+		return { success: true };
 	} catch (error) {
-		console.error('💥 【裏側】上書き保存中に致命的なエラーが発生しました:', error);
+		console.error('【裏側】バックアップ作成または上書き保存に失敗しました:', error);
 		return { success: false, error: error.message };
 	}
 });
