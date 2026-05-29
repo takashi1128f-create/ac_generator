@@ -31,7 +31,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMenuNew: (callback) => ipcRenderer.on('menu-request-new', callback),
   onMenuOpen: (callback) => ipcRenderer.on('menu-request-open', callback),
   openDirectoryDialog: () => ipcRenderer.invoke('open-directory-dialog'),
-  exportFilesToFolder: (baseDir, folderName, files) => ipcRenderer.invoke('export-files-to-folder', baseDir, folderName, files),
+  exportFilesToFolder: (baseDir, folderName, files, isOverwrite, sourcePath) => ipcRenderer.invoke('export-files-to-folder', baseDir, folderName, files, isOverwrite, sourcePath),
   checkFolderExists: (baseDir, folderName) => ipcRenderer.invoke('check-folder-exists', baseDir, folderName),
   onMenuRequestExport: (callback) => ipcRenderer.on('menu-request-export', () => callback()),
   onAppVersion: (callback) => ipcRenderer.on('send-app-version', (event, version) => callback(version)),

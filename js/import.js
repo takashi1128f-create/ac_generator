@@ -872,7 +872,23 @@ window.EXPORT_CONFIG = [
 window.openExportModal = function() {
 	const listContainer = document.getElementById('exportFileList');
 	if (!listContainer) return;
-
+	// ★追加：スイッチ連動処理（モーダルを開くたびに初期化）
+	const overwriteSwitch = document.getElementById('overwriteSwitch');
+	const overwriteText = document.getElementById('overwriteStatusText');
+	const nameInputEl = document.getElementById('exportProjectName');
+	if (overwriteSwitch) {
+		overwriteSwitch.checked = false; 
+		if (overwriteText) { overwriteText.textContent = 'OFF'; overwriteText.className = 'status-text off'; }
+		if (nameInputEl) nameInputEl.disabled = false;
+		
+		overwriteSwitch.onchange = (e) => {
+			if (overwriteText) {
+				overwriteText.textContent = e.target.checked ? 'ON' : 'OFF';
+				overwriteText.className = e.target.checked ? 'status-text on' : 'status-text off';
+			}
+			if (nameInputEl) nameInputEl.disabled = e.target.checked; // ONならフォルダ名入力を無効化
+		};
+	}
 	// 調査ログは役目を終えたので削除またはコメントアウトします
 
 	// アプリが保持している「プロジェクト名」を最優先で取得して入力欄にセット

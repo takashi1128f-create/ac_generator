@@ -97,9 +97,19 @@
 					<div id="exportModal" class="modal-overlay" style="display: none;">
 						<div class="modal-content export-modal">
 							<h3 class="modal-title">エクスポート設定</h3>
-							<div class="export-name-input-group">
-								<label for="exportProjectName">保存フォルダ名：</label>
-								<input type="text" id="exportProjectName" class="modal-input">
+							<div class="export-toggle-switch_box">
+								<div class="export-name-input-group">
+									<label for="exportProjectName">保存フォルダ名：</label>
+									<input type="text" id="exportProjectName" class="modal-input">
+								</div>
+								<div class="extended-physics-switch-container">
+									<span class="switch-label">元のデータに上書き</span>
+									<label class="toggle-switch">
+										<input type="checkbox" id="overwriteSwitch">
+										<span class="toggle-slider round"></span>
+									</label>
+									<span id="overwriteStatusText" class="status-text off">OFF</span>
+								</div>
 							</div>
 							<p class="modal-desc">書き出すファイルを選択してください</p>
 							<div id="exportFileList" class="export-file-list"></div>

@@ -189,10 +189,10 @@ window.executeBulkExport = async function() {
 		alert("書き出し可能なデータがありませんでした。F12のログを確認してください。");
 		return;
 	}
-
-	// ★追加：ギアセットが1つの時だけ、自動で ratios.rto を生成して追加する
-	if (window.gearSetList && window.gearSetList.length === 1) {
-		console.log("⚙️ ギアセットが1つのため、固定の ratios.rto を自動生成します。");
+	// ★修正：drivetrain.ini が書き出される時 ＆ ギアセットが1つの時だけ ratios.rto を追加
+	const isDrivetrainExported = filesToExport.some(f => f.name === 'drivetrain.ini');
+	if (isDrivetrainExported && window.gearSetList && window.gearSetList.length === 1) {
+		console.log("⚙️ drivetrain.ini出力＆ギア1つのため、ratios.rto を送信リストに追加します。");
 		filesToExport.push({
 			name: 'ratios.rto',
 			content: "V160 1st|3.827\r\nR154 1st|3.251\r\nV160 2nd|2.360\r\nR154 2nd|1.955\r\nV160 3rd|1.685\r\nR154 3rd|1.310\r\nV160 4th|1.312\r\nR154 4th|1.000\r\nV160 5th|1.000\r\nR154 5th|0.753\r\nV160 6th|0.793\r\n\r\n"

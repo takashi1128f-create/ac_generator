@@ -568,8 +568,27 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 		if (sourceFolderPath) {
 			// 一括読み込み経由（元のパスがある）なら、そのフォルダ（dataフォルダ等）へ直接上書き
 			targetDir = sourceFolderPath;
+
+			// 2. data_backup の作成（★上書きの時・初回のみ作成するようにここに移動しました）
+			const backupDir = path.join(targetDir, 'data_backup');
+			if (!fs.existsSync(backupDir)) {
+				// バックアップフォルダが存在しない場合のみ新規作成
+				fs.mkdirSync(backupDir, { recursive: true });
+				// 現在そのフォルダ内にある既存のファイルをすべて data_backup にコピーして保護
+				if (fs.existsSync(targetDir)) {
+					const existingFiles = fs.readdirSync(targetDir);
+					for (const fileName of existingFiles) {
+						const srcFile = path.join(targetDir, fileName);
+						const destFile = path.join(backupDir, fileName);
+						// フォルダ自体（自分自身や他のフォルダ）は除外し、ファイルのみを安全にコピー
+						if (fs.statSync(srcFile).isFile()) {
+							fs.copyFileSync(srcFile, destFile);
+						}
+					}
+				}
+			}
 		} else {
-			// 個別読み込み経由、または親フォルダが指定されている場合
+			// 個別読み込み経由、または新規書き出しの場合
 			if (!baseDir) {
 				// 親フォルダの指定がなければ、ダイアログを開いてユーザーに保存先を選択してもらう
 				const result = await dialog.showOpenDialog({
@@ -586,34 +605,21 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 			}
 		}
 
-		// 2. data_backup の作成（初回のみ作成・既にある場合は一切手を加えない）
-		const backupDir = path.join(targetDir, 'data_backup');
-		if (!fs.existsSync(backupDir)) {
-			// バックアップフォルダが存在しない場合のみ新規作成
-			fs.mkdirSync(backupDir, { recursive: true });
-
-			// 現在そのフォルダ内にある既存のファイルをすべて data_backup にコピーして保護
-			if (fs.existsSync(targetDir)) {
-				const existingFiles = fs.readdirSync(targetDir);
-				for (const fileName of existingFiles) {
-					const srcFile = path.join(targetDir, fileName);
-					const destFile = path.join(backupDir, fileName);
-					
-					// フォルダ自体（自分自身や他のフォルダ）は除外し、ファイルのみを安全にコピー
-					if (fs.statSync(srcFile).isFile()) {
-						fs.copyFileSync(srcFile, destFile);
-					}
-				}
-			}
-		}
-
 		// 3. 指定されたデータファイルの書き出し（上書き / 選択されたファイルのみの書き出し）
-		if (!fs.existsSync(targetDir)) {
-			fs.mkdirSync(targetDir, { recursive: true });
-		}
 		for (const file of files) {
 			const fullPath = path.join(targetDir, file.name);
-			fs.writeFileSync(fullPath, file.content, 'utf8');
+			
+			// ★追加：ratios.rto の場合、すでに保存先に存在していれば書き出さずにスキップする
+			if (file.name === 'ratios.rto' && fs.existsSync(fullPath)) {
+				continue;
+			}
+			// ツールがクラッシュしないように try-catch で優しく包み込む
+			try {
+				fs.writeFileSync(fullPath, file.content, 'utf8');
+			} catch (writeErr) {
+				console.error(`ファイル ${file.name} の書き込みに失敗しました（スキップします）:`, writeErr.message);
+				// ここで continue しなくてもエラーは握りつぶされるので次のファイルの書き込みに進む
+			}
 		}
 
 		return { success: true, path: targetDir };

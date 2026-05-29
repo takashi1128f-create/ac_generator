@@ -1383,6 +1383,7 @@ label {
 }
 .export-name-input-group input{
 	padding: 0.2em;
+	width: 300px;
 }
 /* --- タイヤウィザード：スペック入力エリアのスタイル --- */
 .tyre-wizard-specs {
@@ -1506,4 +1507,20 @@ label {
 /* グラフ用マーク(📊)だけは少し薄くする */
 .tyre-graph-item .tyre-indicator-icons span[title*="グラフ"] {
 		opacity: 0.5;
+}
+.export-toggle-switch_box{
+	display: flex;
+	gap: 0.5em;
+	justify-content: space-between;
+}
+.export-toggle-switch_box > div{
+	margin-bottom: 0;
+}
+.export-toggle-switch_box .extended-physics-switch-container{
+	justify-content: flex-start;
+	gap: 15px;
+}
+.export-modal .export-toggle-switch_box .extended-physics-switch-container span{
+	color: #fff;
+	font-size: 1rem;
 }
