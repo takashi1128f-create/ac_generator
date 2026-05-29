@@ -750,6 +750,16 @@ document.addEventListener('DOMContentLoaded', () => {
 		multiFileInput.addEventListener('change', async (e) => {
 			window.isMultiUploading = true;
 			const files = Array.from(e.target.files);
+			// ★追加：一括読み込みしたファイルの絶対パスから、元のフォルダのパスを抽出して記憶する
+			if (files.length > 0 && files[0].path) {
+				const filePath = files[0].path;
+				// Windows(\)とMac(/)のどちらの区切り文字にも対応
+				const lastSlashIdx = Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/'));
+				if (lastSlashIdx !== -1) {
+					window.currentSourceFolderPath = filePath.substring(0, lastSlashIdx);
+					// console.log("[IMPORT] 元のフォルダパスを記憶しました:", window.currentSourceFolderPath);
+				}
+			}
 			// handleMultiFileUpload を直接呼び出し、一括処理を開始する
 			await handleMultiFileUpload(files);
 			window.isMultiUploading = false;

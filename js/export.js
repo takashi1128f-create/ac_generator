@@ -209,7 +209,9 @@ window.executeBulkExport = async function() {
 		}
 	}
 	// --- 4. Electronのメインプロセスに「フォルダ作成」と「一括保存」を依頼 ---
-	const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport);
+	// 一括読み込みパスがあればそれを優先し、無ければ従来のフォルダ選択と名前を渡します
+	const finalBaseDir = window.currentSourceFolderPath ? null : baseDir;
+	const result = await window.electronAPI.exportFilesToFolder(finalBaseDir, exportFolderName, filesToExport, window.currentSourceFolderPath || null);
 	console.log("🏁 [DEBUG] 書き出し結果:", result);
 	if (result && result.success) {
 		alert(`「${exportFolderName}」フォルダに ${filesToExport.length} 個のファイルを書き出しました。\n場所: ${result.path}`);
