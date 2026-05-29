@@ -198,6 +198,35 @@ window.initAeroEditor = function(data) {
 document.addEventListener('DOMContentLoaded', () => {
 	// UI側のラジオボタンのイベントを有効化
 	setupAeroEventListeners();
+	// ★追加: 拡張物理スイッチの手動切り替えイベント
+	const extSwitch = document.getElementById('extendedPhysicsSwitch');
+	const extText = document.getElementById('extendedStatusText');
+	
+	if (extSwitch) {
+		extSwitch.addEventListener('change', (e) => {
+			window.isExtendedPhysicsEnabled = e.target.checked;
+			
+			// CSSの色とテキストを切り替え
+			if (extText) {
+				if (window.isExtendedPhysicsEnabled) {
+					extText.textContent = 'ON';
+					extText.classList.remove('off');
+					extText.classList.add('on');
+				} else {
+					extText.textContent = 'OFF';
+					extText.classList.remove('on');
+					extText.classList.add('off');
+				}
+			}
+			
+			// 切り替わったら、エディター(FIN_0のロック等)と3D表示を即座に更新する
+			if (window.currentAeroData) {
+				window.initAeroEditor(window.currentAeroData);
+				window.updateAeroVisuals();
+				if (window.requestRender) window.requestRender();
+			}
+		});
+	}
 	const aeroFileInput = document.getElementById('aeroFile');
 	if (aeroFileInput) {
 		aeroFileInput.addEventListener('change', (e) => {
@@ -210,8 +239,35 @@ document.addEventListener('DOMContentLoaded', () => {
 			const reader = new FileReader();
 			reader.onload = (event) => {
 				console.log("[aero.js] 📄 ファイルの読み込み完了。");
+				
+				// 読み込んだテキストデータを変数に格納
+				const text = event.target.result;
+
+				// ★追加：拡張物理(ZONE_ または FIN_)の自動判定とスイッチUIの連動
+				const extSwitch = document.getElementById('extendedPhysicsSwitch');
+				const extText = document.getElementById('extendedStatusText');
+				
+				if (text.includes('ZONE_') || text.includes('FIN_')) {
+					window.isExtendedPhysicsEnabled = true;
+					if (extSwitch) extSwitch.checked = true;
+					if (extText) {
+						extText.textContent = 'ON';
+						extText.classList.remove('off');
+						extText.classList.add('on');
+					}
+				} else {
+					window.isExtendedPhysicsEnabled = false;
+					if (extSwitch) extSwitch.checked = false;
+					if (extText) {
+						extText.textContent = 'OFF';
+						extText.classList.remove('on');
+						extText.classList.add('off');
+					}
+				}
+
 				if (typeof window.parseINI === 'function') {
-					window.currentAeroData = window.parseINI(event.target.result);
+					// ここでさっき変数に入れた text をパースする
+					window.currentAeroData = window.parseINI(text);
 					console.log("[aero.js] ⚙️ 解析結果データ:", window.currentAeroData);
 					// 新しいファイルを読み込んだら完全に記憶をリセット（更新）する
 					window.aeroWingBackup = {};

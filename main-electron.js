@@ -560,13 +560,66 @@ ipcMain.handle('open-directory-dialog', async () => {
 	return result.canceled ? null : result.filePaths[0];
 });
 
-ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files) => {
+ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files, sourceFolderPath) => {
 	try {
-		const targetDir = path.join(baseDir, folderName);
-		if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-		for (const file of files) fs.writeFileSync(path.join(targetDir, file.name), file.content, 'utf8');
+		let targetDir = "";
+
+		// 1. 保存先フォルダの決定
+		if (sourceFolderPath) {
+			// 一括読み込み経由（元のパスがある）なら、そのフォルダ（dataフォルダ等）へ直接上書き
+			targetDir = sourceFolderPath;
+		} else {
+			// 個別読み込み経由、または親フォルダが指定されている場合
+			if (!baseDir) {
+				// 親フォルダの指定がなければ、ダイアログを開いてユーザーに保存先を選択してもらう
+				const result = await dialog.showOpenDialog({
+					properties: ['openDirectory', 'createDirectory'],
+					title: '保存先のフォルダ（dataフォルダなど）を選択してください'
+				});
+				if (result.canceled || result.filePaths.length === 0) {
+					return { success: false, error: 'キャンセルされました' };
+				}
+				targetDir = result.filePaths[0];
+			} else {
+				// 従来の選択済みの親フォルダの中に車両フォルダを作って書き出すルート
+				targetDir = path.join(baseDir, folderName);
+			}
+		}
+
+		// 2. data_backup の作成（初回のみ作成・既にある場合は一切手を加えない）
+		const backupDir = path.join(targetDir, 'data_backup');
+		if (!fs.existsSync(backupDir)) {
+			// バックアップフォルダが存在しない場合のみ新規作成
+			fs.mkdirSync(backupDir, { recursive: true });
+
+			// 現在そのフォルダ内にある既存のファイルをすべて data_backup にコピーして保護
+			if (fs.existsSync(targetDir)) {
+				const existingFiles = fs.readdirSync(targetDir);
+				for (const fileName of existingFiles) {
+					const srcFile = path.join(targetDir, fileName);
+					const destFile = path.join(backupDir, fileName);
+					
+					// フォルダ自体（自分自身や他のフォルダ）は除外し、ファイルのみを安全にコピー
+					if (fs.statSync(srcFile).isFile()) {
+						fs.copyFileSync(srcFile, destFile);
+					}
+				}
+			}
+		}
+
+		// 3. 指定されたデータファイルの書き出し（上書き / 選択されたファイルのみの書き出し）
+		if (!fs.existsSync(targetDir)) {
+			fs.mkdirSync(targetDir, { recursive: true });
+		}
+		for (const file of files) {
+			const fullPath = path.join(targetDir, file.name);
+			fs.writeFileSync(fullPath, file.content, 'utf8');
+		}
+
 		return { success: true, path: targetDir };
-	} catch (error) { return { success: false, error: error.message }; }
+	} catch (error) {
+		return { success: false, error: error.message };
+	}
 });
 ipcMain.handle('check-folder-exists', async (event, baseDir, folderName) => fs.existsSync(path.join(baseDir, folderName)));
 ipcMain.handle('set-window-title', (event, projectName) => {
