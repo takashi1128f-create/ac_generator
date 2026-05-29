@@ -12,12 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkAutoLogin: () => ipcRenderer.invoke('check-auto-login'),
   // 裏側からのスプラッシュ終了の合図を受け取る窓口
   onMainWindowShown: (callback) => ipcRenderer.on('main-window-shown', () => callback()),
-  saveProject: (projectData) => ipcRenderer.invoke('save-project', projectData),
-	readModelFile: (filePath) => ipcRenderer.invoke('read-model-file', filePath),
-	readAcDataFolder: (folderPath) => ipcRenderer.invoke('read-ac-data-folder', folderPath),
-  saveAcDataFolder: (folderPath, fileDataMap) => ipcRenderer.invoke('save-ac-data-folder', folderPath, fileDataMap),
-	readAcDataFiles: (folderPath, fileNames) => ipcRenderer.invoke('read-ac-data-files', folderPath, fileNames),
-	saveAcDataFiles: (folderPath, fileDataMap) => ipcRenderer.invoke('save-ac-data-files', folderPath, fileDataMap),
+  readModelFile: (filePath) => ipcRenderer.invoke('read-model-file', filePath),
+  
   // ★重複を整理：終了用と保存終了用の窓口をここにまとめました
   forceQuit: () => ipcRenderer.send('force-quit'),
   onTriggerSaveAndClose: (callback) => ipcRenderer.on('trigger-save-and-close', () => callback()),

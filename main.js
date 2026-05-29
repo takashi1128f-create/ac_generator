@@ -327,64 +327,6 @@ if (btnOpenProject) {
 		}
 	});
 }
-// ==========================================
-// ★ 【追加】dataフォルダの一括自動読み込み処理
-// ==========================================
-const btnImportFolder = document.getElementById('btn-import-folder');
-if (btnImportFolder) {
-	btnImportFolder.addEventListener('click', async () => {
-		console.log("📂 [FOLDER_IMPORT] dataフォルダの選択ダイアログを開きます...");
-		try {
-			// 1. preload.js経由でWindowsのフォルダ選択ダイアログを開く
-			if (!window.electronAPI || typeof window.electronAPI.openDirectoryDialog !== 'function') {
-				alert("フォルダ選択機能が準備できていません。preload.jsを確認してください。");
-				return;
-			}
-			const folderPath = await window.electronAPI.openDirectoryDialog();
-			
-			// キャンセルされた場合は何もしない
-			if (!folderPath) {
-				console.log("🛑 [FOLDER_IMPORT] 選択がキャンセルされました。");
-				return;
-			}
-			
-			console.log("📥 [FOLDER_IMPORT] スキャンを開始します。パス:", folderPath);
-			
-			// 2. 裏側（main-electron.js）に11ファイル＋タイヤLUTの一括スキャンを依頼
-			const result = await window.electronAPI.readAcDataFolder(folderPath);
-			if (!result || !result.success) {
-				alert("フォルダの読み込みに失敗しました:\n" + (result?.error || "原因不明"));
-				return;
-			}
-
-			// プロジェクトデータにdataフォルダのパスをしっかり記憶させる
-			if (!window.currentProject.environment) window.currentProject.environment = {};
-			window.currentProject.environment.data_folder = folderPath;
-
-			// 3. 回収したファイルを1つずつ、既存の自動解析ロジック（processImportedFile）へ流し込む
-			let loadedCount = 0;
-			for (const fileName in result.files) {
-				const rawText = result.files[fileName];
-				if (rawText !== null) {
-					processImportedFile(fileName, rawText, false); // ★第3引数に false を渡して、道中のリセット合戦を完全に封じる！
-					loadedCount++;
-				}
-			}
-
-			// ★ 4. 11ファイルすべてが完璧に合流・補完されて揃ったこの瞬間に、満を持して1回だけ画面全体をリフレッシュする！
-			if (typeof loadProjectToUI === 'function') {
-				loadProjectToUI(window.currentProject);
-			}
-
-			console.log(`✨ [FOLDER_IMPORT] スキャン完了！ ${loadedCount} 個のファイルを同期しました。`);
-			alert(`✅ dataフォルダの一括読み込みが完了しました！\n（合計 ${loadedCount} 個のファイルを同期・解析しました）`);
-
-		} catch (err) {
-			console.error("❌ [FOLDER_IMPORT] 画面側でエラーが発生しました:", err);
-			alert("フォルダ読み込み中にエラーが発生しました。");
-		}
-	});
-}
 window.loadProjectToUI = async function(projectState) {
 	console.log("🏁 [復元開始] データの復元を実行します...", projectState);
 
@@ -410,9 +352,6 @@ window.loadProjectToUI = async function(projectState) {
 	if (files['suspensions']) window.currentSuspensionData = files['suspensions'].currentData;
 	if (files['tyres'])       window.currentTyreData       = files['tyres'].currentData;
 	if (files['car'])         window.currentCarData        = files['car'].currentData;
-	if (files['colliders']) {
-    window.currentCarData = { ...window.currentCarData, ...files['colliders'].currentData };
-  }
 	if (files['aero'])        window.currentAeroData       = files['aero'].currentData;
 	if (files['engine'])      window.currentEngineData     = files['engine'].currentData;
 	if (files['setup'])       window.currentSetupData      = files['setup'].currentData;
@@ -544,47 +483,26 @@ function triggerEvents(element) {
 // ==========================================
 // ★ ファイル読み込み ＆ Stateへの保存
 // ==========================================
-function processImportedFile(fileName, rawText, shouldUpdateUI = true) {
+function processImportedFile(fileName, rawText) {
 	let parsedData = {};
-	let stateKey = fileName.replace('.ini', '').replace('.lut', '').replace('.rto', '');
-
 	// 1. 拡張子によって解析方法を分ける
 	if (fileName.endsWith('.lut')) {
 		parsedData = analyzeLUT(rawText);
 	} else if (fileName.endsWith('.ini')) {
 		parsedData = analyzeINI(rawText);
-	} else if (fileName.endsWith('.rto')) {
-		parsedData = analyzeRTO(rawText);
-		if (fileName === 'final.rto') {
-			stateKey = 'final_rto_list';
-		}
 	} else {
-		return; // ini, lut, rto 以外は無視
+		return; // ini, lut 以外は無視
 	}
-
-	// ★【核心のバグ修正】aero.ini の場合は、未記述の拡張セクション(FIN_0等)が消えないようデフォルト土台と合流させる
-	if (fileName === 'aero.ini' && window.ini_DATA && window.ini_DATA['aero.ini']) {
-		console.log("⚙️ [BUG_FIX] aero.ini をデフォルトの土台と自動合流・補完しました");
-		parsedData = { ...window.ini_DATA['aero.ini'], ...parsedData };
-	}
-	// ★【追加】colliders.ini の場合、データが迷子にならないよう車両大元データ(currentCarData)へ即時合流させる
-	if (fileName === 'colliders.ini') {
-		window.currentCarData = { ...window.currentCarData, ...parsedData };
-	}
-	// ★【安全対策】setup.ini の場合も、不完全なデータにならないようデフォルトで自動補完する
-	if (fileName === 'setup.ini' && typeof window.mergeWithDefaultSetup === 'function') {
-		parsedData = window.mergeWithDefaultSetup(parsedData);
-	}
-
-	// 2. アプリの記憶領域（State）にぶち込む！
+	// 2. 「suspensions.ini」の「.ini」を消して「suspensions」にする
+	const stateKey = fileName.replace('.ini', '').replace('.lut', '');
+	// 3. アプリの記憶領域（State）にぶち込む！
 	window.currentProject.files[stateKey] = {
 		isModified: true,
 		currentData: parsedData
 	};
 	console.log(`[メモリ保存] ${fileName} を解析し、Stateに保存しました。`, parsedData);
-
-	// 3. UI（スライダー）をガチャン！と動かす（一括読み込み時は最後に1回だけ動かすため連動を制限）
-	if (shouldUpdateUI && typeof loadProjectToUI === 'function') {
+	// 4. UI（スライダー）をガチャン！と動かす
+	if (typeof loadProjectToUI === 'function') {
 		loadProjectToUI(window.currentProject);
 	}
 }
@@ -630,23 +548,6 @@ function analyzeLUT(text) {
 		}
 	});
 	return points; // [{rpm: 250, torque: 35}, ...] の形
-}
-// ★追加：RTO解析用（final.rto の 名前|数値 の構造をオブジェクトの配列に変換する）
-function analyzeRTO(text) {
-	const lines = text.split(/\r?\n/);
-	const list = [];
-	lines.forEach((line) => {
-		const clean = line.split(';')[0].split('//')[0].trim();
-		if (!clean) return;
-		const parts = clean.split('|');
-		if (parts.length === 2) {
-			list.push({
-				name: parts[0].trim(),
-				value: parseFloat(parts[1])
-			});
-		}
-	});
-	return list; // [{name: 'V160 1st', value: 3.827}, ...] の形
 }
 // ==========================================
 // ★ 「プロジェクトを保存」ボタン（手動保存）の処理
