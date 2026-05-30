@@ -21,30 +21,26 @@ window.diffChartInstance = null;
 window.__lastDrivetrainData = null;
 window.activeDrivetrainTab = 'GEAR'; // 開いた時の初期タブを「ギア」に設定
 window.initDrivetrainEditor = function(initialData = null) {
-	const container = document.getElementById('gear-editor');
-	if (!container) return;
-
+	// ★修正：データ構築を先に行うため、ログを先頭に移動
 	console.log("⚙️ [DEBUG-DT] initDrivetrainEditor開始: 現在のギアセット数 =", window.gearSetList.length);
 
 	// ==========================================
-	// ★ ここを追加：古いギアセットの居座り（ゴミデータ）を掃除する！
+	// ★ 古いギアセットの居座り（ゴミデータ）を掃除する（要素チェックの前に実行！）
 	// ==========================================
 	if (window.currentSetupData) {
-		// 現在の setup.ini の中に GEAR_SET_X が存在するかチェック
 		const hasGearSets = Object.keys(window.currentSetupData).some(k => k.startsWith('GEAR_SET_'));
-		
-		// setup.ini に無いのに、リストには残っている場合 -> 強制リセット
 		if (!hasGearSets && window.gearSetList.length > 0) {
 			console.log("🧹 [DEBUG-DT] setup.ini は単一ギア設定です。古いギアセット(JZX100等)を消去します！");
-			window.gearSetList = []; // リストを空にする
+			window.gearSetList = []; 
 			if (window.currentProject && window.currentProject.files['drivetrain_sets']) {
-				delete window.currentProject.files['drivetrain_sets']; // プロジェクトの記憶からも消す
+				delete window.currentProject.files['drivetrain_sets']; 
 			}
 		}
 	}
-	// ==========================================
 
-	// ★ ギアセットが空（単一ギアパターン）の場合、Base Drivetrainを自動生成する
+	// ==========================================
+	// ★ ギアセットが空の場合、Base Drivetrainを自動生成する（要素チェックの前に実行！）
+	// ==========================================
 	if (window.gearSetList.length === 0) {
 		console.log("⚙️ [DEBUG-DT] ギアセットが0件です。drivetrain.ini から Base Drivetrain を生成します...");
 		
@@ -67,6 +63,12 @@ window.initDrivetrainEditor = function(initialData = null) {
 		}
 	}
 
+	// 🚨【ガード節】データ構築が完了した後に、HTML要素の存在チェックを行う！
+	// タブを開いていない時は、ここで安全に処理を抜けます（データはすでに裏で作られています）
+	const container = document.getElementById('gear-editor');
+	if (!container) return;
+
+	// ここから下はタブが開かれている（HTML要素がある）時だけ実行される描画処理
 	window.renderDrivetrainUI();
 	
 	if (window.activeDrivetrainTab === 'GEAR' || window.activeDrivetrainTab === 'FINAL') {
