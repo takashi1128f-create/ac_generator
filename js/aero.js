@@ -89,6 +89,9 @@ window.updateAeroVisuals = function() {
 	}
 	for (const section in data) {
 		if (section.startsWith('WING_') || section.startsWith('FIN_')) {
+			if (data[section]._ENABLED === false) {
+				continue;
+			}
 			// 2. 追加：もし FIN であり、かつ拡張物理スイッチが OFF なら、描画せずに次のループへ飛ばす
 			if (section.startsWith('FIN_') && !window.isExtendedPhysicsEnabled) {
 				continue;
