@@ -716,6 +716,13 @@ window.updateSuspensionEditorUI = function(data) {
 	const container = document.getElementById('suspension-data-container');
 	const previewArea = document.getElementById('preview-suspension');
 	if (!container || !data) return;
+	// ★ここから追加：初期起動時でも枠組みを表示させるための初期化
+	if (!data._EXTENSION) {
+		data._EXTENSION = { TORQUE_MODE_EX: '2', FIX_PROGRESSIVE_RATE: '1', _ENABLED: false };
+	}
+	if (!data._EXTENSION_FLEX) {
+		data._EXTENSION_FLEX = { TORSIONAL_STIFFNESS: '12000', TORSIONAL_DAMPING: '150', _ENABLED: false };
+	}
 	// --- 1. TYPEごとのスキーマ定義は window.SUSPENSION_EXTRA_SCHEMA を参照 ---
 	// アクティブタブの記憶
 	const activeBtn = container.querySelector('.suspension-tab-btn.active');

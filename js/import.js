@@ -45,6 +45,23 @@ window.EXTENDED_PHYSICS_TARGETS = {
 	sections: ['_EXTENSION', '_EXTENSION_FLEX', 'FIN_0', 'VIRTUALKM'],
 	keys: [] // car.ini の VERSION など
 };
+// ★追加：メインスイッチを自動でONにする共通関数
+window.forceEnableMasterSwitch = function() {
+	const masterSwitch = document.getElementById('extendedPhysicsSwitch');
+	if (masterSwitch && !masterSwitch.checked) {
+		window.isExtendedPhysicsEnabled = true;
+		masterSwitch.checked = true;
+		
+		const extText = document.getElementById('extendedStatusText');
+		if (extText) {
+			extText.textContent = 'ON';
+			extText.classList.remove('off');
+			extText.classList.add('on');
+		}
+		
+		masterSwitch.dispatchEvent(new Event('change')); // 他へ通知
+	}
+};
 window.mergeWithDefaultSetup = function(uploadedData) {
 	const defaultData = window.parseINI(setup_ini);
 	const mergedData = {};

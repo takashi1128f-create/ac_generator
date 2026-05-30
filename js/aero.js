@@ -199,14 +199,11 @@ window.initAeroEditor = function(data) {
 	sections.forEach(section => {
 		const wrapper = document.createElement('article');
 		wrapper.className = 'aero-section-box';
-		// [FIN_0] セクションかつ、拡張物理がOFFならロックする[cite: 27, 28]
-		if (section === 'FIN_0' && !window.isExtendedPhysicsEnabled) {
-			wrapper.style.opacity = '0.4';
-			wrapper.style.pointerEvents = 'none';
-			wrapper.classList.add('is-extended-locked');
-		}
+		// ★修正：外箱（wrapper）はロックせず、常にスイッチを押せるようにします
+		wrapper.style.opacity = '1';
+		wrapper.style.pointerEvents = 'auto';
+		wrapper.classList.remove('is-extended-locked');
 		// ★ここを書き換え：タイトルの横に「個別スイッチ」を追加
-		// ==========================================
 		const nameStr = data[section].NAME ? ` (${data[section].NAME})` : '';
 		
 		// 項目ごとに「有効/無効」の状態を保存するフラグをデータに追加（初期値は true）
@@ -228,6 +225,14 @@ window.initAeroEditor = function(data) {
 		
 		const box = document.createElement('div');
 		box.className = 'suspension-item_box';
+		// ★修正：半透明と操作ロックは、入力欄の入った中身（box）だけに適用する
+		if ((section === 'FIN_0' && !window.isExtendedPhysicsEnabled) || !isItemEnabled) {
+			box.style.opacity = '0.4';
+			box.style.pointerEvents = 'none';
+		} else {
+			box.style.opacity = '1';
+			box.style.pointerEvents = 'auto';
+		}
 		['NAME', 'SPAN', 'CHORD', 'POSITION', 'ANGLE'].forEach(key => {
 			if (data[section][key] !== undefined) {
 				const val = data[section][key];
@@ -271,9 +276,13 @@ window.initAeroEditor = function(data) {
 			toggleInput.addEventListener('change', (e) => {
 				const isChecked = e.target.checked;
 				data[section]._ENABLED = isChecked; // データに状態を保存
-
-				// 中身（box）の半透明と操作ロックを切り替え
-				if (isChecked) {
+				// ★修正：共通関数を呼び出してメインスイッチをONにする
+				if (isChecked && typeof window.forceEnableMasterSwitch === 'function') {
+					window.forceEnableMasterSwitch();
+				}
+				// ★修正：メインスイッチと個別スイッチの両方がONのときだけ中身を解放する
+				const isMainEnabled = (section === 'FIN_0' ? window.isExtendedPhysicsEnabled : true);
+				if (isChecked && isMainEnabled) {
 					box.style.opacity = '1';
 					box.style.pointerEvents = 'auto';
 				} else {
