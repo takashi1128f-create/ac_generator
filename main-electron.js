@@ -560,7 +560,7 @@ ipcMain.handle('open-directory-dialog', async () => {
 	return result.canceled ? null : result.filePaths[0];
 });
 
-// ★引数を (event, baseDir, folderName, files, isOverwrite, sourcePath) に変更
+// ★引数を (event, baseDir, folderName, files, isOverwrite, sourcePath) であることを確認
 ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files, isOverwrite, sourcePath) => {
 	try {
 		let targetDir = "";
@@ -568,23 +568,31 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 		if (isOverwrite) {
 			// 🔄 【スイッチON：元のデータに上書き】
 			if (!sourcePath) {
-				return { success: false, error: '元のフォルダパスが見つかりません。一括読み込みまたはD&Dからやり直してください。' };
+				// ★修正：パスを知らない（手動読み込み等）場合は、エラーで止めずに「上書き先」を聞く専用ダイアログを出す！
+				const result = await dialog.showOpenDialog({
+					properties: ['openDirectory'],
+					title: '上書き先のデータフォルダ（dataフォルダなど）を選択してください'
+				});
+				if (result.canceled || result.filePaths.length === 0) {
+					return { success: false, error: 'キャンセルされました' };
+				}
+				targetDir = result.filePaths[0];
+			} else {
+				targetDir = sourcePath; // パスを知っていればダイアログを出さずに即座に上書き
 			}
-			targetDir = sourcePath; // 元の場所をそのままターゲットにする
 
-			// ★ 上書き用バックアップフォルダの準備
+			// ★修正：上書き用バックアップフォルダの準備
 			const backupDir = path.join(targetDir, 'data_backup');
 			if (!fs.existsSync(backupDir)) {
 				fs.mkdirSync(backupDir, { recursive: true });
 			}
 
-			// ★ 修正：送られてきたファイル（書き出し予定のファイル）だけを狙い撃ちして保護する
+			// ★修正：送られてきた「書き出し予定のファイル」だけを狙い撃ちしてバックアップ（GLBなどは無視）
 			for (const file of files) {
 				const srcFile = path.join(targetDir, file.name);
 				const destFile = path.join(backupDir, file.name);
 
 				// 元のフォルダにそのファイルが存在しており、かつ「まだバックアップされていない」場合のみコピー
-				// （これにより、複数回セーブしても一番最初のオリジナルが安全に維持されます）
 				if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
 					if (fs.statSync(srcFile).isFile()) {
 						fs.copyFileSync(srcFile, destFile);
@@ -593,7 +601,7 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 			}
 		} else {
 			// 💾 【スイッチOFF：新規書き出し】
-			// ★バックアップは絶対に作らない
+			// バックアップは絶対に作らない
 			if (!baseDir) {
 				const result = await dialog.showOpenDialog({
 					properties: ['openDirectory', 'createDirectory'],
@@ -615,12 +623,11 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 		for (const file of files) {
 			const fullPath = path.join(targetDir, file.name);
 
-			// ratios.rto がすでに存在する場合はスキップ（上書きしない）
+			// ratios.rto がすでに存在する場合はスキップ
 			if (file.name === 'ratios.rto' && fs.existsSync(fullPath)) {
 				continue;
 			}
 
-			// アセットコルサ起動中などでファイルがロックされていてもクラッシュしないようにする
 			try {
 				fs.writeFileSync(fullPath, file.content, 'utf8');
 			} catch (writeErr) {

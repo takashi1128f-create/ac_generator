@@ -35,12 +35,17 @@ window.executeBulkExport = async function() {
 	const safeProjectName = projectName.replace(/[\\/:*?"<>|]/g, "_");
 	const exportFolderName = safeProjectName; // -data-file を削除
 
-	// --- 2. 保存先のベースとなるフォルダを選択させる ---
-	const baseDir = await window.electronAPI.openDirectoryDialog();
-	if (!baseDir) {
-		console.log("⚠️ [DEBUG] フォルダ選択がキャンセルされました");
-		return;
+	// --- 2. 保存先のベースとなるフォルダを選択させる（OFFの時のみ） ---
+	let baseDir = null;
+	// ★追加：スイッチが「OFF」の時だけダイアログを開いて保存先を聞く
+	if (!isOverwrite) {
+		baseDir = await window.electronAPI.openDirectoryDialog();
+		if (!baseDir) {
+			console.log("⚠️ [DEBUG] フォルダ選択がキャンセルされました");
+			return;
+		}
 	}
+
 	const filesToExport = [];
 	// --- 3. 選択されたファイルのデータを順番に収集 ---
 	for (const file of window.EXPORT_CONFIG) {
@@ -201,16 +206,20 @@ window.executeBulkExport = async function() {
 	}
 
 	console.log("📤 [DEBUG] Electronへ送信するファイルリスト:", filesToExport);
-	const folderExists = await window.electronAPI.checkFolderExists(baseDir, exportFolderName);
-	if (folderExists) {
-		const confirmOverwrite = confirm(`警告：既にフォルダ「${exportFolderName}」が存在します。\n中身を上書きしてもよろしいですか？`);
-		if (!confirmOverwrite) {
-			console.log("⚠️ [DEBUG] ユーザーにより上書きがキャンセルされました");
-			return; // 処理を中断
+	console.log("🔍 [事実確認] 現在のデータフォルダの記憶:", window.currentDataFolderPath);
+	console.log("🔍 [事実確認] スイッチの状態:", isOverwrite);
+	if (!isOverwrite) {
+		const folderExists = await window.electronAPI.checkFolderExists(baseDir, exportFolderName);
+		if (folderExists) {
+			const confirmOverwrite = confirm(`警告：既にフォルダ「${exportFolderName}」が存在します。\n中身を上書きしてもよろしいですか？`);
+			if (!confirmOverwrite) {
+				console.log("⚠️ [DEBUG] ユーザーにより上書きがキャンセルされました");
+				return; // 処理を中断
+			}
 		}
 	}
 	// --- 4. Electronのメインプロセスに「フォルダ作成」と「一括保存」を依頼 ---
-	const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport, isOverwrite, window.currentSourceFolderPath || null);
+	const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport, isOverwrite, window.currentDataFolderPath || null);
 	console.log("🏁 [DEBUG] 書き出し結果:", result);
 	if (result && result.success) {
 		alert(`「${exportFolderName}」フォルダに ${filesToExport.length} 個のファイルを書き出しました。\n場所: ${result.path}`);

@@ -343,6 +343,13 @@ window.loadProjectToUI = async function(projectState) {
 			await window.loadModelByPath(projectState.environment.model_path);
 		}
 	}
+	
+	// ★追加：忘れていた「データフォルダのパス」の記憶を復元する
+	if (projectState.environment && projectState.environment.data_folder) {
+		window.currentDataFolderPath = projectState.environment.data_folder;
+	} else {
+		window.currentDataFolderPath = null;
+	}
 
 	const files = projectState.files || {};
 
@@ -602,6 +609,10 @@ document.addEventListener('DOMContentLoaded', () => {
 			// ★追加：拡張物理のON/OFF状態もプロジェクトデータに記憶させる
 			if (!window.currentProject.environment) window.currentProject.environment = {};
 			window.currentProject.environment.isExtendedPhysicsEnabled = (window.isExtendedPhysicsEnabled === true);
+			
+			// ★追加：上書き保存用の「データフォルダのパス」も一緒にセーブデータに記憶させる！
+			window.currentProject.environment.data_folder = window.currentDataFolderPath || "";
+			
 			console.log("✅ [SAVE] 拡張物理の状態を回収しました:", window.currentProject.environment.isExtendedPhysicsEnabled);
 			// 3. 最新データを回収した状態でのみ、保存（バックアップ作成）を実行
 			try {

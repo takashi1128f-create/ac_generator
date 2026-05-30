@@ -636,8 +636,17 @@ export async function handleMultiFileUpload(files) {
 	for (const file of Array.from(files)) {
 		const name = file.name.toLowerCase();
 		try {
-			// ★修正：.lut と .rto も受け入れるように条件を追加
 			if (name.endsWith('.ini') || name.endsWith('.lut') || name.endsWith('.rto')) {
+				
+				// ★追加：データファイル（ini等）だった場合のみ、その場所を「データ専用の箱」に記憶する
+				if (file.path) {
+					const filePath = file.path;
+					const lastSlashIdx = Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/'));
+					if (lastSlashIdx !== -1) {
+						window.currentDataFolderPath = filePath.substring(0, lastSlashIdx);
+					}
+				}
+
 				const content = await readTextFile(file);
 				if (name.endsWith('.lut')) {
 					// LUTファイルの場合は専用のパース関数に直接渡す
@@ -750,16 +759,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		multiFileInput.addEventListener('change', async (e) => {
 			window.isMultiUploading = true;
 			const files = Array.from(e.target.files);
-			// ★追加：一括読み込みしたファイルの絶対パスから、元のフォルダのパスを抽出して記憶する
-			if (files.length > 0 && files[0].path) {
-				const filePath = files[0].path;
-				// Windows(\)とMac(/)のどちらの区切り文字にも対応
-				const lastSlashIdx = Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/'));
-				if (lastSlashIdx !== -1) {
-					window.currentSourceFolderPath = filePath.substring(0, lastSlashIdx);
-					// console.log("[IMPORT] 元のフォルダパスを記憶しました:", window.currentSourceFolderPath);
-				}
-			}
+			
+			// ★修正：ここでは一括でパスを記憶せず（3Dモデルのパスを誤認するのを防ぐため）、
+			// 上記の handleMultiFileUpload 内でデータファイルごとに記憶するように処理を移動しました。
+
 			// handleMultiFileUpload を直接呼び出し、一括処理を開始する
 			await handleMultiFileUpload(files);
 			window.isMultiUploading = false;
