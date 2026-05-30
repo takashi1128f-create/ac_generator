@@ -130,6 +130,43 @@ window.initAeroEditor = function(data) {
 	const container = document.getElementById('aero-data-container');
 	if (!container || !data) return;
 	// 現在の枚数に合わせて、HTML側のラジオボタンのチェック状態を同期
+	if (!data.FIN_0) {
+		data.FIN_0 = {
+			NAME: 'FIN',
+			CHORD: '1.8',
+			SPAN: '0.70',
+			POSITION: '0,0.1,-0.9',
+			LUT_AOA_CL: 'fin_AOA_CL.lut',
+			LUT_GH_CL: '',
+			CL_GAIN: '1',
+			LUT_AOA_CD: 'fin_AOA_CD.lut',
+			LUT_GH_CD: '',
+			CD_GAIN: '0.7',
+			ANGLE: '0',
+			_ENABLED: false // 初期はOFF（半透明）
+		};
+	}
+
+	// ==========================================
+	// ★追加：ZONE_ 系のデフォルト値もここで確実に補完しておく
+	// ==========================================
+	if (!data.DATA) data.DATA = {};
+	const defaultZones = {
+		'ZONE_FRONT_CL': '0',
+		'ZONE_FRONT_CD': '0',
+		'ZONE_REAR_CL': '0',
+		'ZONE_REAR_CD': '0',
+		'ZONE_LEFT_CL': '0',
+		'ZONE_LEFT_CD': '0',
+		'ZONE_RIGHT_CL': '0',
+		'ZONE_RIGHT_CD': '0'
+	};
+	for (const [key, val] of Object.entries(defaultZones)) {
+		// まだ値が入っていなければデフォルト値 '0' をセット
+		if (data.DATA[key] === undefined) {
+			data.DATA[key] = val;
+		}
+	}
 	const wingCount = Object.keys(data).filter(k => k.startsWith('WING_')).length;
 	const targetRadio = document.querySelector(`input[name="aero-wing-count"][value="${wingCount}"]`);
 	if (targetRadio) targetRadio.checked = true;

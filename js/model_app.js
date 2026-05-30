@@ -1548,7 +1548,6 @@ document.addEventListener('change', (e) => {
 				};
 			}
 		}
-
 		// 3. UIの表示を即座に更新（画面をリフレッシュして VERSION 変更を表示させる）
 		if (typeof window.updateSuspensionEditorUI === 'function') {
 			window.updateSuspensionEditorUI(window.currentSuspensionData);
