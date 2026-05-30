@@ -490,8 +490,25 @@ export function applyIniData(fileName, parsedData) {
 		detectedExtended = true;
 	}
 	// ★追加：aero.ini の拡張セクションチェック
-	if (fileName.includes('aero.ini') && normalizedData.FIN_0) {
-		detectedExtended = true;
+	if (fileName.includes('aero.ini')) {
+		let hasAeroExt = false;
+		if (normalizedData.FIN_0) {
+			hasAeroExt = true;
+		} else {
+			// 全セクションのキーをチェックし、ZONE_ から始まるものがあれば拡張物理と判定
+			for (const sec in normalizedData) {
+				for (const key in normalizedData[sec]) {
+					if (key.startsWith('ZONE_')) {
+						hasAeroExt = true;
+						break;
+					}
+				}
+				if (hasAeroExt) break;
+			}
+		}
+		if (hasAeroExt) {
+			detectedExtended = true;
+		}
 	}
 
 	if (detectedExtended) {
@@ -517,10 +534,24 @@ export function applyIniData(fileName, parsedData) {
 		const factoryDefault = window.parseINI(default_aero_ini);
 		console.log("[aero.js] 🛠️ 土台となるデフォルト:", factoryDefault);
 
+		// ★追加：合流させる前に、アップロードされた元のデータに本物の FIN_0 が存在していたかチェック
+		const hasRealFin0 = normalizedData.hasOwnProperty('FIN_0');
+
 		// 2. その土台の上に、アップロードされたデータを上書き合流させます
-		// これにより、ファイルに FIN_0 がなくてもデフォルトの FIN_0 が維持されます
 		window.currentAeroData = { ...factoryDefault, ...normalizedData };
 		console.log("[aero.js] ✅ 合流後の最終データ:", window.currentAeroData);
+
+		// ==========================================
+		// ★ここを追加：本物が無ければ初期状態を強制的に _ENABLED = false (OFF) にする
+		// ==========================================
+		if (window.currentAeroData && window.currentAeroData.FIN_0) {
+			if (hasRealFin0) {
+				window.currentAeroData.FIN_0._ENABLED = true;  // 実在すれば有効
+			} else {
+				window.currentAeroData.FIN_0._ENABLED = false; // 実在しなければ無効化（半透明）
+			}
+		}
+		// ==========================================
 
 		if (typeof window.initAeroEditor === 'function') {
 			window.initAeroEditor(window.currentAeroData);

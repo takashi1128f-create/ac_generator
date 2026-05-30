@@ -135,6 +135,59 @@ window.initAeroEditor = function(data) {
 	panel.className = 'suspension-tab-panel active';
 	container.appendChild(panel);
 	// WING_ で始まるもの、または FIN_0 を表示対象にする[cite: 28]
+	//HEADERセクションとVERSIONのセレクトボックスを最上部に生成
+	const headerWrapper = document.createElement('article');
+	headerWrapper.className = 'aero-section-box';
+	headerWrapper.innerHTML = `<div class="suspension-item-title_box"><p>HEADER</p></div>`;
+	
+	// 現在のVERSIONを取得（データが無ければ '2' とする）
+	let currentVersion = (data.HEADER && data.HEADER.VERSION) ? String(data.HEADER.VERSION).trim() : '2';
+	
+	// データ側にHEADERが無い場合、UIの初期値(2)をデータ側にも確実に保存しておく
+	if (!data.HEADER) {
+		data.HEADER = { VERSION: currentVersion };
+	}
+	// 基本の選択肢(1, 2, 3)にない特殊な値なら、リストに自動追加して選択させる
+	const standardOptions = ['1', '2', '3'];
+	const isCustom = !standardOptions.includes(currentVersion);
+	
+	const headerBox = document.createElement('div');
+	headerBox.className = 'suspension-item_box';
+	
+	const selectHtml = `
+		<div class="suspension-item">
+			<div class="input-unit">
+				<label>VERSION</label>
+				<div class="input-with-range">
+					<select id="aero-version-select" class="text-input" style="width: 100%; cursor: pointer;">
+						<option value="1" ${currentVersion === '1' ? 'selected' : ''}>1</option>
+						<option value="2" ${currentVersion === '2' ? 'selected' : ''}>2</option>
+						<option value="3" ${currentVersion === '3' ? 'selected' : ''}>3</option>
+						${isCustom ? `<option value="${currentVersion}" selected>${currentVersion}</option>` : ''}
+					</select>
+				</div>
+			</div>
+		</div>
+	`;
+	headerBox.innerHTML = selectHtml;
+	headerWrapper.appendChild(headerBox);
+	panel.appendChild(headerWrapper);
+	// 見た目を整えるための「空のダミー箱」
+	const emptySpacer = document.createElement('article');
+	emptySpacer.className = 'aero-section-box';
+	emptySpacer.style.visibility = 'hidden'; // スペースだけ確保して、箱の枠線や背景は見えなくする
+	panel.appendChild(emptySpacer);
+	// セレクトボックスの変更をデータに即座に反映させるイベント
+	setTimeout(() => {
+		const versionSelect = document.getElementById('aero-version-select');
+		if (versionSelect) {
+			versionSelect.addEventListener('change', (e) => {
+				window.currentAeroData.HEADER.VERSION = e.target.value;
+				if (window.modifiedStatus) window.modifiedStatus.aero = true;
+			});
+		}
+	}, 0);
+	// ★追加ここまで
 	const sections = Object.keys(data).filter(s => s.startsWith('WING_') || s === 'FIN_0').sort((a, b) => {
 		if (a === 'FIN_0') return 1;
 		if (b === 'FIN_0') return -1;
@@ -149,8 +202,27 @@ window.initAeroEditor = function(data) {
 			wrapper.style.pointerEvents = 'none';
 			wrapper.classList.add('is-extended-locked');
 		}
+		// ★ここを書き換え：タイトルの横に「個別スイッチ」を追加
+		// ==========================================
 		const nameStr = data[section].NAME ? ` (${data[section].NAME})` : '';
-		wrapper.innerHTML = `<div class="suspension-item-title_box"><p>${section}${nameStr}</p></div>`;
+		
+		// 項目ごとに「有効/無効」の状態を保存するフラグをデータに追加（初期値は true）
+		if (data[section]._ENABLED === undefined) {
+			data[section]._ENABLED = true; 
+		}
+		const isItemEnabled = data[section]._ENABLED;
+
+		// スイッチのHTMLをタイトル行の右側に配置する
+		wrapper.innerHTML = `
+			<div class="suspension-item-title_box" style="display: flex; justify-content: space-between; align-items: center;">
+				<p>${section}${nameStr}</p>
+				<label class="toggle-switch" style="margin-right: 15px;">
+					<input type="checkbox" class="aero-item-toggle" data-section="${section}" ${isItemEnabled ? 'checked' : ''}>
+					<span class="toggle-slider round"></span>
+				</label>
+			</div>
+		`;
+		
 		const box = document.createElement('div');
 		box.className = 'suspension-item_box';
 		['NAME', 'SPAN', 'CHORD', 'POSITION', 'ANGLE'].forEach(key => {
@@ -190,6 +262,27 @@ window.initAeroEditor = function(data) {
 				box.appendChild(itemDiv);
 			}
 		});
+		// ★ここを追加：個別スイッチを切り替えたときの動作
+		const toggleInput = wrapper.querySelector('.aero-item-toggle');
+		if (toggleInput) {
+			toggleInput.addEventListener('change', (e) => {
+				const isChecked = e.target.checked;
+				data[section]._ENABLED = isChecked; // データに状態を保存
+
+				// 中身（box）の半透明と操作ロックを切り替え
+				if (isChecked) {
+					box.style.opacity = '1';
+					box.style.pointerEvents = 'auto';
+				} else {
+					box.style.opacity = '0.4';
+					box.style.pointerEvents = 'none';
+				}
+
+				if (window.modifiedStatus) window.modifiedStatus.aero = true;
+				window.updateAeroVisuals();
+				if (window.requestRender) window.requestRender();
+			});
+		}
 		wrapper.appendChild(box);
 		panel.appendChild(wrapper);
 	});
@@ -268,6 +361,14 @@ document.addEventListener('DOMContentLoaded', () => {
 				if (typeof window.parseINI === 'function') {
 					// ここでさっき変数に入れた text をパースする
 					window.currentAeroData = window.parseINI(text);
+					//元のテキストに [FIN_0] が本当に書かれていたか判定する
+					if (window.currentAeroData && window.currentAeroData.FIN_0) {
+						if (text.toUpperCase().includes('[FIN_0]')) {
+							window.currentAeroData.FIN_0._ENABLED = true;  // あればON
+						} else {
+							window.currentAeroData.FIN_0._ENABLED = false; // 無ければOFF
+						}
+					}
 					console.log("[aero.js] ⚙️ 解析結果データ:", window.currentAeroData);
 					// 新しいファイルを読み込んだら完全に記憶をリセット（更新）する
 					window.aeroWingBackup = {};

@@ -415,13 +415,26 @@ window.downloadAeroIni = function(isExport = false) {
 	}
 	let iniContent = "";
 	// 現在保持している全セクション（WING_0, WING_1など）を出力
+	if (data.HEADER && data.HEADER.VERSION !== undefined) {
+		iniContent += `[HEADER]\nVERSION=${data.HEADER.VERSION}\n\n`;
+	}
+	
 	for (const section in data) {
-		// 拡張物理がOFFの時、[FIN_0] セクションは書き出さない[cite: 29, 30]
+		// 【🚨追加必須1】HEADERが二重に書き出されるのを防ぐ
+		if (section === 'HEADER') continue;
+
+		// 【🚨追加必須2】個別スイッチがOFFの項目は書き出さない
+		if (data[section]._ENABLED === false) continue;
+
+		// 拡張物理がOFFの時、[FIN_0] セクションは書き出さない
 		if (section === 'FIN_0' && !window.isExtendedPhysicsEnabled) continue;
 
 		iniContent += `[${section}]\n`;
 		for (const key in data[section]) {
-			// 拡張物理がOFFの時、ZONE_ で始まるダメージ項目は書き出さない[cite: 29, 30]
+			// 【🚨追加必須3】システム用の裏側フラグ（_ENABLED）を文字として書き出さない
+			if (key === '_ENABLED') continue;
+
+			// 拡張物理がOFFの時、ZONE_ で始まるダメージ項目は書き出さない
 			if (key.startsWith('ZONE_') && !window.isExtendedPhysicsEnabled) continue;
 
 			iniContent += `${key}=${data[section][key]}\n`;
