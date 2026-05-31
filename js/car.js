@@ -27,7 +27,12 @@ window.updateCarEditorUI = function(data) {
 		label: 'GRAPHICS',
 		items: [{
 			section: 'GRAPHICS',
-			keys: ['DRIVEREYES', 'ONBOARD_EXPOSURE', 'OUTBOARD_EXPOSURE', 'ON_BOARD_PITCH_ANGLE', 'BUMPER_CAMERA_POS', 'BONNET_CAMERA_POS', 'MIRROR_POSITION', 'SHAKE_MUL', 'USE_ANIMATED_SUSPENSIONS', 'FUEL_LIGHT_MIN_LITERS', 'BUMPER_CAMERA_PITCH', 'BONNET_CAMERA_PITCH', 'VIRTUAL_MIRROR_ENABLED']
+			title: 'F1 CAMERA SETTINGS', // ★追加：F1キーで変わるカメラ用のサブタイトル
+			keys: ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE', 'BUMPER_CAMERA_POS', 'BUMPER_CAMERA_PITCH', 'BONNET_CAMERA_POS', 'BONNET_CAMERA_PITCH', 'CHASE_CAMERA_PITCH']
+		}, {
+			section: 'GRAPHICS',
+			title: 'GRAPHICS & SYSTEM SETCHNIGS', // ★追加：システム・画面効果用のサブタイトル
+			keys: ['ONBOARD_EXPOSURE', 'OUTBOARD_EXPOSURE', 'MIRROR_POSITION', 'SHAKE_MUL', 'USE_ANIMATED_SUSPENSIONS', 'FUEL_LIGHT_MIN_LITERS', 'VIRTUAL_MIRROR_ENABLED']
 		}]
 	}, {
 		id: 'car-controls',
@@ -114,7 +119,39 @@ window.updateCarEditorUI = function(data) {
 				}
 				// ★修正：描画更新を即座に実行する命令を追加
 				if (window.updateSuspensionVisuals) window.updateSuspensionVisuals();
+				
+				// ★追加：数値を変更した時、フォーカス中の視点プレビューもリアルタイムに更新する
+				if (window.updateCameraPreviewWithCurrentData) {
+					window.updateCameraPreviewWithCurrentData();
+				}
+				
 				if (typeof window.requestRender === 'function') window.requestRender();
+			});
+
+			// ==========================================
+			// ★追加：入力欄にフォーカス（選択）された時の処理
+			// ==========================================
+			input.addEventListener('focus', () => {
+				// カメラ関連のキー（座標またはピッチ角）かどうかを判定
+				const cameraKeys = ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE', 'BUMPER_CAMERA_POS', 'BUMPER_CAMERA_PITCH', 'BONNET_CAMERA_POS', 'BONNET_CAMERA_PITCH', 'MIRROR_POSITION'];
+				
+				if (cameraKeys.includes(key)) {
+					// 1. グローバル変数に現在のキーを記憶させる
+					window.currentActiveCameraKey = key;
+					
+					// 2. 他のすべてのハイライトを消す
+					document.querySelectorAll('.active-camera-item').forEach(el => {
+						el.classList.remove('active-camera-item');
+					});
+					
+					// 3. 自分の親要素（.suspension-item）をハイライトする
+					itemDiv.classList.add('active-camera-item');
+					
+					// 4. 3D画面側に「カメラを移動しろ」と命令を出す司令塔を呼ぶ
+					if (window.updateCameraPreviewWithCurrentData) {
+						window.updateCameraPreviewWithCurrentData();
+					}
+				}
 			});
 		});
 	};
@@ -136,7 +173,11 @@ window.updateCarEditorUI = function(data) {
 		tab.items.forEach(itemDef => {
 			if (!itemDef.isCustom && !data[itemDef.section]) return;
 			const sectionWrapper = document.createElement('article');
-			sectionWrapper.innerHTML = `<div class="suspension-item-title_box"><p>${itemDef.section}</p></div>`;
+			
+			// ★修正：itemDefにtitleが定義されている場合はそれを使い、なければセクション名を表示する
+			const displayTitle = itemDef.title ? itemDef.title : itemDef.section;
+			sectionWrapper.innerHTML = `<div class="suspension-item-title_box"><p>${displayTitle}</p></div>`;
+			
 			const itemBox = document.createElement('div');
 			itemBox.className = 'suspension-item_box';
 			if (itemDef.keys) {
@@ -181,4 +222,124 @@ window.updateCarEditorUI = function(data) {
 			panel.appendChild(sectionWrapper);
 		});
 	});
+};
+// ==========================================
+// ★追加：car.iniの視点座標へカメラを移動させる関数
+// ==========================================
+window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, label) {
+	if (!window.camera || !window.suspensionScene) return;
+
+	// サスペンション用カメラの制御を一時的に上書きする
+	const targetCamera = window.camera; 
+
+	// 1. 座標のパース
+	const x = parseFloat(posX) || 0;
+	const y = parseFloat(posY) || 0;
+	const z = parseFloat(posZ) || 0;
+	const pitch = parseFloat(pitchAngleDeg) || 0;
+
+	// 2. 最終座標の決定
+	// ★修正：ACのモデルは「Zプラス方向が前」なので、数値を一切加工せずにそのまま使う！
+	const finalX = x;
+	const finalY = y;
+	const finalZ = z;
+
+	// 3. カメラを移動
+	targetCamera.position.set(finalX, finalY, finalZ);
+
+	// 4. 視点の向き（方向とピッチ角）を設定
+	// ★修正：車の正面（Z軸のプラス方向）を真っ直ぐ見つめるようにセット
+	const targetPoint = new THREE.Vector3(finalX, finalY, finalZ + 10);
+	targetCamera.lookAt(targetPoint);
+	
+	// ピッチ角（上下の傾き）を適用
+	// もし上下の向きが逆（数値を上げると上を向いてしまう等）の場合は、ここのマイナス(-)を外してください。
+	targetCamera.rotateX(-pitch * (Math.PI / 180));
+
+	// 5. プレビュー画面上に現在の視点名をオーバーレイ表示する
+	let overlay = document.getElementById('vision-overlay');
+	if (!overlay) {
+		overlay = document.createElement('div');
+		overlay.id = 'vision-overlay';
+		overlay.style.position = 'absolute';
+		overlay.style.top = '16%;';
+		overlay.style.left = '47vw';
+		overlay.style.padding = '5px 10px';
+		overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+		overlay.style.color = '#00ffff';
+		overlay.style.fontWeight = 'bold';
+		overlay.style.borderRadius = '5px';
+		// overlay.style.pointerEvents = 'none'; // マウス操作の邪魔にならないように
+		overlay.style.zIndex = '1000';
+		// プレビューエリアに追加
+		const previewArea = document.querySelector('.preview_inner_box') || document.body;
+		previewArea.appendChild(overlay);
+	}
+	overlay.textContent = `👁️ ${label} VIEW`;
+	overlay.style.display = 'block';
+
+	if (window.requestRender) window.requestRender();
+};
+
+// 視点リセット（通常視点に戻す）用の関数
+window.resetPreviewCameraVision = function() {
+	const overlay = document.getElementById('vision-overlay');
+	if (overlay) overlay.style.display = 'none';
+};
+// ==========================================
+// ★追加：現在のデータから座標と角度を抽出してカメラを移動する司令塔
+// ==========================================
+window.updateCameraPreviewWithCurrentData = function() {
+	const activeKey = window.currentActiveCameraKey;
+	const carData = window.currentCarData;
+	if (!activeKey || !carData || !carData.GRAPHICS) return;
+
+	let posKey = null;
+	let pitchKey = null;
+	let label = '';
+
+	// 1. フォーカスされたキーから、対になる座標と角度のキー名を割り出す
+	if (activeKey === 'DRIVEREYES' || activeKey === 'ON_BOARD_PITCH_ANGLE') {
+		posKey = 'DRIVEREYES';
+		pitchKey = 'ON_BOARD_PITCH_ANGLE';
+		label = 'DRIVER';
+	} else if (activeKey === 'BUMPER_CAMERA_POS' || activeKey === 'BUMPER_CAMERA_PITCH') {
+		posKey = 'BUMPER_CAMERA_POS';
+		pitchKey = 'BUMPER_CAMERA_PITCH';
+		label = 'BUMPER';
+	} else if (activeKey === 'BONNET_CAMERA_POS' || activeKey === 'BONNET_CAMERA_PITCH') {
+		posKey = 'BONNET_CAMERA_POS';
+		pitchKey = 'BONNET_CAMERA_PITCH';
+		label = 'BONNET';
+	} else if (activeKey === 'MIRROR_POSITION') {
+		posKey = 'MIRROR_POSITION';
+		pitchKey = null; // ミラーは角度設定がないため null
+		label = 'MIRROR';
+	} else {
+		return;
+	}
+
+	let x = 0, y = 1.0, z = 0;
+	let pitch = 0;
+
+	// 2. INIデータから実際の座標を数値として取得する
+	// ※ACエンジンの解析結果に基づき、GRAPHICS_OFFSET 等は一切加味せず、純粋な生の値を使用する
+	if (posKey && carData.GRAPHICS[posKey]) {
+		const parts = String(carData.GRAPHICS[posKey]).split(',').map(v => parseFloat(v.trim()));
+		if (parts.length === 3 && !parts.some(isNaN)) {
+			x = parts[0];
+			y = parts[1];
+			z = parts[2];
+		}
+	}
+
+	// 3. INIデータから実際のピッチ角を数値として取得する
+	if (pitchKey && carData.GRAPHICS[pitchKey]) {
+		pitch = parseFloat(carData.GRAPHICS[pitchKey]) || 0;
+	}
+
+	// 4. 末尾にある実際のカメラ移動関数へ数値を渡して実行する
+	if (typeof window.movePreviewCameraToCarVision === 'function') {
+		window.movePreviewCameraToCarVision(x, y, z, pitch, label);
+	}
 };

@@ -1524,3 +1524,10 @@ label {
 	color: #fff;
 	font-size: 1rem;
 }
+/* --- ここから追加：カメラ位置編集中のハイライト用 --- */
+.suspension-item.active-camera-item {
+	box-shadow: 0 0 10px #5fafb9;
+	border-radius: 4px;
+	transition: box-shadow 0.3s ease;
+	background-color: rgba(95, 175, 185, 0.1);
+}
