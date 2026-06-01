@@ -260,10 +260,35 @@ window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, 
 	const pitch = parseFloat(pitchAngleDeg) || 0;
 
 	// 2. 最終座標の決定
-  // ★修正：ACのモデルは「Zプラス方向が前」なので、数値を一切加工せずにそのまま使う！
-  const finalX = x;
-  const finalY = y;
-  const finalZ = z;
+  // ★修正：model_app.jsで動かされた車体(Scene)の傾きと位置を基準にし、カメラの相対座標を完璧にワールド座標へ変換する
+  let finalX = x;
+  let finalY = y;
+  let finalZ = z;
+
+  // 空間内から本物の車体オブジェクト(Scene)を特定
+  let carGroup = null;
+  if (window.suspensionScene) {
+    carGroup = window.suspensionScene.children.find(child => child.name === 'Scene');
+  }
+  if (!carGroup && window.scene) {
+    carGroup = window.scene.children.find(child => child.name === 'Scene');
+  }
+
+  if (carGroup) {
+    // カメラの生数値(x, y, z)は車体基準のローカル座標なので、THREE.Vector3 を使って
+    // 車体(carGroup)が現在持っている位置・高さ・前後の傾きをすべて含んだ「本物のワールド座標」へ自動変換する
+    const localPos = new THREE.Vector3(x, y, z);
+    
+    // 車体の現在の行列（マトリクス）を強制更新して最新の状態にする
+    carGroup.updateMatrixWorld(true);
+    
+    // ローカル座標をワールド座標に変換
+    localPos.applyMatrix4(carGroup.matrixWorld);
+    
+    finalX = localPos.x;
+    finalY = localPos.y;
+    finalZ = localPos.z;
+  }
 
   // 3. カメラを移動
   targetCamera.position.set(finalX, finalY, finalZ);
