@@ -268,28 +268,25 @@ window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, 
   // 3. カメラを移動
   targetCamera.position.set(finalX, finalY, finalZ);
 
-  // ★修正：車体・複数に分かれたモデル要素・タイヤパーツをすべて一括で非表示・表示制御する
+  // ★修正：環境（床や空）のメッシュを完全に保護し、車体モデル（SceneグループとWHEELパーツ）の配下だけを非表示にする
   const isHide = (label === 'DRIVER' || label === 'MIRROR');
 
-  // 1. 複数に分かれて保持されているすべてのモデル要素を一括制御
-  if (Array.isArray(window.currentModels)) {
-    window.currentModels.forEach(m => {
-      if (m) m.visible = !isHide;
-    });
-  }
-
-  // 2. 3D空間の直下にある車体グループやWHEELパーツを一括制御
-  if (window.suspensionScene) {
-    window.suspensionScene.children.forEach(child => {
-      if (child) {
-        // 名前が Scene のもの、または WHEEL_ から始まるパーツを対象にする
-        if (child.name === 'Scene' || child.name.startsWith('WHEEL_')) {
-          child.visible = !isHide;
-        }
+  const hideOnlyCarMeshes = (sceneObj) => {
+    if (!sceneObj) return;
+    sceneObj.children.forEach(child => {
+      // 床や空（名前なしメッシュ）は完全にスルーし、車体（Scene）とタイヤ（WHEEL_）の配下だけを対象にする
+      if (child && (child.name === 'Scene' || child.name.startsWith('WHEEL_'))) {
+        child.traverse((node) => {
+          if (node.isMesh || node.type === 'Mesh') {
+            node.visible = !isHide;
+          }
+        });
       }
     });
-  }
+  };
 
+  hideOnlyCarMeshes(window.suspensionScene);
+  hideOnlyCarMeshes(window.scene);
   // 4. 視点の向き（方向とピッチ角）を設定
   // ★修正：ミラー用視点なら真後ろ（Zマイナス方向）、その他（ボンネット等）は正面（Zプラス方向）を向く
   let targetPoint;
