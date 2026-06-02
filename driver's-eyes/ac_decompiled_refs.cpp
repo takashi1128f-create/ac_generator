@@ -2,7 +2,7 @@
 // Assetto Corsa (acs.exe) Decompiled Reference
 // ==========================================
 
-// 1. CarAvatar::init3D (view.ini オーバーライドの証拠)
+// 1. CarAvatar::init3D (view.ini オーバーライドと全ミラーマスターカメラの証拠)
 void __thiscall CarAvatar::init3D(CarAvatar *this, basic_string<> *param_1) {
     // ... 中略 ...
     pbVar5 = Path::getDocumentPath((basic_string<> *)local_1d0);
@@ -10,16 +10,24 @@ void __thiscall CarAvatar::init3D(CarAvatar *this, basic_string<> *param_1) {
     pbVar5 = std::operator+<>(&local_270,pbVar5,&this->unixName);
     pbVar5 = std::operator+<>(&local_230,pbVar5,L"/view.ini");
     bVar11 = Path::fileExists(pbVar5,false);
+    
+    // 【仕様1】view.ini が存在する場合は最優先で読み込み、DRIVEREYESを上書き
     if (bVar11) {
         INIReaderDocuments::INIReaderDocuments((INIReaderDocuments *)&local_138,pbVar5,false);
         if (local_138.ready != false) {
             std::basic_string<>::assign(&local_290,L"DRIVER_EYES_POSITION",0x14);
             pvVar6 = INIReader::getFloat3(&local_138,(vec3f *)local_2b8,&local_290,&local_270);
             (this->driverEyesPosition).x = pvVar6->x;
-            (this->driverEyesPosition).y = pvVar6->y; // view.ini の値で上書き
+            (this->driverEyesPosition).y = pvVar6->y; 
             (this->driverEyesPosition).z = pvVar6->z;
         }
     }
+    
+    // 【仕様2】全ミラー（ドア/ルーム/バーチャル）共通の後方撮影用カメラの座標設定
+    // car.iniから読んだMIRROR_POSITIONの「X(左右)」だけを残し、「Y(高さ)」と「Z(前後)」をドライバー目線に強制同期
+    (this->mirrorPosition).y = (this->driverEyesPosition).y;
+    (this->mirrorPosition).z = (this->driverEyesPosition).z;
+    
     // ...
 }
 
