@@ -715,32 +715,66 @@ ipcMain.handle('read-model-file', async (event, filePath) => {
 });
 
 // ==========================================
-// ★ マイドキュメントの view.ini との通信処理
+// ★ マイドキュメントの view.ini との通信処理（詳細な探索ログ出力版）
 // ==========================================
+
+// ヘルパー関数：本物の Assetto Corsa フォルダを探し出す
+function getAssettoCorsaCfgPath(carName) {
+	const profile = process.env.USERPROFILE || '';
+	// 可能性のある「ドキュメント」のパスをすべてリストアップ
+	const possibleDocs = [
+		app.getPath('documents'),                      // 1. ElectronがOSから聞いた標準
+		path.join(profile, 'Documents'),               // 2. ローカルのドキュメント強制
+		path.join(profile, 'OneDrive', 'Documents'),   // 3. OneDrive (英語名)
+		path.join(profile, 'OneDrive', 'ドキュメント')  // 4. OneDrive (日本語名)
+	];
+
+	console.log(`\n--- 🔍 [裏側] ${carName} のマイドキュメントフォルダ探索を開始 ---`);
+
+	for (const docs of possibleDocs) {
+		const testPath = path.join(docs, 'Assetto Corsa', 'cfg', 'cars', carName);
+		
+		// ★追加：どこを探しているかすべてログに出す
+		console.log(`[探索] チェック中... : ${testPath}`);
+
+		// もしこの場所にフォルダが実在していれば、そこが「本物」！
+		if (fs.existsSync(testPath)) {
+			console.log(`✅ [発見] ここに実在しました！ : ${testPath}\n`);
+			return testPath;
+		}
+	}
+	
+	// どこにも無ければ、とりあえず標準の場所を返す（新規作成時用）
+	const fallbackPath = path.join(app.getPath('documents'), 'Assetto Corsa', 'cfg', 'cars', carName);
+	console.log(`❌ [失敗] フォルダがどこにも見つかりませんでした。デフォルトの場所を返します: ${fallbackPath}\n`);
+	return fallbackPath;
+}
+
 ipcMain.handle('read-view-ini', async (event, carName) => {
 	try {
-		// 1. OSから「マイドキュメント」のパスを安全に取得する
-		const docsPath = app.getPath('documents');
-		// 2. アセットコルサの保存先ルールに合わせてパスを組み立てる
-		const targetDir = path.join(docsPath, 'Assetto Corsa', 'cfg', 'cars', carName);
+		const targetDir = getAssettoCorsaCfgPath(carName);
 		const targetFile = path.join(targetDir, 'view.ini');
+
+		console.log(`【裏側】最終的に読み込みに挑戦する view.ini のパス: ${targetFile}`);
 
 		if (fs.existsSync(targetFile)) {
 			const content = fs.readFileSync(targetFile, 'utf8');
+			console.log(`【裏側】✅ view.ini の読み込みに成功しました！`);
 			return { success: true, content: content };
 		}
+		
+		console.log(`【裏側】⚠️ パスは特定しましたが、中に view.ini というファイル自体が存在しませんでした。`);
 		return { success: false, reason: 'not_found' };
 	} catch (error) {
-		console.error(`【裏側】view.ini の読み込みに失敗:`, error);
+		console.error(`【裏側】❌ view.ini の読み込み処理自体がエラーでクラッシュしました:`, error);
 		return { success: false, error: error.message };
 	}
 });
 
 ipcMain.handle('save-view-ini', async (event, carName, content) => {
 	try {
-		const docsPath = app.getPath('documents');
-		const targetDir = path.join(docsPath, 'Assetto Corsa', 'cfg', 'cars', carName);
-
+		const targetDir = getAssettoCorsaCfgPath(carName);
+		
 		// 1. 保存先のフォルダが無ければ自動で作る
 		if (!fs.existsSync(targetDir)) {
 			fs.mkdirSync(targetDir, { recursive: true });

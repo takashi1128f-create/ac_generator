@@ -54,11 +54,11 @@ window.updateCarEditorUI = function(data) {
 		items: [{
 			section: 'GRAPHICS',
 			title: '💺 シートポジション設定 (view.ini)', // ★修正：view.ini専用グループ
-			keys: ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE']
+			keys: ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE', 'ON_BOARD_YAW_ANGLE']
 		}, {
 			section: 'GRAPHICS',
 			title: 'メーター・ダッシュボード視点 (dash_cam.ini)', // ★修正：dash_cam.ini専用グループ
-			keys: ['DASH_CAM_POS', 'DASH_CAM_PITCH']
+			keys: ['DASH_CAM_POS']
 		}, {
 			section: 'GRAPHICS',
 			title: 'F1 CAMERA SETTINGS (car.ini)', // ★修正：car.iniの外部カメラグループ
@@ -188,12 +188,11 @@ window.updateCarEditorUI = function(data) {
 			// ==========================================
 			input.addEventListener('focus', () => {
 				// カメラ関連のキー（座標またはピッチ角）かどうかを判定
-				// ★修正：ダッシュボード視点（DASH_CAM_POS 等）も追加
-				const cameraKeys = ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE', 'DASH_CAM_POS', 'DASH_CAM_PITCH', 'BUMPER_CAMERA_POS', 'BUMPER_CAMERA_PITCH', 'BONNET_CAMERA_POS', 'BONNET_CAMERA_PITCH', 'MIRROR_POSITION'];
+				// ★修正：不要になった DASH_CAM_PITCH を消し、ON_BOARD_YAW_ANGLE を追加
+				const cameraKeys = ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE', 'ON_BOARD_YAW_ANGLE', 'DASH_CAM_POS', 'BUMPER_CAMERA_POS', 'BUMPER_CAMERA_PITCH', 'BONNET_CAMERA_POS', 'BONNET_CAMERA_PITCH', 'MIRROR_POSITION'];
 				
 				// ★修正：特殊なファイル（マイドキュメントの view.ini）に保存されるキーの判定（dash_camは除外）
-				const specialFileKeys = ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE'];
-
+				const specialFileKeys = ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE', 'ON_BOARD_YAW_ANGLE'];
 				if (cameraKeys.includes(key)) {
 					
 					// ★追加：特殊な視点を初めて触った時だけ、ブラウザの記憶（localStorage）を利用して1回だけ案内を出す
@@ -547,10 +546,15 @@ window.updateCameraPreviewWithCurrentData = function() {
 	let label = '';
 
 	// 1. フォーカスされたキーから、対になる座標と角度のキー名を割り出す
-	if (activeKey === 'DRIVEREYES' || activeKey === 'ON_BOARD_PITCH_ANGLE') {
+	// ★修正：ON_BOARD_YAW_ANGLE もドライバー視点のグループに追加し、ダッシュボード視点の対応も追加
+	if (activeKey === 'DRIVEREYES' || activeKey === 'ON_BOARD_PITCH_ANGLE' || activeKey === 'ON_BOARD_YAW_ANGLE') {
 		posKey = 'DRIVEREYES';
-		pitchKey = 'ON_BOARD_PITCH_ANGLE';
+		pitchKey = 'ON_BOARD_PITCH_ANGLE'; // ※Yaw（左右の首振り）はThree.jsのカメラ挙動として現状は固定しているためピッチのみ使用
 		label = 'DRIVER';
+	} else if (activeKey === 'DASH_CAM_POS') {
+		posKey = 'DASH_CAM_POS';
+		pitchKey = null; // ダッシュボード視点は固定
+		label = 'DASH_CAM';
 	} else if (activeKey === 'BUMPER_CAMERA_POS' || activeKey === 'BUMPER_CAMERA_PITCH') {
 		posKey = 'BUMPER_CAMERA_POS';
 		pitchKey = 'BUMPER_CAMERA_PITCH';
