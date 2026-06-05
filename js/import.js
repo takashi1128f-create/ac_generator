@@ -42,7 +42,6 @@ window.modifiedStatus = {
 };
 // ★追加：拡張物理のマスターステート
 window.isExtendedPhysicsEnabled = false;
-
 // ★追加：拡張物理として扱うセクションとキーのリスト
 window.EXTENDED_PHYSICS_TARGETS = {
 	sections: ['_EXTENSION', '_EXTENSION_FLEX', 'FIN_0', 'VIRTUALKM'],
@@ -54,14 +53,12 @@ window.forceEnableMasterSwitch = function() {
 	if (masterSwitch && !masterSwitch.checked) {
 		window.isExtendedPhysicsEnabled = true;
 		masterSwitch.checked = true;
-		
 		const extText = document.getElementById('extendedStatusText');
 		if (extText) {
 			extText.textContent = 'ON';
 			extText.classList.remove('off');
 			extText.classList.add('on');
 		}
-		
 		masterSwitch.dispatchEvent(new Event('change')); // 他へ通知
 	}
 };
@@ -500,7 +497,6 @@ export function applyIniData(fileName, parsedData) {
 		}
 	}
 	let detectedExtended = false;
-	
 	// car.ini のバージョンチェック
 	if (fileName.includes('car.ini') && normalizedData.HEADER?.VERSION === 'extended-2') {
 		detectedExtended = true;
@@ -530,7 +526,6 @@ export function applyIniData(fileName, parsedData) {
 			detectedExtended = true;
 		}
 	}
-
 	if (detectedExtended) {
 		window.isExtendedPhysicsEnabled = true;
 		const masterSwitch = document.getElementById('extendedPhysicsSwitch'); // ★HTML側で作ったIDと一致させてください
@@ -549,30 +544,28 @@ export function applyIniData(fileName, parsedData) {
 		}
 	} else if (fileName.includes('aero.ini')) {
 		console.log("[aero.js] 📂 アップロードされたデータ:", normalizedData);
-
 		// 1. 土台として、ini-data.js にある「絶対に FIN_0 が入っている新品」を解析して用意します
 		const factoryDefault = window.parseINI(default_aero_ini);
 		console.log("[aero.js] 🛠️ 土台となるデフォルト:", factoryDefault);
-
 		// ★追加：合流させる前に、アップロードされた元のデータに本物の FIN_0 が存在していたかチェック
 		const hasRealFin0 = normalizedData.hasOwnProperty('FIN_0');
-
 		// 2. その土台の上に、アップロードされたデータを上書き合流させます
-		window.currentAeroData = { ...factoryDefault, ...normalizedData };
+		window.currentAeroData = {
+			...factoryDefault,
+			...normalizedData
+		};
 		console.log("[aero.js] ✅ 合流後の最終データ:", window.currentAeroData);
-
 		// ==========================================
 		// ★ここを追加：本物が無ければ初期状態を強制的に _ENABLED = false (OFF) にする
 		// ==========================================
 		if (window.currentAeroData && window.currentAeroData.FIN_0) {
 			if (hasRealFin0) {
-				window.currentAeroData.FIN_0._ENABLED = true;  // 実在すれば有効
+				window.currentAeroData.FIN_0._ENABLED = true; // 実在すれば有効
 			} else {
 				window.currentAeroData.FIN_0._ENABLED = false; // 実在しなければ無効化（半透明）
 			}
 		}
 		// ==========================================
-
 		if (typeof window.initAeroEditor === 'function') {
 			window.initAeroEditor(window.currentAeroData);
 		}
@@ -582,8 +575,7 @@ export function applyIniData(fileName, parsedData) {
 		if (typeof window.requestRender === 'function') {
 			window.requestRender();
 		}
-	}
-	else if (fileName.includes('tyres.ini')) {
+	} else if (fileName.includes('tyres.ini')) {
 		window.currentTyreData = normalizedData;
 		if (typeof window.updateTyreEditorUI === 'function') {
 			window.updateTyreEditorUI(window.currentTyreData);
@@ -666,7 +658,6 @@ export function applyIniData(fileName, parsedData) {
 		// ★追加：ドラッグ＆ドロップでの読み込み時にもエディターを更新
 		if (typeof window.initSetupEditor === 'function') {
 			window.initSetupEditor(window.currentSetupData);
-			
 			// --- ここから追加：表示の強制リフレッシュ ---
 			// 今開いている「GEAR」などのタブボタンを探して、プログラムからクリックさせます
 			const activeTabBtn = document.querySelector('#setup-editor .setup-tab-btn.active');
@@ -693,27 +684,11 @@ export function applyIniData(fileName, parsedData) {
  * 複数ファイルアップロード時のメインエントリポイント
  */
 // （今後UIを追加したら、このリストに名前を足すだけで自動対応します）
-const ALLOWED_FILES = [
-	'aero.ini',
-	'cameras.ini',
-	'car.ini',
-	'colliders.ini',
-	'dash_cam.ini',
-	'drivetrain.ini',
-	'engine.ini',
-	'final.rto',
-	'power.lut',
-	'setup.ini',
-	'suspensions.ini',
-	'tyres.ini',
-	'mirrors.ini'
-];
+const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini'];
 export async function handleMultiFileUpload(files) {
 	const fileArray = Array.from(files); // 使い回せるように一度配列に変換しておく
-
 	// ★追加：ドロップされたファイルの中に設定ファイル（.ini）が1つでもあるかチェック
 	const hasIniFiles = fileArray.some(f => f.name && f.name.toLowerCase().endsWith('.ini'));
-
 	// ==========================================
 	// ★修正：INIファイルが含まれている（dataフォルダ等のドロップ）場合のみ車名を特定・更新する
 	// ==========================================
@@ -742,7 +717,6 @@ export async function handleMultiFileUpload(files) {
 	} else {
 		console.log("[MULTI-IMPORT] 3Dモデル単体等のため、既存の正しい車名を維持します:", window.currentCarDirectoryName);
 	}
-
 	// 特定が終わってから、本来のファイル読み込みループを開始する
 	for (const file of fileArray) {
 		const name = file.name.toLowerCase();
@@ -752,12 +726,10 @@ export async function handleMultiFileUpload(files) {
 				if (!ALLOWED_FILES.includes(name)) {
 					// 許可リストにないファイル（lights.iniなど）はここで華麗にスルー！
 					console.log(`[IMPORT] 対象外ファイルをスキップしました: ${name}`);
-					continue; 
+					continue;
 				}
 			}
-
 			if (name.endsWith('.ini') || name.endsWith('.lut') || name.endsWith('.rto')) {
-				
 				// ★修正：データファイル（ini等）だった場合のみ、その場所を「データ専用の箱」に記憶する
 				// ※ただし、ここは初回の一括読み込み時（またはパスが空の時）だけ記憶するように安全装置をかけます
 				if (file.path && !window.currentDataFolderPath) {
@@ -768,7 +740,6 @@ export async function handleMultiFileUpload(files) {
 						console.log(`[IMPORT] メインの保存先をロックしました: ${window.currentDataFolderPath}`);
 					}
 				}
-
 				const content = file.content !== undefined ? file.content : await readTextFile(file);
 				if (name.endsWith('.lut')) {
 					// LUTファイルの場合は専用のパース関数に直接渡す
@@ -798,7 +769,6 @@ export async function handleMultiFileUpload(files) {
 					window.currentProject.environment.model_path = file.path;
 					console.log("[IMPORT] モデルパスをプロジェクトに登録しました:", file.path);
 				}
-				
 				// =======================================================
 				// ★修正：メニューの一括読み込みから届いた「パス情報だけのオブジェクト」の場合
 				// プロジェクトロード時にも使われている、実績のある安全な自動復元ルートへ流します
@@ -833,18 +803,17 @@ export async function handleMultiFileUpload(files) {
 					}
 				} else { // ✅「 } 」を足して綺麗に仕分けました
 					console.log("[IMPORT] データがないため、デフォルト値を適用します。");
-				Object.keys(window.ini_DATA).forEach(key => {
-					applyIniData(key, window.ini_DATA[key]);
-				});
+					Object.keys(window.ini_DATA).forEach(key => {
+						applyIniData(key, window.ini_DATA[key]);
+					});
+				}
+				// 共通の描画更新
+				if (typeof window.requestRender === 'function') window.requestRender();
 			}
-			// 共通の描画更新
-			if (typeof window.requestRender === 'function') window.requestRender();
+		} catch (err) {
+			// console.error(`[import.js] ファイル処理失敗: ${file.name}`, err);
 		}
-} catch (err) {
-		// console.error(`[import.js] ファイル処理失敗: ${file.name}`, err);
-	}
-} // ← ここでファイルの読み込みループ(for)が終了
-
+	} // ← ここでファイルの読み込みループ(for)が終了
 	// ==========================================
 	// ★修正：設定ファイル（.ini）がドロップされた時だけ view.ini の補完を行う
 	// 3Dモデル単体のドロップ時に、既存の本物データをダミー値で上書き破壊するのを防ぎます
@@ -859,7 +828,6 @@ export async function handleMultiFileUpload(files) {
 		} else {
 			dashCamParsed = parseINI(default_dash_cam_ini);
 		}
-
 		// 2. view.ini の補完 (Electron経由でマイドキュメントへ確実な車名で探しに行く)
 		let viewIniParsed = null;
 		if (window.electronAPI && window.electronAPI.readViewIni) {
@@ -877,16 +845,13 @@ export async function handleMultiFileUpload(files) {
 		} else {
 			viewIniParsed = parseINI(default_view_ini);
 		}
-
 		// 3. 取得した座標データを car.ini (GRAPHICS) の中に安全に注入する
 		if (window.currentCarData) {
 			if (!window.currentCarData.GRAPHICS) window.currentCarData.GRAPHICS = {};
-			
 			// dash_cam.ini の反映
 			if (dashCamParsed && dashCamParsed.DASH_CAM && dashCamParsed.DASH_CAM.POS) {
 				window.currentCarData.GRAPHICS.DASH_CAM_POS = dashCamParsed.DASH_CAM.POS;
 			}
-			
 			// view.ini の反映
 			if (viewIniParsed) {
 				if (viewIniParsed.CAMERA) {
@@ -902,7 +867,6 @@ export async function handleMultiFileUpload(files) {
 				}
 			}
 		}
-
 		// UI側（car.js等）を更新して画面に数値を出す
 		if (typeof window.updateCarEditorUI === 'function' && window.currentCarData) {
 			window.updateCarEditorUI(window.currentCarData);
@@ -913,7 +877,6 @@ export async function handleMultiFileUpload(files) {
 			window.updateCarEditorUI(window.currentCarData);
 		}
 	}
-
 } // ← ここで handleMultiFileUpload 関数全体が終了
 // サスペンションINI処理
 // --- suspensions.ini 用のハンドラ ---
@@ -931,40 +894,30 @@ export async function processSuspensionIni(file) {
 //二重読み込みーーーーーーーーーーーーーーーーーーーーーーーーー
 // すべてのファイル入力を一括で監視する「統合センター」
 document.addEventListener('DOMContentLoaded', () => {
-	const fileInputIds = [
-		'suspensionFile', 'tyreFile', 'carFile', 'collidersFile',
-		'aeroFile', 'engineFile', 'lutFile', 'drivetrainFile', 'setupFile', 'importFile'
-	];
-
+	const fileInputIds = ['suspensionFile', 'tyreFile', 'carFile', 'collidersFile', 'aeroFile', 'engineFile', 'lutFile', 'drivetrainFile', 'setupFile', 'importFile'];
 	fileInputIds.forEach(id => {
 		const el = document.getElementById(id);
 		if (el) {
 			el.addEventListener('change', async (e) => {
 				// まとめてアップロード中は、handleMultiFileUpload 側で処理するため無視する
 				if (window.isMultiUploading) return;
-
 				const file = e.target.files[0];
 				if (!file) return;
-
 				// ★修正：個別アップロード時も、一括読み込みと全く同じ「メインルート」を通すように統合
 				await handleMultiFileUpload([file]);
-				
 				// ★追加：連続して同じファイルを読み込めるように入力をリセットする
 				e.target.value = '';
 			});
 		}
 	});
-
 	// まとめてアップロード（マルチ）用の処理
 	const multiFileInput = document.getElementById('multiFileUpload');
 	if (multiFileInput) {
 		multiFileInput.addEventListener('change', async (e) => {
 			window.isMultiUploading = true;
 			const files = Array.from(e.target.files);
-			
 			// ★修正：ここでは一括でパスを記憶せず（3Dモデルのパスを誤認するのを防ぐため）、
 			// 上記の handleMultiFileUpload 内でデータファイルごとに記憶するように処理を移動しました。
-
 			// handleMultiFileUpload を直接呼び出し、一括処理を開始する
 			await handleMultiFileUpload(files);
 			window.isMultiUploading = false;
@@ -977,11 +930,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================================
 document.addEventListener('input', (e) => {
 	const target = e.target;
-	
 	// 親要素を探す範囲を広げます（.sub-content, .tab-content, または ID 指定）
 	const content = target.closest('.sub-content, .tab-content, .camera-section, #engine-data-container, #power-lut-container, #setup-editor');
 	if (!content) return;
-
 	// HTML上の実際のID（事実）と、modifiedStatusのキーを正確に一致させます
 	const idMap = {
 		'sus-editor': 'suspensions',
@@ -1007,7 +958,6 @@ document.addEventListener('input', (e) => {
 		'section-4': 'cameras',
 		'section-5': 'cameras'
 	};
-
 	// 1. まず通常の ID マップでフラグを立てる
 	const key = idMap[content.id];
 	if (key && window.modifiedStatus) {
@@ -1018,7 +968,6 @@ document.addEventListener('input', (e) => {
 		}
 		// console.log(`📝 [LOG] 編集を検知しました: ${key} (ID: ${content.id})`);
 	}
-
 	// 2. 特殊なケース（power.lut のテキストエリア）を個別にチェック
 	// これを if(key) の外に出すことで、確実に検知させます
 	if (target.id === 'power-lut-textarea') {
@@ -1028,54 +977,93 @@ document.addEventListener('input', (e) => {
 		}
 	}
 });
-
-const exportFiles = [
-		{ id: 'suspension', name: 'suspensions.ini', func: window.downloadSuspensionIni },
-		{ id: 'car', name: 'car.ini', func: window.downloadCarIni },
-		// ... 他のファイルも同様
+const exportFiles = [{
+		id: 'suspension',
+		name: 'suspensions.ini',
+		func: window.downloadSuspensionIni
+	}, {
+		id: 'car',
+		name: 'car.ini',
+		func: window.downloadCarIni
+	},
+	// ... 他のファイルも同様
 ];
-
 // モーダルを開く時の処理
 function openExportModal() {
-		const container = document.getElementById('exportFileList');
-		container.innerHTML = ''; // 一旦クリア
-
-		exportFiles.forEach(file => {
-				// 事実確認：そのデータが「初期値と違う」か「読み込まれているか」をチェック
-				const isModified = checkIfModified(file.id); 
-
-				const item = document.createElement('div');
-				item.className = `export-file-item ${isModified ? 'modified' : ''}`;
-				
-				item.innerHTML = `
+	const container = document.getElementById('exportFileList');
+	container.innerHTML = ''; // 一旦クリア
+	exportFiles.forEach(file => {
+		// 事実確認：そのデータが「初期値と違う」か「読み込まれているか」をチェック
+		const isModified = checkIfModified(file.id);
+		const item = document.createElement('div');
+		item.className = `export-file-item ${isModified ? 'modified' : ''}`;
+		item.innerHTML = `
 						<input type="checkbox" id="chk-${file.id}" ${isModified ? 'checked' : ''}>
 						<label for="chk-${file.id}">${file.name}</label>
 						${isModified ? '<span class="modified-tag">MODIFIED</span>' : ''}
 				`;
-				container.appendChild(item);
-		});
-		
-		document.getElementById('exportModal').style.display = 'flex';
+		container.appendChild(item);
+	});
+	document.getElementById('exportModal').style.display = 'flex';
 }
-
 // 書き出し対象のファイルリスト定義
-window.EXPORT_CONFIG = [
-	{ id: 'suspensions', name: 'suspensions.ini', func: 'downloadSuspensionIni' },
-	{ id: 'car', name: 'car.ini', func: 'downloadCarIni' },
-	{ id: 'view', name: 'view.ini', func: 'downloadViewIni' },
-	{ id: 'dash_cam', name: 'dash_cam.ini', func: 'downloadDashCamIni' },
-	{ id: 'tyres', name: 'tyres.ini', func: 'downloadTyreIni' },
-	{ id: 'colliders', name: 'colliders.ini', func: 'downloadCollidersIni' },
-	{ id: 'aero', name: 'aero.ini', func: 'downloadAeroIni' },
-	{ id: 'engine', name: 'engine.ini', func: 'downloadEngineIni' },
-	{ id: 'lut', name: 'power.lut', func: 'downloadPowerLut' },
-	{ id: 'drivetrain', name: 'drivetrain.ini', func: 'downloadDrivetrainIni' },
-	{ id: 'final', name: 'final.rto', func: 'downloadFinalRto' },
-	{ id: 'setup', name: 'setup.ini', func: 'downloadSetupIni' },
-	{ id: 'cameras', name: 'cameras.ini', func: 'downloadCamerasIni' },
-	{ id: 'mirrors', name: 'mirrors.ini', func: 'downloadMirrorsIni' }
-];
-
+window.EXPORT_CONFIG = [{
+	id: 'suspensions',
+	name: 'suspensions.ini',
+	func: 'downloadSuspensionIni'
+}, {
+	id: 'car',
+	name: 'car.ini',
+	func: 'downloadCarIni'
+}, {
+	id: 'view',
+	name: 'view.ini',
+	func: 'downloadViewIni'
+}, {
+	id: 'dash_cam',
+	name: 'dash_cam.ini',
+	func: 'downloadDashCamIni'
+}, {
+	id: 'tyres',
+	name: 'tyres.ini',
+	func: 'downloadTyreIni'
+}, {
+	id: 'colliders',
+	name: 'colliders.ini',
+	func: 'downloadCollidersIni'
+}, {
+	id: 'aero',
+	name: 'aero.ini',
+	func: 'downloadAeroIni'
+}, {
+	id: 'engine',
+	name: 'engine.ini',
+	func: 'downloadEngineIni'
+}, {
+	id: 'lut',
+	name: 'power.lut',
+	func: 'downloadPowerLut'
+}, {
+	id: 'drivetrain',
+	name: 'drivetrain.ini',
+	func: 'downloadDrivetrainIni'
+}, {
+	id: 'final',
+	name: 'final.rto',
+	func: 'downloadFinalRto'
+}, {
+	id: 'setup',
+	name: 'setup.ini',
+	func: 'downloadSetupIni'
+}, {
+	id: 'cameras',
+	name: 'cameras.ini',
+	func: 'downloadCamerasIni'
+}, {
+	id: 'mirrors',
+	name: 'mirrors.ini',
+	func: 'downloadMirrorsIni'
+}];
 // モーダルを開く処理
 window.openExportModal = function() {
 	const listContainer = document.getElementById('exportFileList');
@@ -1085,10 +1073,12 @@ window.openExportModal = function() {
 	const overwriteText = document.getElementById('overwriteStatusText');
 	const nameInputEl = document.getElementById('exportProjectName');
 	if (overwriteSwitch) {
-		overwriteSwitch.checked = false; 
-		if (overwriteText) { overwriteText.textContent = 'OFF'; overwriteText.className = 'status-text off'; }
+		overwriteSwitch.checked = false;
+		if (overwriteText) {
+			overwriteText.textContent = 'OFF';
+			overwriteText.className = 'status-text off';
+		}
 		if (nameInputEl) nameInputEl.disabled = false;
-		
 		overwriteSwitch.onchange = (e) => {
 			if (overwriteText) {
 				overwriteText.textContent = e.target.checked ? 'ON' : 'OFF';
@@ -1098,32 +1088,25 @@ window.openExportModal = function() {
 		};
 	}
 	// 調査ログは役目を終えたので削除またはコメントアウトします
-
 	// アプリが保持している「プロジェクト名」を最優先で取得して入力欄にセット
 	const nameInput = document.getElementById('exportProjectName');
 	if (nameInput) {
 		let pName = "New-Project";
-		
 		// 1. ログの事実に基づき、正しいプロパティ名（projectName）で取得する
 		if (window.currentProject && window.currentProject.projectName) {
 			pName = window.currentProject.projectName;
-		} 
+		}
 		// 2. なければ car.ini の車種名を確認
 		else if (window.currentCarData?.INFO?.SCREEN_NAME) {
 			pName = window.currentCarData.INFO.SCREEN_NAME;
 		}
-		
 		nameInput.value = pName.trim();
 	}
-
 	listContainer.innerHTML = ''; // リストをクリア
-
 	window.EXPORT_CONFIG.forEach(file => {
 		const isModified = window.modifiedStatus[file.id] || false;
-		
 		const div = document.createElement('div');
 		div.className = `export-item ${isModified ? 'is-modified' : ''}`;
-		
 		div.innerHTML = `
 			<input type="checkbox" id="check-${file.id}" ${isModified ? 'checked' : ''}>
 			<label for="check-${file.id}">${file.name}</label>
@@ -1131,7 +1114,5 @@ window.openExportModal = function() {
 		`;
 		listContainer.appendChild(div);
 	});
-
 	document.getElementById('exportModal').style.display = 'flex';
 };
-

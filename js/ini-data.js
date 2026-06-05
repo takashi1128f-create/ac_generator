@@ -1139,7 +1139,6 @@ export const default_final_rto = `
 4.1:1|4.1
 4.3:1|4.3
 `;
-
 export const default_view_ini = `
 [CAMERA]
 ON_BOARD_PITCH_ANGLE=0
@@ -1148,7 +1147,6 @@ ON_BOARD_YAW_ANGLE=0
 [DRIVER_EYES_POSITION]
 DRIVEREYES=0, 1.0, 0
 `;
-
 export const default_dash_cam_ini = `
 [DASH_CAM]
 POS=0, 1.0, 0

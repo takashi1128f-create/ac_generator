@@ -107,7 +107,6 @@ window.updateAeroVisuals = function() {
 				const isFin = section.startsWith('FIN_');
 				const geoWidth = isFin ? 0.02 : wSpan;
 				const geoHeight = isFin ? wSpan : 0.02;
-
 				const geo = new THREE.BoxGeometry(geoWidth, geoHeight, wChord);
 				const mesh = window.createEdgeMesh(geo, 0x00ffff);
 				const wZ = wPos[2] - gOffset.z;
@@ -146,7 +145,6 @@ window.initAeroEditor = function(data) {
 			_ENABLED: false // 初期はOFF（半透明）
 		};
 	}
-
 	// ==========================================
 	// ★追加：ZONE_ 系のデフォルト値もここで確実に補完しておく
 	// ==========================================
@@ -179,21 +177,19 @@ window.initAeroEditor = function(data) {
 	const headerWrapper = document.createElement('article');
 	headerWrapper.className = 'aero-section-box';
 	headerWrapper.innerHTML = `<div class="suspension-item-title_box"><p>HEADER</p></div>`;
-	
 	// 現在のVERSIONを取得（データが無ければ '2' とする）
 	let currentVersion = (data.HEADER && data.HEADER.VERSION) ? String(data.HEADER.VERSION).trim() : '2';
-	
 	// データ側にHEADERが無い場合、UIの初期値(2)をデータ側にも確実に保存しておく
 	if (!data.HEADER) {
-		data.HEADER = { VERSION: currentVersion };
+		data.HEADER = {
+			VERSION: currentVersion
+		};
 	}
 	// 基本の選択肢(1, 2, 3)にない特殊な値なら、リストに自動追加して選択させる
 	const standardOptions = ['1', '2', '3'];
 	const isCustom = !standardOptions.includes(currentVersion);
-	
 	const headerBox = document.createElement('div');
 	headerBox.className = 'suspension-item_box';
-	
 	const selectHtml = `
 		<div class="suspension-item">
 			<div class="input-unit">
@@ -242,13 +238,11 @@ window.initAeroEditor = function(data) {
 		wrapper.classList.remove('is-extended-locked');
 		// ★ここを書き換え：タイトルの横に「個別スイッチ」を追加
 		const nameStr = data[section].NAME ? ` (${data[section].NAME})` : '';
-		
 		// 項目ごとに「有効/無効」の状態を保存するフラグをデータに追加（初期値は true）
 		if (data[section]._ENABLED === undefined) {
-			data[section]._ENABLED = true; 
+			data[section]._ENABLED = true;
 		}
 		const isItemEnabled = data[section]._ENABLED;
-
 		// スイッチのHTMLをタイトル行の右側に配置する
 		wrapper.innerHTML = `
 			<div class="suspension-item-title_box" style="display: flex; justify-content: space-between; align-items: center;">
@@ -259,7 +253,6 @@ window.initAeroEditor = function(data) {
 				</label>
 			</div>
 		`;
-		
 		const box = document.createElement('div');
 		box.className = 'suspension-item_box';
 		// ★修正：半透明と操作ロックは、入力欄の入った中身（box）だけに適用する
@@ -326,7 +319,6 @@ window.initAeroEditor = function(data) {
 					box.style.opacity = '0.4';
 					box.style.pointerEvents = 'none';
 				}
-
 				if (window.modifiedStatus) window.modifiedStatus.aero = true;
 				window.updateAeroVisuals();
 				if (window.requestRender) window.requestRender();
@@ -343,11 +335,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	// ★追加: 拡張物理スイッチの手動切り替えイベント
 	const extSwitch = document.getElementById('extendedPhysicsSwitch');
 	const extText = document.getElementById('extendedStatusText');
-	
 	if (extSwitch) {
 		extSwitch.addEventListener('change', (e) => {
 			window.isExtendedPhysicsEnabled = e.target.checked;
-			
 			// CSSの色とテキストを切り替え
 			if (extText) {
 				if (window.isExtendedPhysicsEnabled) {
@@ -360,7 +350,6 @@ document.addEventListener('DOMContentLoaded', () => {
 					extText.classList.add('off');
 				}
 			}
-			
 			// 切り替わったら、エディター(FIN_0のロック等)と3D表示を即座に更新する
 			if (window.currentAeroData) {
 				window.initAeroEditor(window.currentAeroData);
@@ -381,14 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
 			const reader = new FileReader();
 			reader.onload = (event) => {
 				console.log("[aero.js] 📄 ファイルの読み込み完了。");
-				
 				// 読み込んだテキストデータを変数に格納
 				const text = event.target.result;
-
 				// ★追加：拡張物理(ZONE_ または FIN_)の自動判定とスイッチUIの連動
 				const extSwitch = document.getElementById('extendedPhysicsSwitch');
 				const extText = document.getElementById('extendedStatusText');
-				
 				if (text.includes('ZONE_') || text.includes('FIN_')) {
 					window.isExtendedPhysicsEnabled = true;
 					if (extSwitch) extSwitch.checked = true;
@@ -406,14 +392,13 @@ document.addEventListener('DOMContentLoaded', () => {
 						extText.classList.add('off');
 					}
 				}
-
 				if (typeof window.parseINI === 'function') {
 					// ここでさっき変数に入れた text をパースする
 					window.currentAeroData = window.parseINI(text);
 					//元のテキストに [FIN_0] が本当に書かれていたか判定する
 					if (window.currentAeroData && window.currentAeroData.FIN_0) {
 						if (text.toUpperCase().includes('[FIN_0]')) {
-							window.currentAeroData.FIN_0._ENABLED = true;  // あればON
+							window.currentAeroData.FIN_0._ENABLED = true; // あればON
 						} else {
 							window.currentAeroData.FIN_0._ENABLED = false; // 無ければOFF
 						}

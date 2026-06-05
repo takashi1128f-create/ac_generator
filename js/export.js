@@ -30,11 +30,9 @@ window.executeBulkExport = async function() {
 	// --- 1. プロジェクト名（フォルダ名）を入力欄から取得 ---
 	const nameInput = document.getElementById('exportProjectName');
 	const projectName = nameInput ? nameInput.value.trim() : "Unknown-Car";
-	
 	// フォルダ名に使用できない禁止文字をアンダースコアに置換
 	const safeProjectName = projectName.replace(/[\\/:*?"<>|]/g, "_");
 	const exportFolderName = safeProjectName; // -data-file を削除
-
 	// --- 2. 保存先のベースとなるフォルダを選択させる（OFFの時のみ） ---
 	let baseDir = null;
 	// ★追加：スイッチが「OFF」の時だけダイアログを開いて保存先を聞く
@@ -45,14 +43,12 @@ window.executeBulkExport = async function() {
 			return;
 		}
 	}
-
 	let viewIniContent = null; // ★追加：マイドキュメント仕分け用の変数
 	const filesToExport = [];
 	// --- 3. 選択されたファイルのデータを順番に収集 ---
 	for (const file of window.EXPORT_CONFIG) {
 		const checkbox = document.getElementById(`check-${file.id}`);
 		if (checkbox && checkbox.checked) {
-
 			// 🔒 安全ガード：インポートされていない空欄のデータは、チェックが入っていても書き出し対象から除外
 			// ★修正：view と dash_cam の安全ガードを追加（carデータがあれば書き出し可能）
 			if (file.id === 'view' && !window.currentCarData) continue;
@@ -64,7 +60,6 @@ window.executeBulkExport = async function() {
 			if (file.id === 'aero' && !window.currentAeroData) continue;
 			if (file.id === 'setup' && !window.currentSetupData) continue;
 			if (file.id === 'mirrors' && !window.currentMirrorsData) continue;
-
 			const getFunc = window[file.func];
 			console.log(`📄 [DEBUG] ファイル収集中: ${file.name} (関数: ${file.func})`);
 			if (typeof getFunc === 'function') {
@@ -96,10 +91,8 @@ window.executeBulkExport = async function() {
 			}
 		}
 	}
-
 	// ★ タイヤのLUTファイルを動的に生成して書き出しリストに追加
 	if (window.tyreCompoundList && window.tyreCompoundList.length > 0) {
-		
 		// 🕵️ 元のデータから「本物の既存のLUTファイル名」を収集（クノス標準名は意図的に除外し、初期化時の誤判定を防ぐ）
 		const originalLutNames = new Set();
 		window.tyreCompoundList.forEach(c => {
@@ -122,26 +115,21 @@ window.executeBulkExport = async function() {
 				}
 			}
 		});
-
 		// 同一ファイル名が複数回リストに追加されるのを防ぐためのガード用Set
 		const addedLutFiles = new Set();
-
 		window.tyreCompoundList.forEach(comp => {
 			const suffix = comp.index === 0 ? '' : `_${comp.index}`;
 			const fSec = `FRONT${suffix}`;
 			const rSec = `REAR${suffix}`;
 			const tfSec = `THERMAL_FRONT${suffix}`;
 			const trSec = `THERMAL_REAR${suffix}`;
-
 			const fData = comp.data.FRONT || {};
 			const rData = comp.data.REAR || {};
 			const tfData = comp.data.THERMAL_FRONT || {};
 			const trData = comp.data.THERMAL_REAR || {};
-
 			const power = comp.wizardPower || 300;
 			const pattern = document.getElementById('wiz-lut-pattern') ? document.getElementById('wiz-lut-pattern').value : 'A';
 			const nameSuffix = (pattern === 'A') ? `_${comp.name.toLowerCase()}` : '';
-
 			// 1️⃣ FRONTの摩耗LUT
 			let fWearName = fData.WEAR_CURVE ? fData.WEAR_CURVE.trim() : "";
 			if (!fWearName || !originalLutNames.has(fWearName.toLowerCase())) {
@@ -152,11 +140,13 @@ window.executeBulkExport = async function() {
 				const fWearNameLower = fWearName.toLowerCase();
 				if (!addedLutFiles.has(fWearNameLower)) {
 					const fWearContent = `0|100\n0.005|95\n0.008|98\n0.015|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
-					filesToExport.push({ name: fWearName, content: fWearContent });
+					filesToExport.push({
+						name: fWearName,
+						content: fWearContent
+					});
 					addedLutFiles.add(fWearNameLower);
 				}
 			}
-
 			// ② REARの摩耗LUT
 			let rWearName = rData.WEAR_CURVE ? rData.WEAR_CURVE.trim() : "";
 			if (!rWearName || !originalLutNames.has(rWearName.toLowerCase())) {
@@ -168,11 +158,13 @@ window.executeBulkExport = async function() {
 				if (!addedLutFiles.has(rWearNameLower)) {
 					const peak = (0.015 + (power / 600) * 0.655).toFixed(3);
 					const rWearContent = `0|100\n0.005|95\n0.008|98\n${peak}|100\n1.5|100\n3|99.5\n6|99\n9|98.5\n12|80\n15|70\n18|65\n21|60\n24|50`;
-					filesToExport.push({ name: rWearName, content: rWearContent });
+					filesToExport.push({
+						name: rWearName,
+						content: rWearContent
+					});
 					addedLutFiles.add(rWearNameLower);
 				}
 			}
-
 			// ③ FRONTの温度熱ダレLUT
 			let fPerfName = tfData.PERFORMANCE_CURVE ? tfData.PERFORMANCE_CURVE.trim() : "";
 			if (!fPerfName || !originalLutNames.has(fPerfName.toLowerCase())) {
@@ -183,11 +175,13 @@ window.executeBulkExport = async function() {
 				const fPerfNameLower = fPerfName.toLowerCase();
 				if (!addedLutFiles.has(fPerfNameLower)) {
 					const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
-					filesToExport.push({ name: fPerfName, content: tContent });
+					filesToExport.push({
+						name: fPerfName,
+						content: tContent
+					});
 					addedLutFiles.add(fPerfNameLower);
 				}
 			}
-
 			// ④ REARの温度熱ダレLUT
 			let rPerfName = trData.PERFORMANCE_CURVE ? trData.PERFORMANCE_CURVE.trim() : "";
 			if (!rPerfName || !originalLutNames.has(rPerfName.toLowerCase())) {
@@ -198,7 +192,10 @@ window.executeBulkExport = async function() {
 				const rPerfNameLower = rPerfName.toLowerCase();
 				if (!addedLutFiles.has(rPerfNameLower)) {
 					const tContent = `0|0.800\n30|0.950\n60|1.000\n90|1.000\n120|0.996\n150|0.990\n180|0.984\n210|0.978\n240|0.977\n270|0.976\n300|0.975\n330|0.950\n360|0.925\n390|0.900\n420|0.800`;
-					filesToExport.push({ name: rPerfName, content: tContent });
+					filesToExport.push({
+						name: rPerfName,
+						content: tContent
+					});
 					addedLutFiles.add(rPerfNameLower);
 				}
 			}
@@ -217,7 +214,6 @@ window.executeBulkExport = async function() {
 			content: "V160 1st|3.827\r\nR154 1st|3.251\r\nV160 2nd|2.360\r\nR154 2nd|1.955\r\nV160 3rd|1.685\r\nR154 3rd|1.310\r\nV160 4th|1.312\r\nR154 4th|1.000\r\nV160 5th|1.000\r\nR154 5th|0.753\r\nV160 6th|0.793\r\n\r\n"
 		});
 	}
-
 	console.log("📤 [DEBUG] Electronへ送信するファイルリスト:", filesToExport);
 	console.log("🔍 [事実確認] 現在のデータフォルダの記憶:", window.currentDataFolderPath);
 	console.log("🔍 [事実確認] スイッチの状態:", isOverwrite);
@@ -234,7 +230,6 @@ window.executeBulkExport = async function() {
 	// --- 4. Electronのメインプロセスに「フォルダ作成」と「一括保存」を依頼 ---
 	let exportSuccess = true;
 	let dataResultPath = "";
-
 	if (filesToExport.length > 0) {
 		const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport, isOverwrite, window.currentDataFolderPath || null);
 		console.log("🏁 [DEBUG] 書き出し結果:", result);
@@ -246,7 +241,6 @@ window.executeBulkExport = async function() {
 			return;
 		}
 	}
-
 	// ==========================================
 	// 💺 【3分岐の自動仕分け】収集された viewIniContent があれば、マイドキュメントへダイレクトに保存
 	// ==========================================
@@ -264,7 +258,6 @@ window.executeBulkExport = async function() {
 			}
 		}
 	}
-
 	// すべての保存ルートが成功したら、わかりやすい仕分け内訳をポップアップで報告
 	if (exportSuccess) {
 		let successMsg = `🎉 書き出しが完全に完了しました！\n\n`;
@@ -285,7 +278,6 @@ document.addEventListener('DOMContentLoaded', () => {
 	const openBtn = document.getElementById('openExportModalBtn');
 	const closeBtn = document.getElementById('closeExportBtn');
 	const execBtn = document.getElementById('executeExportBtn');
-
 	// window.openExportModal は import.js 側で定義されているものを使用します
 	if (openBtn) {
 		openBtn.onclick = () => {
@@ -349,7 +341,6 @@ window.downloadMirrorsIni = function(isExport = false) {
 	}
 	// ★ 重要：一括書き出し時はここでテキストを返して終了
 	if (isExport === true) return iniContent;
-
 	// 個別保存用のフォールバック処理
 	const blob = new Blob([iniContent], {
 		type: 'text/plain'
@@ -503,25 +494,19 @@ window.downloadAeroIni = function(isExport = false) {
 	if (data.HEADER && data.HEADER.VERSION !== undefined) {
 		iniContent += `[HEADER]\nVERSION=${data.HEADER.VERSION}\n\n`;
 	}
-	
 	for (const section in data) {
 		// 【🚨追加必須1】HEADERが二重に書き出されるのを防ぐ
 		if (section === 'HEADER') continue;
-
 		// 【🚨追加必須2】個別スイッチがOFFの項目は書き出さない
 		if (data[section]._ENABLED === false) continue;
-
 		// 拡張物理がOFFの時、[FIN_0] セクションは書き出さない
 		if (section === 'FIN_0' && !window.isExtendedPhysicsEnabled) continue;
-
 		iniContent += `[${section}]\n`;
 		for (const key in data[section]) {
 			// 【🚨追加必須3】システム用の裏側フラグ（_ENABLED）を文字として書き出さない
 			if (key === '_ENABLED') continue;
-
 			// 拡張物理がOFFの時、ZONE_ で始まるダメージ項目は書き出さない
 			if (key.startsWith('ZONE_') && !window.isExtendedPhysicsEnabled) continue;
-
 			iniContent += `${key}=${data[section][key]}\n`;
 		}
 		iniContent += "\n";
@@ -597,7 +582,6 @@ window.downloadSetupIni = function(isExport = false) {
 	iniContent += "[DISPLAY_METHOD]\nSHOW_CLICKS=1\n\n";
 	const currentUseGearset = (data['GEARS'] && data['GEARS']['USE_GEARSET'] !== undefined) ? data['GEARS']['USE_GEARSET'] : '1';
 	iniContent += `[GEARS]\nUSE_GEARSET=${currentUseGearset}\n\n`;
-
 	// ★修正：ギアセットの数によって出力を切り替える
 	if (window.gearSetList && window.gearSetList.length === 1) {
 		// 1つの時：協議した通りの「固定ギア(rto)」用ブロックを書き出す
@@ -623,7 +607,6 @@ window.downloadSetupIni = function(isExport = false) {
 			iniContent += "\n";
 		});
 	}
-
 	iniContent += "[FINAL_GEAR_RATIO]\nRATIOS=final.rto\nNAME=Final Gear Ratio\nPOS_X=1\nPOS_Y=0\nHELP=HELP_REAR_GEAR\n\n";
 	// 元々のセットアップデータ（足回り・エアロ等）を書き出す
 	for (const section in data) {
@@ -727,16 +710,13 @@ window.downloadSuspensionIni = function(isExport = false) {
 	}, {
 		id: 'AXLE',
 		type: 'AXLE_SPECIAL'
-	},
-	{
+	}, {
 		id: '_EXTENSION',
 		type: 'FIXED'
-	},
-	{
+	}, {
 		id: '_EXTENSION_FLEX',
 		type: 'FIXED'
-	},
-	{
+	}, {
 		id: 'GRAPHICS_OFFSETS',
 		type: 'FIXED'
 	}, {
@@ -773,7 +753,6 @@ window.downloadSuspensionIni = function(isExport = false) {
 		} else if (secDef.type === 'DYNAMIC') {
 			const currentType = data[secName].TYPE || 'DWB';
 			const baseKeys = [...SUSPENSION_BASE_KEYS];
-			
 			// すべての形式（DWB, STRUT, AXLE）に対して、スキーマに定義された
 			// 'extended' カテゴリのキーを書き出し対象に加える
 			if (window.SUSPENSION_EXTRA_SCHEMA[currentType]) {
@@ -785,7 +764,6 @@ window.downloadSuspensionIni = function(isExport = false) {
 					}
 				});
 			}
-			
 			const finalKeys = [...new Set(baseKeys)];
 			finalKeys.forEach(key => {
 				if (data[secName][key] !== undefined) {
@@ -818,40 +796,32 @@ window.downloadTyreIni = function(isExport = false) {
 		alert("タイヤデータが存在しません。");
 		return;
 	}
-
 	let iniObj = {};
-
 	// 1. 共通のグローバルセクションをベースの生データから安全に引き継ぐ
 	const baseRaw = window.tyreCompoundList[0].raw_ini || {};
 	if (baseRaw.HEADER) iniObj["HEADER"] = JSON.parse(JSON.stringify(baseRaw.HEADER));
 	if (baseRaw.VIRTUALKM) iniObj["VIRTUALKM"] = JSON.parse(JSON.stringify(baseRaw.VIRTUALKM));
 	if (baseRaw.COMPOUND_DEFAULT) iniObj["COMPOUND_DEFAULT"] = JSON.parse(JSON.stringify(baseRaw.COMPOUND_DEFAULT));
-
 	// HEADERセクションの存在とVERSION=10の記述を絶対保証
 	if (!iniObj["HEADER"]) iniObj["HEADER"] = {};
 	if (!iniObj["HEADER"].VERSION) iniObj["HEADER"].VERSION = "10";
-
 	// 2. エディタ画面上の最新状態（window.tyreCompoundList）からインデックス順にセクションを再構成
 	window.tyreCompoundList.forEach(comp => {
 		const suffix = comp.index === 0 ? '' : `_${comp.index}`;
-		
 		const fSec = `FRONT${suffix}`;
 		const rSec = `REAR${suffix}`;
 		const tfSec = `THERMAL_FRONT${suffix}`;
 		const trSec = `THERMAL_REAR${suffix}`;
-
 		if (comp.data.FRONT) iniObj[fSec] = JSON.parse(JSON.stringify(comp.data.FRONT));
 		if (comp.data.REAR) iniObj[rSec] = JSON.parse(JSON.stringify(comp.data.REAR));
 		if (comp.data.THERMAL_FRONT) iniObj[tfSec] = JSON.parse(JSON.stringify(comp.data.THERMAL_FRONT));
 		if (comp.data.THERMAL_REAR) iniObj[trSec] = JSON.parse(JSON.stringify(comp.data.THERMAL_REAR));
-
 		// 🌟クリーンアップ：[HEADER] 以外の各タイヤセクションに紛れ込んだ VERSION キーを完全に除去
 		if (iniObj[fSec]) delete iniObj[fSec].VERSION;
 		if (iniObj[rSec]) delete iniObj[rSec].VERSION;
 		if (iniObj[tfSec]) delete iniObj[tfSec].VERSION;
 		if (iniObj[trSec]) delete iniObj[trSec].VERSION;
 	});
-
 	// 3. 再構築したオブジェクトから、アセットコルサ標準の INI テキストに変換
 	let iniContent = "";
 	for (const section in iniObj) {
@@ -861,10 +831,8 @@ window.downloadTyreIni = function(isExport = false) {
 		}
 		iniContent += "\n";
 	}
-
 	// 一括保存モードの時はテキストデータのみを返して終了
 	if (isExport === true) return iniContent;
-
 	// === 以下は個別保存ボタンが押された場合のフォールバック処理 ===
 	const blob = new Blob([iniContent], {
 		type: 'text/plain'
@@ -888,10 +856,10 @@ window.downloadViewIni = function(isExport = false) {
 	res += `ON_BOARD_YAW_ANGLE=${graphics.ON_BOARD_YAW_ANGLE !== undefined ? graphics.ON_BOARD_YAW_ANGLE : '0'}\n\n`;
 	res += "[DRIVER_EYES_POSITION]\n";
 	res += `DRIVEREYES=${graphics.DRIVEREYES !== undefined ? graphics.DRIVEREYES : '0, 1.0, 0'}\n`;
-
 	if (isExport === true) return res;
-
-	const blob = new Blob([res], { type: 'text/plain' });
+	const blob = new Blob([res], {
+		type: 'text/plain'
+	});
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement('a');
 	a.href = url;
@@ -899,16 +867,15 @@ window.downloadViewIni = function(isExport = false) {
 	a.click();
 	URL.revokeObjectURL(url);
 };
-
 // ★追加：dataフォルダ用の dash_cam.ini テキストを生成する関数
 window.downloadDashCamIni = function(isExport = false) {
 	const graphics = window.currentCarData?.GRAPHICS || {};
 	let res = "[DASH_CAM]\n";
 	res += `POS=${graphics.DASH_CAM_POS !== undefined ? graphics.DASH_CAM_POS : '0, 1.0, 0'}\n`;
-
 	if (isExport === true) return res;
-
-	const blob = new Blob([res], { type: 'text/plain' });
+	const blob = new Blob([res], {
+		type: 'text/plain'
+	});
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement('a');
 	a.href = url;
@@ -916,7 +883,6 @@ window.downloadDashCamIni = function(isExport = false) {
 	a.click();
 	URL.revokeObjectURL(url);
 };
-
 window.downloadCarIni = function(isExport = false) {
 	if (!window.currentCarData) {
 		alert("車両データが存在しません。");
@@ -925,7 +891,6 @@ window.downloadCarIni = function(isExport = false) {
 	let iniContent = "";
 	// ★追加：マイドキュメントや個別のiniに仕分けされたカメラ座標キーのリスト
 	const specialCameraKeys = ['DRIVEREYES', 'ON_BOARD_PITCH_ANGLE', 'ON_BOARD_YAW_ANGLE', 'DASH_CAM_POS'];
-
 	for (const section in window.currentCarData) {
 		// COLLIDER_ から始まる設定は colliders.ini 用なので弾く
 		if (section.startsWith('COLLIDER_')) continue;
@@ -933,7 +898,6 @@ window.downloadCarIni = function(isExport = false) {
 		for (const key in window.currentCarData[section]) {
 			// ★修正：特殊ファイルへ仕分けされたキーは、car.ini 側に混ざらないよう完全にガードして除外する
 			if (section === 'GRAPHICS' && specialCameraKeys.includes(key)) continue;
-
 			iniContent += `${key}=${window.currentCarData[section][key]}\n`;
 		}
 		iniContent += "\n";

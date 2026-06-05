@@ -118,21 +118,14 @@ window.initColliderEditor = function(data) {
 				const options = ['1', '2', 'extended-2'];
 				// 現在の値がリストに無い場合は追加しておく（カスタム対応）
 				if (!options.includes(v) && v !== "") options.push(v);
-				
-				const optionsHtml = options.map(opt => 
-					`<option value="${opt}" ${opt === v ? 'selected' : ''}>${opt}</option>`
-				).join('');
-				
+				const optionsHtml = options.map(opt => `<option value="${opt}" ${opt === v ? 'selected' : ''}>${opt}</option>`).join('');
 				return `<select class="text-input" data-idx="${i}">${optionsHtml}</select>`;
 			}
-
 			const editorRule = window.getEditorStep(key, v);
 			const currentStep = typeof editorRule === 'object' ? editorRule.step : editorRule;
 			const currentMin = typeof editorRule === 'object' && editorRule.min !== "" ? ` min="${editorRule.min}"` : "";
 			const currentMax = typeof editorRule === 'object' && editorRule.max !== "" ? ` max="${editorRule.max}"` : "";
-			
 			const inputType = isNaN(v) ? "text" : "number";
-			
 			return `<input type="${inputType}" class="text-input" data-idx="${i}" value="${v}" step="${currentStep}"${currentMin}${currentMax}>`;
 		}).join('');
 		itemDiv.innerHTML = `

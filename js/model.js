@@ -297,7 +297,6 @@ function requestRender() {
 	needsUpdate = true;
 }
 window.requestRender = requestRender;
-
 window.handleModelFile = function(file) {
 	if (!file) return;
 	const fileName = file.name.toLowerCase();
@@ -310,13 +309,11 @@ window.handleModelFile = function(file) {
 	} else {
 		loader = new GLTFLoader(manager);
 	}
-
 	// 読み込み中のラベルを表示
 	for (let i = 0; i < NUM_CAMERAS; i++) {
 		const label = document.querySelector(`#preview-${i} .loading-label`);
 		if (label) label.style.display = 'block';
 	}
-
 	// ★修正：モデルを「1回だけ」読み込んで、それを各シーンにクローンして配る
 	loader.load(url, (object) => {
 		// 1. まず「大元のモデル（原本）」を取得・調整する
@@ -324,34 +321,26 @@ window.handleModelFile = function(file) {
 		if (fileName.endsWith('.fbx')) {
 			originalModel.scale.setScalar(0.01);
 		}
-		
 		// 原本に対して1回だけマテリアル（色など）の調整を行う
 		applyModelPatches(originalModel);
-
 		// 2. カメラ1〜6（メイン画面）へクローンを配る
 		for (let i = 0; i < NUM_CAMERAS; i++) {
 			if (currentModels[i]) scenes[i].remove(currentModels[i]);
-			
 			// ★ここが魔法のコード：原本の形だけをコピーして軽量化
-			const clonedModel = originalModel.clone(); 
-			
+			const clonedModel = originalModel.clone();
 			scenes[i].add(clonedModel);
 			currentModels[i] = clonedModel;
-			
 			const label = document.querySelector(`#preview-${i} .loading-label`);
 			if (label) label.style.display = 'none';
 		}
-
 		// 3. サスペンション画面へもクローンを配る
 		if (suspensionModel) suspensionScene.remove(suspensionModel);
 		const suspClonedModel = originalModel.clone();
 		suspensionScene.add(suspClonedModel);
 		suspensionModel = suspClonedModel;
-
 		if (typeof window.setupSuspensionReferences === 'function') {
 			window.setupSuspensionReferences(suspensionModel);
 		}
-
 		// 全て配置が終わったら1回だけ描画を更新
 		requestRender();
 	});
@@ -539,16 +528,13 @@ function resizeAll() {
 
 function animate() {
 	requestAnimationFrame(animate);
-	
 	if (needsUpdate) {
 		// ★最適化：現在表示されているタブをチェックし、見えているものだけを処理する
 		const cameraTab = document.getElementById('camera-content');
 		const suspensionTab = document.getElementById('suspension-content');
-		
 		// tab-hidden クラスを持っていない（＝表示されている）かを確認
 		const isCameraVisible = cameraTab && !cameraTab.classList.contains('tab-hidden');
 		const isSuspensionVisible = suspensionTab && !suspensionTab.classList.contains('tab-hidden');
-
 		// 1. サスペンションの重い計算は、サスペンション画面が見えている時だけ実行
 		if (isSuspensionVisible) {
 			if (typeof window.updateSuspensionVisuals === 'function' && window.currentSuspensionData) {
@@ -559,7 +545,6 @@ function animate() {
 				}
 			}
 		}
-
 		// 2. カメラタブが表示されている時だけ、6つのカメラを描画する
 		if (isCameraVisible) {
 			for (let i = 0; i < NUM_CAMERAS; i++) {
@@ -568,14 +553,12 @@ function animate() {
 				}
 			}
 		}
-
 		// 3. サスペンションタブが表示されている時だけ、サスペンション画面を描画する
 		if (isSuspensionVisible) {
 			if (suspensionRenderer && suspensionScene && suspensionCamera) {
 				suspensionRenderer.render(suspensionScene, suspensionCamera);
 			}
 		}
-
 		// 描画が終わったらフラグを戻す
 		needsUpdate = false;
 	}
@@ -648,40 +631,31 @@ window.setupSuspensionReferences = function(model) {
 };
 window.loadModelByPath = async function(path) {
 	if (!path) return;
-
 	console.log("[MODEL] プロジェクトからモデルを復元します（安全ルート）:", path);
-	
 	try {
 		// 1. preload.js 経由で裏側にファイルの読み込みを依頼する（ブラウザの防壁を回避）
 		if (!window.electronAPI || typeof window.electronAPI.readModelFile !== 'function') {
 			throw new Error("window.electronAPI.readModelFile が定義されていません。preload.jsを確認してください。");
 		}
-		
 		const arrayBuffer = await window.electronAPI.readModelFile(path);
-		
 		// 2. 取得したバイナリデータからBlobを生成
 		const blob = new Blob([arrayBuffer]);
 		const fileName = path.split('\\').pop().split('/').pop();
-		
 		// 3. 元のロジックと同じ「擬似的なアップロードファイル」を再現
 		const file = new File([blob], fileName, {
 			type: "model/gltf-binary"
 		});
-
 		// 4. model.js 本来の「7画面すべてにモデルを配置する処理」を呼び出す
 		if (typeof handleModelFile === 'function') {
 			handleModelFile(file);
 		}
-
 		// 5. import.js 本来の「パーツの仕分け・解析処理」を呼び出す
 		if (typeof load3DModel === 'function') {
 			await load3DModel(file);
 		} else {
 			console.warn("[MODEL] load3DModel が見つかりません。");
 		}
-
 		console.log("🏎️ [MODEL] 3Dモデルの安全な復元に成功しました！");
-
 		// 描画の安定化のため、少し待ってからサスペンションの見た目を最新状態にガチャン！と合わせる
 		setTimeout(() => {
 			if (typeof window.updateSuspensionVisuals === 'function' && window.currentSuspensionData) {
@@ -689,7 +663,6 @@ window.loadModelByPath = async function(path) {
 			}
 			if (typeof window.requestRender === 'function') window.requestRender();
 		}, 500);
-
 	} catch (error) {
 		console.error("[MODEL] モデルデータの復元処理に失敗しました:", error);
 	}

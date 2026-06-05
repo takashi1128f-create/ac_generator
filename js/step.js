@@ -52,12 +52,12 @@ window.getEditorStep = function(key, val) {
 			exact: ['LIMITER']
 		}, {
 			step: "100",
-			exact: ['SPRING_RATE', 'DAMP_BUMP', 'DAMP_REBOUND', 'DAMP_FAST_BUMP', 'DAMP_FAST_REBOUND', 'FRONT', 'REAR', 'REFERENCE_RPM','TORSIONAL_STIFFNESS'],
+			exact: ['SPRING_RATE', 'DAMP_BUMP', 'DAMP_REBOUND', 'DAMP_FAST_BUMP', 'DAMP_FAST_REBOUND', 'FRONT', 'REAR', 'REFERENCE_RPM', 'TORSIONAL_STIFFNESS'],
 			include: ['ARB']
 		}, {
 			step: "10", // ★減衰用：10単位で調整
 			exact: ['TORSIONAL_DAMPING']
-		},{
+		}, {
 			step: "0.005",
 			exact: ['WIDTH']
 		}, {

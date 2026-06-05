@@ -20,7 +20,6 @@ function getAvailableTabs() {
 		// ギア関連の除外判定を、ギアセット数に応じて切り替える
 		const isGearSection = section.startsWith('GEAR_') || section === 'FINAL_GEAR_RATIO';
 		const shouldHide = (window.gearSetList.length > 1 && isGearSection) || section === 'GEARS' || section === 'DISPLAY_METHOD';
-
 		if (shouldHide) {
 			continue;
 		}
@@ -42,7 +41,6 @@ window.renderSetupUI = function() {
 		// ギア関連の表示判定
 		const isGearSection = section.startsWith('GEAR_') || section === 'FINAL_GEAR_RATIO';
 		const shouldHide = (window.gearSetList.length > 1 && isGearSection) || section === 'GEARS' || section === 'DISPLAY_METHOD';
-
 		if (shouldHide) {
 			continue;
 		}

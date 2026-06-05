@@ -15,21 +15,17 @@ document.addEventListener('DOMContentLoaded', () => {
 	const editorTitle = document.getElementById('editor-title');
 	const titleMap = window.EDITOR_TITLES || {};
 	const descMap = window.EDITOR_DESCRIPTIONS || {};
-
 	tabs.forEach(tab => {
 		tab.addEventListener('click', () => {
 			// ★追加：メインタブを切り替えた際に、視点と透過状態を必ずリセットする
 			if (window.resetPreviewCameraVision) {
 				window.resetPreviewCameraVision();
 			}
-
 			const target = tab.dataset.tab; // editor, suspension, engine, tire など
 			const subTarget = tab.dataset.sub; // sus-editor, tyre-editor, 等
-
 			// ボタンの活性状態切り替え
 			tabs.forEach(t => t.classList.remove('active'));
 			tab.classList.add('active');
-
 			// --- ★ 大枠を全て確実に隠す ---
 			if (cameraContent) cameraContent.classList.add('tab-hidden');
 			if (suspensionContent) suspensionContent.classList.add('tab-hidden');
@@ -38,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (drivetrainContent) drivetrainContent.classList.add('tab-hidden');
 			if (setupContent) setupContent.classList.add('tab-hidden');
 			if (gearContent) gearContent.classList.add('tab-hidden');
-
 			// --- ターゲットだけを表示する ---
 			if (target === 'editor') {
 				if (cameraContent) cameraContent.classList.remove('tab-hidden');
@@ -68,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			} else if (target === 'setup') {
 				if (setupContent) setupContent.classList.remove('tab-hidden');
 			}
-
 			// --- サブエディター（各入力画面）の切り替え ---
 			if (subTarget) {
 				if (editorTitle && titleMap[subTarget]) {
@@ -80,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
 					targetContent.classList.remove('tab-hidden');
 				}
 			}
-
 			// ... (以降のプレビュー領域切替、リサイズ対応などは元のまま) ...
 			const previewArea = document.getElementById('preview-suspension');
 			if (previewArea && target === 'suspension') {
@@ -161,22 +154,18 @@ document.addEventListener('DOMContentLoaded', () => {
 	const infoModal = document.getElementById('info-modal');
 	const modalClose = document.getElementById('modal-close');
 	let sliderInterval = null;
-
 	// ★追加：無限ループのための下準備（クローン画像の追加）
 	function initLoopSliders() {
 		const tracks = document.querySelectorAll('.slider-img_box');
 		tracks.forEach(track => {
 			// 既にクローンを追加済みならスキップ
 			if (track.dataset.looped) return;
-
 			const slides = track.querySelectorAll('.slider-img');
 			if (slides.length <= 1) return;
-
 			// 最初の画像を複製（クローン）して、一番最後に追加する
 			const firstClone = slides[0].cloneNode(true);
 			firstClone.classList.add('clone-slide'); // 判別用のクラス
 			track.appendChild(firstClone);
-
 			// セットアップ完了の目印
 			track.dataset.looped = "true";
 		});
@@ -184,33 +173,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	function startManualSlider() {
 		initLoopSliders(); // 開始前に必ず下準備を実行
-
 		if (sliderInterval) clearInterval(sliderInterval);
-
 		sliderInterval = setInterval(() => {
 			const tracks = document.querySelectorAll('.slider-img_box');
-			
 			tracks.forEach((track) => {
 				// 画面に見えていない時はスキップ
 				if (track.offsetWidth === 0) return;
-
 				const slides = track.querySelectorAll('.slider-img');
 				if (slides.length <= 1) return;
-
 				// 1枚の幅を正確に取得
-				const slideWidth = slides[0].offsetWidth; 
+				const slideWidth = slides[0].offsetWidth;
 				if (slideWidth === 0) return;
-
 				// 現在位置から「いま何枚目か」を計算
 				let currentSlide = Math.round(track.scrollLeft / slideWidth);
 				currentSlide++; // 次の画像へ
-
 				// スクロール実行（滑らかに移動）
 				track.scrollTo({
 					left: currentSlide * slideWidth,
 					behavior: 'smooth'
 				});
-
 				// ★追加：シームレスループのトリック
 				// 今移動したのが「最後にくっつけたクローン画像」だった場合
 				if (currentSlide === slides.length - 1) {
@@ -233,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			sliderInterval = null;
 		}
 	}
-
 	if (infoBtn && infoModal) {
 		infoBtn.addEventListener('click', (e) => {
 			e.preventDefault();

@@ -8,7 +8,6 @@ window.currentProject = {
 	files: {} // ここに各iniファイルの内容が { suspensions: { currentData: {...} }, ... } の形で入る
 };
 window.currentProjectPath = ""; // 現在開いているプロジェクトのパス
-
 // ==========================================
 // ★ アプリ全体の設定管理（フロントエンド）
 // ==========================================
@@ -18,10 +17,10 @@ window.APP_CONFIG = {
 		// checkingMinDuration: 2500,// 「確認中...」を見せる
 		// successDisplayDelay: 5000,// 緑文字や成功ボタンを見せておく時間（秒数リセット可能）
 		// fadeSpeed: 1000// 最後に画面が消える速度
-		authStartDelay: 0,// スプラッシュ終了後、チェックを開始するまでの「タメ」
-		checkingMinDuration: 1000,// 「確認中...」を見せる
-		successDisplayDelay: 1000,// 緑文字や成功ボタンを見せておく時間（秒数リセット可能）
-		fadeSpeed: 0// 最後に画面が消える速度
+		authStartDelay: 0, // スプラッシュ終了後、チェックを開始するまでの「タメ」
+		checkingMinDuration: 1000, // 「確認中...」を見せる
+		successDisplayDelay: 1000, // 緑文字や成功ボタンを見せておく時間（秒数リセット可能）
+		fadeSpeed: 0 // 最後に画面が消える速度
 	},
 	messages: {
 		checking: '⏳ 権限を確認中...',
@@ -29,7 +28,6 @@ window.APP_CONFIG = {
 		errorBtn: '❌ 認証エラー',
 		manualSuccess: "認証に成功しました！\n間もなく起動します...",
 		autoSuccess: "自動認証成功！",
-		
 		// ★ 追加・修正
 		free: (days) => `無料体験版として起動しました。\n残り利用可能日数は ${days} 日です。\nメンバーシップにご参加いただくと制限が解除されます！`,
 		trial: (days) => `YouTube メンバーシップ「支援者（心の支え）」様\n今月の残り利用可能日数は ${days} 日です。\nいつも応援ありがとうございます！`,
@@ -37,12 +35,10 @@ window.APP_CONFIG = {
 		expired: "今月の利用枠を使い切りました。\n来月1日にリセットされます。\nすぐに使い続けたい場合は、メンバーシップの登録・レベルアップをご検討ください。"
 	}
 };
-
 // 起動時のチラつき防止（目印がある場合は最初から透明にしておく）
 if (window.location.search.includes('action=newProject')) {
 	document.documentElement.style.opacity = '0';
 }
-
 // =========================================================
 // ★ アプリ起動時のメイン処理（受付係パターン）
 // =========================================================
@@ -54,43 +50,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 	const btnNewProject = document.getElementById('hub-new-project');
 	const startupHub = document.getElementById('startup-hub');
 	const DISCORD_AUTH_URL = "https://discord.com/oauth2/authorize?client_id=1496540447684952144&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A34567%2Fauth&scope=identify+guilds.members.read";
-
 	// --- 【分岐点】URLの目印を確認 ---
 	const urlParams = new URLSearchParams(window.location.search);
 	const isNewProjectMode = urlParams.get('action') === 'newProject';
-
 	if (isNewProjectMode) {
 		// -----------------------------------------------------
 		// ➡ 【ルートA】新規作成モード（目印がある場合）
 		// -----------------------------------------------------
 		console.log("【起動】ルートA：新規作成モードで初期化します");
-		
 		// 1. 次回リロード時に勝手に発動しないよう、URLの目印を消す
 		window.history.replaceState({}, document.title, window.location.pathname);
-		
 		// 2. 画面を表示し、認証不要なのでロック画面を即座に消す
 		document.documentElement.style.transition = "opacity 0.3s ease";
 		document.documentElement.style.opacity = '1';
 		if (lockScreen) lockScreen.style.display = "none";
-		
 		// 3. タイマー(0.3秒)：画面の表示を待ってから新規作成ボタンを自動で押す
 		setTimeout(() => {
 			if (btnNewProject) btnNewProject.click();
 		}, 300);
-
 		// 4. 【出口】ここで処理を完全終了（これより下の認証処理へは進まない）
 		return;
 	}
-
 	// -----------------------------------------------------
 	// ➡ 【ルートB】通常起動・認証モード（目印がない場合）
 	// -----------------------------------------------------
 	console.log("【起動】ルートB：通常起動（認証モード）で開始します");
-
 	// 1. 画面の初期状態をセット（ロック画面を確実に表示）
 	if (lockScreen) lockScreen.style.display = "flex";
 	document.documentElement.style.opacity = '1';
-
 	// 2. 手動ログインボタンの動作を登録
 	if (loginBtn) {
 		loginBtn.addEventListener('click', () => {
@@ -98,7 +85,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 			if (window.electronAPI) window.electronAPI.openExternalLink(DISCORD_AUTH_URL);
 		});
 	}
-
 	// ★追加：手動ログイン成功時の処理（ブラウザ認証が終わったあと画面を消す）
 	if (window.electronAPI && window.electronAPI.onDiscordCallback) {
 		window.electronAPI.onDiscordCallback((authResult) => {
@@ -122,25 +108,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 			}
 		});
 	}
-
 	// 3. 自動ログインのチェック
 	if (window.electronAPI && window.electronAPI.onMainWindowShown) {
 		window.electronAPI.onMainWindowShown(() => {
-			
 			setTimeout(() => {
 				if (loginBtn) loginBtn.innerHTML = window.APP_CONFIG.messages.checking;
-				
 				// ★演出用のタイマー：開始時刻を記録
 				const startTime = Date.now();
-
 				window.electronAPI.checkAutoLogin().then(authResult => {
 					// 通信にかかった時間を計算
 					const elapsedTime = Date.now() - startTime;
 					// 設定された「最低時間」に足りない分の残り時間を計算
 					const waitRemaining = Math.max(0, window.APP_CONFIG.timing.checkingMinDuration - elapsedTime);
-
 					console.log(`【表側】通信完了（${elapsedTime}ms）。演出のため、あと ${waitRemaining}ms 待機します。`);
-
 					// 残りの時間だけ待ってから、画面を更新する
 					setTimeout(() => {
 						if (authResult && authResult.success) {
@@ -149,52 +129,49 @@ document.addEventListener('DOMContentLoaded', async () => {
 								loginBtn.innerHTML = window.APP_CONFIG.messages.successBtn;
 								loginBtn.style.pointerEvents = 'none';
 							}
-							
-						if (statusMsg) {
-							statusMsg.style.color = "#51cf66";
-							// プランに応じたメッセージの割り振り
-							if (authResult.plan === 'free') {           // ★これを追加
-								statusMsg.textContent = window.APP_CONFIG.messages.free(authResult.daysLeft);
-							} else if (authResult.plan === 'trial') {
-								statusMsg.textContent = window.APP_CONFIG.messages.trial(authResult.daysLeft);
-							} else if (authResult.plan === 'permanent') {
-								statusMsg.textContent = window.APP_CONFIG.messages.permanent;
-							} else {
-								statusMsg.textContent = window.APP_CONFIG.messages.autoSuccess;
+							if (statusMsg) {
+								statusMsg.style.color = "#51cf66";
+								// プランに応じたメッセージの割り振り
+								if (authResult.plan === 'free') { // ★これを追加
+									statusMsg.textContent = window.APP_CONFIG.messages.free(authResult.daysLeft);
+								} else if (authResult.plan === 'trial') {
+									statusMsg.textContent = window.APP_CONFIG.messages.trial(authResult.daysLeft);
+								} else if (authResult.plan === 'permanent') {
+									statusMsg.textContent = window.APP_CONFIG.messages.permanent;
+								} else {
+									statusMsg.textContent = window.APP_CONFIG.messages.autoSuccess;
+								}
 							}
-						}
-						
-						// 設定された successDisplayDelay (3秒など) の時間だけ表示を維持
-						setTimeout(() => {
-							const securityOverlay = document.getElementById('security-lock-screen') || lockScreen;
-							if (securityOverlay) {
-								securityOverlay.style.transition = `opacity ${window.APP_CONFIG.timing.fadeSpeed / 1000}s ease`;
-								securityOverlay.style.opacity = "0";
-
-								setTimeout(() => {
-									securityOverlay.style.display = "none";
-									// ハブ画面を表示
-									if (startupHub) {
-										startupHub.style.display = "flex";
-										startupHub.style.opacity = "0";
-										startupHub.style.transition = "opacity 0.5s ease";
-										setTimeout(() => { startupHub.style.opacity = "1"; }, 10);
-									}
-								}, window.APP_CONFIG.timing.fadeSpeed);
+							// 設定された successDisplayDelay (3秒など) の時間だけ表示を維持
+							setTimeout(() => {
+								const securityOverlay = document.getElementById('security-lock-screen') || lockScreen;
+								if (securityOverlay) {
+									securityOverlay.style.transition = `opacity ${window.APP_CONFIG.timing.fadeSpeed / 1000}s ease`;
+									securityOverlay.style.opacity = "0";
+									setTimeout(() => {
+										securityOverlay.style.display = "none";
+										// ハブ画面を表示
+										if (startupHub) {
+											startupHub.style.display = "flex";
+											startupHub.style.opacity = "0";
+											startupHub.style.transition = "opacity 0.5s ease";
+											setTimeout(() => {
+												startupHub.style.opacity = "1";
+											}, 10);
+										}
+									}, window.APP_CONFIG.timing.fadeSpeed);
+								}
+							}, window.APP_CONFIG.timing.successDisplayDelay);
+						} else {
+							// 失敗時の処理（同様に messages から取得）
+							if (statusMsg) {
+								statusMsg.style.color = "#ff6b6b";
+								statusMsg.textContent = (authResult.reason === 'trial_expired') ? window.APP_CONFIG.messages.expired : "認証失敗：権限がありません。";
 							}
-						}, window.APP_CONFIG.timing.successDisplayDelay);
-
-					} else {
-						// 失敗時の処理（同様に messages から取得）
-						if (statusMsg) {
-							statusMsg.style.color = "#ff6b6b";
-							statusMsg.textContent = (authResult.reason === 'trial_expired') 
-								? window.APP_CONFIG.messages.expired 
-								: "認証失敗：権限がありません。";
+							if (loginBtn) loginBtn.innerHTML = 'Discordで認証';
 						}
-						if (loginBtn) loginBtn.innerHTML = 'Discordで認証';
-					}}, waitRemaining); // ⭕️ 修正①：「, waitRemaining」を追加してタイマーの時間を教える
-				// ⭕️ 修正②：不足していた「データ受け取り終了」のカッコと、エラー時の処理を追加する
+					}, waitRemaining); // ⭕️ 修正①：「, waitRemaining」を追加してタイマーの時間を教える
+					// ⭕️ 修正②：不足していた「データ受け取り終了」のカッコと、エラー時の処理を追加する
 				}).catch(err => {
 					console.error("認証チェックでエラー発生:", err);
 					if (loginBtn) loginBtn.innerHTML = 'エラー発生';
@@ -209,14 +186,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 			window.appVersion = version; // いつでも使えるように保存
 			const versionDisplay = document.getElementById('app-version-display');
 			if (versionDisplay) {
-					versionDisplay.textContent = `Version ${version}`;
+				versionDisplay.textContent = `Version ${version}`;
 			}
 		});
 	}
 });
-
 // ↓ ここから下は、既存の function updateProjectFileState(...) などが続きます
-
 //テスト終わり
 document.addEventListener('DOMContentLoaded', () => {
 	const btnNewProject = document.getElementById('hub-new-project');
@@ -240,33 +215,28 @@ document.addEventListener('DOMContentLoaded', () => {
 		// 3. 「作成」を押したときの処理
 		btnExecute.addEventListener('click', async () => {
 			const projectName = nameInput.value.trim();
-			
 			// ★修正：alert() を廃止し、入力欄を赤くして警告する（フォーカス迷子バグを完全回避）
 			if (projectName === "") {
 				nameInput.style.border = "2px solid #ff6b6b"; // 枠を赤くする
 				nameInput.placeholder = "※プロジェクト名を入力してください！"; // プレースホルダーで警告
 				nameInput.value = ""; // 中身を空にする
-				
 				// 確実に入力欄にカーソルを戻す
 				setTimeout(() => {
 					if (nameInput) nameInput.focus();
 				}, 50);
 				return;
 			}
-			
 			// 正しく入力されて進む場合は、枠の色などを元に戻す
-			nameInput.style.border = ""; 
+			nameInput.style.border = "";
 			nameInput.placeholder = "例: My_AE86_Grip";
 			// モーダルを隠す
 			nameModal.classList.add('hidden');
 			// ★修正：ダミーデータを作るのではなく、アプリの記憶領域（State）に名前をセットする！
 			window.currentProject.projectName = projectName;
-			
 			// ★修正：効かなかった document.title を消し、裏側へタイトル変更を依頼する
 			if (window.electronAPI && window.electronAPI.setWindowTitle) {
 				window.electronAPI.setWindowTitle(projectName);
 			}
-
 			window.currentProject.project = {
 				name: projectName,
 				created: new Date().toISOString(),
@@ -329,7 +299,6 @@ if (btnOpenProject) {
 }
 window.loadProjectToUI = async function(projectState) {
 	console.log("🏁 [復元開始] データの復元を実行します...", projectState);
-
 	if (!projectState) return;
 	if (projectState.projectName && window.electronAPI && window.electronAPI.setWindowTitle) {
 		window.electronAPI.setWindowTitle(projectState.projectName);
@@ -343,32 +312,27 @@ window.loadProjectToUI = async function(projectState) {
 			await window.loadModelByPath(projectState.environment.model_path);
 		}
 	}
-	
 	// ★追加：忘れていた「データフォルダのパス」の記憶を復元する
 	if (projectState.environment && projectState.environment.data_folder) {
 		window.currentDataFolderPath = projectState.environment.data_folder;
 	} else {
 		window.currentDataFolderPath = null;
 	}
-
 	const files = projectState.files || {};
-
 	// =======================================================
 	// 2. INIデータ・その他の変数復元（最新の追加分も網羅）
 	// =======================================================
 	if (files['suspensions']) window.currentSuspensionData = files['suspensions'].currentData;
-	if (files['tyres'])       window.currentTyreData       = files['tyres'].currentData;
-	if (files['car'])         window.currentCarData        = files['car'].currentData;
-	if (files['aero'])        window.currentAeroData       = files['aero'].currentData;
-	if (files['engine'])      window.currentEngineData     = files['engine'].currentData;
-	if (files['setup'])       window.currentSetupData      = files['setup'].currentData;
-	if (files['drivetrain'])  window.currentDrivetrainData = files['drivetrain'].currentData;
-	
+	if (files['tyres']) window.currentTyreData = files['tyres'].currentData;
+	if (files['car']) window.currentCarData = files['car'].currentData;
+	if (files['aero']) window.currentAeroData = files['aero'].currentData;
+	if (files['engine']) window.currentEngineData = files['engine'].currentData;
+	if (files['setup']) window.currentSetupData = files['setup'].currentData;
+	if (files['drivetrain']) window.currentDrivetrainData = files['drivetrain'].currentData;
 	// 追加機能分のデータ
-	if (files['power_lut_raw'])  window.currentPowerLutRaw = files['power_lut_raw'].currentData;
-	if (files['final_rto_list']) window.finalRtoList       = files['final_rto_list'].currentData;
-	if (files['modified_status']) window.modifiedStatus    = files['modified_status'].currentData;
-
+	if (files['power_lut_raw']) window.currentPowerLutRaw = files['power_lut_raw'].currentData;
+	if (files['final_rto_list']) window.finalRtoList = files['final_rto_list'].currentData;
+	if (files['modified_status']) window.modifiedStatus = files['modified_status'].currentData;
 	// ★修正：拡張物理スイッチのON/OFF状態を完全に復元する
 	// 1. まずは「保存時に記憶したスイッチの状態」を最優先で読み込む
 	if (projectState.environment && projectState.environment.isExtendedPhysicsEnabled !== undefined) {
@@ -384,26 +348,22 @@ window.loadProjectToUI = async function(projectState) {
 		}
 		window.isExtendedPhysicsEnabled = detectedExtended;
 	}
-
 	// 画面のスイッチを復元した状態に合わせて切り替える
 	const masterSwitch = document.getElementById('extendedPhysicsSwitch');
 	if (masterSwitch) {
 		masterSwitch.checked = window.isExtendedPhysicsEnabled;
 	}
-
 	// =======================================================
 	// 3. 各画面のUI更新 (タブの中身を再描画)
 	// =======================================================
 	if (typeof window.updateSuspensionEditorUI === 'function') window.updateSuspensionEditorUI(window.currentSuspensionData);
-	if (typeof window.updateCarEditorUI === 'function')        window.updateCarEditorUI(window.currentCarData);
-	if (typeof window.updateTyreEditorUI === 'function')       window.updateTyreEditorUI(window.currentTyreData);
-	if (typeof window.initEngineEditor === 'function')         window.initEngineEditor(window.currentEngineData);
-	
-	window.aeroWingBackup = {}; 
-	if (typeof window.initAeroEditor === 'function')           window.initAeroEditor(window.currentAeroData);
-	if (typeof window.initSetupEditor === 'function')          window.initSetupEditor(window.currentSetupData);
-	if (typeof window.initColliderEditor === 'function')       window.initColliderEditor(window.currentCarData);
-
+	if (typeof window.updateCarEditorUI === 'function') window.updateCarEditorUI(window.currentCarData);
+	if (typeof window.updateTyreEditorUI === 'function') window.updateTyreEditorUI(window.currentTyreData);
+	if (typeof window.initEngineEditor === 'function') window.initEngineEditor(window.currentEngineData);
+	window.aeroWingBackup = {};
+	if (typeof window.initAeroEditor === 'function') window.initAeroEditor(window.currentAeroData);
+	if (typeof window.initSetupEditor === 'function') window.initSetupEditor(window.currentSetupData);
+	if (typeof window.initColliderEditor === 'function') window.initColliderEditor(window.currentCarData);
 	// =======================================================
 	// 4. DRIVETRAINの復元
 	// =======================================================
@@ -414,48 +374,39 @@ window.loadProjectToUI = async function(projectState) {
 		if (typeof window.renderDrivetrainUI === 'function') window.renderDrivetrainUI();
 		if (typeof window.updateGearChart === 'function') window.updateGearChart();
 	}
-
 	// =======================================================
 	// 5. CAMERAの完全復元とUI同期
 	// =======================================================
 	console.log("📸 [UI更新] カメラ設定の直接同期を開始します");
-
 	if (files['camera_configs']) {
 		window.cameraConfigs = files['camera_configs'].currentData;
 		window.initialConfigs = JSON.parse(JSON.stringify(window.cameraConfigs));
-
 		for (let i = 0; i < (window.NUM_CAMERAS || 6); i++) {
 			const config = window.cameraConfigs[i];
 			if (!config) continue;
-
 			// 各プロパティをHTML要素に直接流し込む
 			['x', 'y', 'z', 'rx', 'ry', 'rz', 'fov'].forEach(prop => {
 				const input = document.querySelector(`.input-range[data-id="${i}"][data-prop="${prop}"]`);
 				const display = document.querySelector(`.val-display.val-${prop}[data-id="${i}"]`);
-
 				if (input && config[prop] !== undefined) {
 					input.value = config[prop];
 					// スライダーイベントを強制発火させて反映を確実にする
 					if (typeof triggerEvents === 'function') {
 						triggerEvents(input);
 					}
-					
 					if (display) {
 						const suffix = (prop.startsWith('r')) ? '°' : '';
 						display.textContent = (prop === 'fov') ? Math.round(config[prop]) : Number(config[prop]).toFixed(3) + suffix;
 					}
 				}
 			});
-
 			// Three.js側のカメラオブジェクトを同期
 			if (typeof window.updateUIFromConfig === 'function') {
 				window.updateUIFromConfig(i);
 			}
 		}
 	}
-
 	if (files['camera_raw']) window.originalRawData = files['camera_raw'].currentData;
-
 	// =======================================================
 	// 6. 変更ステータス（modifiedStatus）の更新
 	// =======================================================
@@ -469,13 +420,11 @@ window.loadProjectToUI = async function(projectState) {
 			if (key === 'camera_configs') window.modifiedStatus.cameras = true;
 		});
 	}
-
 	// =======================================================
 	// 7. 最終レンダリングとビジュアル更新
 	// =======================================================
 	if (typeof window.updateSuspensionVisuals === 'function') window.updateSuspensionVisuals(window.currentSuspensionData);
 	if (typeof window.requestRender === 'function') window.requestRender();
-
 	console.log("✅ [同期完了] すべてのデータが復元されました。");
 };
 // 変更をブラウザに通知する（スライダー等を連動させるための魔法の関数）
@@ -573,20 +522,20 @@ document.addEventListener('DOMContentLoaded', () => {
 			// 2. 画面のデータをすべて回収（最新の全ファイルに対応）
 			const dataMap = {
 				'suspensions': window.currentSuspensionData,
-				'tyres':       window.currentTyreData,
-				'car':         window.currentCarData,
-				'aero':        window.currentAeroData,
-				'engine':      window.currentEngineData,
-				'setup':       window.currentSetupData,
-				'drivetrain':  window.currentDrivetrainData,
+				'tyres': window.currentTyreData,
+				'car': window.currentCarData,
+				'aero': window.currentAeroData,
+				'engine': window.currentEngineData,
+				'setup': window.currentSetupData,
+				'drivetrain': window.currentDrivetrainData,
 				// リスト・テキスト形式の重要データ
 				'power_lut_raw': window.currentPowerLutRaw,
 				'final_rto_list': window.finalRtoList,
 				// 編集状態フラグ（オレンジ色のタグを復元するため）
-				'modified_status': window.modifiedStatus, 
+				'modified_status': window.modifiedStatus,
 				// カメラ
 				'camera_configs': window.cameraConfigs,
-				'camera_raw':     window.originalRawData
+				'camera_raw': window.originalRawData
 			};
 			for (const [key, data] of Object.entries(dataMap)) {
 				if (data && (Array.isArray(data) ? data.length > 0 : Object.keys(data).length > 0)) {
@@ -609,10 +558,8 @@ document.addEventListener('DOMContentLoaded', () => {
 			// ★追加：拡張物理のON/OFF状態もプロジェクトデータに記憶させる
 			if (!window.currentProject.environment) window.currentProject.environment = {};
 			window.currentProject.environment.isExtendedPhysicsEnabled = (window.isExtendedPhysicsEnabled === true);
-			
 			// ★追加：上書き保存用の「データフォルダのパス」も一緒にセーブデータに記憶させる！
 			window.currentProject.environment.data_folder = window.currentDataFolderPath || "";
-			
 			console.log("✅ [SAVE] 拡張物理の状態を回収しました:", window.currentProject.environment.isExtendedPhysicsEnabled);
 			// 3. 最新データを回収した状態でのみ、保存（バックアップ作成）を実行
 			try {
@@ -720,21 +667,18 @@ document.addEventListener('DOMContentLoaded', () => {
 	if (btnRestore) {
 		btnRestore.addEventListener('click', async () => {
 			console.log("🔘 [RESTORE] 復元ボタンがクリックされました！"); // 通過チェック1
-
 			if (!window.currentProjectPath) {
 				console.warn("⚠️ [RESTORE] 保存パスがないため中断しました");
 				alert("プロジェクトが一度も保存されていないため、復元できるバックアップがありません。");
 				return;
 			}
 			console.log("📂 [RESTORE] 復元対象パス:", window.currentProjectPath); // 通過チェック2
-
 			const confirmRestore = confirm("【注意】\n最後に保存した時の状態（バックアップ）に戻しますか？\n現在の未保存の編集内容は失われます。");
 			if (confirmRestore) {
 				try {
 					console.log("⏳ [RESTORE] 裏側(Electron)へバックアップデータを要求します...");
 					const result = await window.electronAPI.restoreProject(window.currentProjectPath);
 					console.log("📥 [RESTORE] 裏側からデータが返ってきました:", result); // 通過チェック3
-
 					if (result.success) {
 						window.currentProject = result.data;
 						console.log("🔄 [RESTORE] 画面更新(loadProjectToUI)を呼び出します...");
@@ -807,14 +751,13 @@ if (window.electronAPI && window.electronAPI.onMenuSave) {
 			const btn = document.getElementById('btn-save-project');
 			if (btn) {
 				btn.click(); // 1. 既存の保存ボタンをプログラムから押す
-				
 				// 2. 保存完了を待ってからアプリを強制終了する
 				// データの回収と書き込み時間を考慮し、1.5秒待機します
 				setTimeout(() => {
 					if (window.electronAPI.forceQuit) {
 						window.electronAPI.forceQuit();
 					}
-				}, 1500); 
+				}, 1500);
 			} else {
 				// エディター画面以外（保存ボタンがない画面）ならそのまま終了
 				if (window.electronAPI.forceQuit) window.electronAPI.forceQuit();
@@ -851,7 +794,6 @@ if (window.electronAPI && window.electronAPI.onMenuSave) {
 			if (filesToSend && filesToSend.length > 0) {
 				console.log(`[MENU-IMPORT] 裏側から ${filesToSend.length} 個のファイルデータを受信しました。読み込みを開始します。`);
 				window.isMultiUploading = true;
-
 				import('./js/import.js').then(module => {
 					if (module.handleMultiFileUpload) {
 						// 既存のマルチアップロード処理へそのまま流し込む！
@@ -888,12 +830,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		masterSwitch.addEventListener('change', (e) => {
 			const isExtended = e.target.checked;
 			window.isExtendedPhysicsEnabled = isExtended;
-
 			// 1. car.ini (コライダー等) の VERSION 書き換え
 			if (window.currentCarData && window.currentCarData.HEADER) {
 				window.currentCarData.HEADER.VERSION = isExtended ? 'extended-2' : '1';
 			}
-
 			// 2. suspensions.ini の VERSION とデフォルト値書き換え
 			if (window.currentSuspensionData) {
 				if (window.currentSuspensionData.HEADER) {
@@ -914,7 +854,6 @@ document.addEventListener('DOMContentLoaded', () => {
 					}
 				}
 			}
-
 			// 3. 画面の再描画（UIエディターをリフレッシュして書き換わったデータを表示する）
 			if (typeof window.updateSuspensionEditorUI === 'function') {
 				window.updateSuspensionEditorUI(window.currentSuspensionData);
@@ -925,7 +864,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (typeof window.initAeroEditor === 'function' && window.currentAeroData) {
 				window.initAeroEditor(window.currentAeroData);
 			}
-			
 			// 4. 変更フラグを立てる（保存時にMODIFIEDマークを出すため）
 			if (window.modifiedStatus) {
 				window.modifiedStatus.car = true;
@@ -941,36 +879,32 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('keydown', (e) => {
 	// フォーカスされているのが数値入力欄（type="number"）の場合のみ発動
 	if (e.target.tagName === 'INPUT' && e.target.type === 'number') {
-		
 		// Shiftキーが押されていて、かつ上下矢印キーの場合
 		if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
 			e.preventDefault(); // デフォルトの1ステップ増減をキャンセル
-
 			// 現在の入力欄に設定されているstep値を取得（設定されていなければ1）
 			const step = parseFloat(e.target.step) || 1;
-			
 			// Shiftキーを押している時の倍率（10倍）
-			const multiplier = 10; 
+			const multiplier = 10;
 			const customStep = step * multiplier;
-
 			let currentValue = parseFloat(e.target.value) || 0;
-
 			if (e.key === 'ArrowUp') {
 				currentValue += customStep;
 			} else if (e.key === 'ArrowDown') {
 				currentValue -= customStep;
 			}
-
 			// 浮動小数点の計算誤差（0.10000000001みたいな数字）を防ぐ処理
 			const stepStr = customStep.toString();
 			const decimalPlaces = stepStr.includes('.') ? stepStr.split('.')[1].length : 0;
-			
 			// 値を更新
 			e.target.value = currentValue.toFixed(decimalPlaces);
-
 			// 値が変更されたことをシステムに通知（タイヤグラフや他のプレビューを自動連動させる）
-			e.target.dispatchEvent(new Event('input', { bubbles: true }));
-			e.target.dispatchEvent(new Event('change', { bubbles: true }));
+			e.target.dispatchEvent(new Event('input', {
+				bubbles: true
+			}));
+			e.target.dispatchEvent(new Event('change', {
+				bubbles: true
+			}));
 		}
 	}
 });
@@ -983,16 +917,12 @@ document.addEventListener('dragover', (e) => {
 	e.stopPropagation();
 	// ここにドロップ時のエフェクト（画面を暗くするなど）を入れることも可能です
 });
-
 document.addEventListener('drop', async (e) => {
 	e.preventDefault();
 	e.stopPropagation();
-
 	// ファイルまたはフォルダがドロップされたか確認
 	if (!e.dataTransfer.items) return;
-
 	let filesToProcess = [];
-
 	// フォルダの中身を再帰的（奥の奥まで）に取得する関数
 	const traverseFileTree = (item) => {
 		return new Promise((resolve) => {
@@ -1013,9 +943,7 @@ document.addEventListener('drop', async (e) => {
 			}
 		});
 	};
-
 	window.isMultiUploading = true;
-
 	// ドロップされたアイテム（ファイルやフォルダ）を順番に展開
 	for (let i = 0; i < e.dataTransfer.items.length; i++) {
 		const item = e.dataTransfer.items[i].webkitGetAsEntry();
@@ -1024,10 +952,8 @@ document.addEventListener('drop', async (e) => {
 			filesToProcess = filesToProcess.concat(extractedFiles);
 		}
 	}
-
 	if (filesToProcess.length > 0) {
 		console.log(`[D&D] ${filesToProcess.length}個のファイルを検出しました。読み込みを開始します。`);
-		
 		// import.js の一括読み込み機能（handleMultiFileUpload）に取得したファイルの束をそのまま流し込む！
 		import('./js/import.js').then(module => {
 			if (module.handleMultiFileUpload) {

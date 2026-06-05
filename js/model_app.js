@@ -25,7 +25,6 @@ window.updateMirrorsVisuals = function() {
 	const scene = window.scene || (window.scenes && window.scenes[0]);
 	const model = window.currentModel || (window.currentModels && window.currentModels[0]);
 	const data = window.currentMirrorsData;
-
 	// 古いハイライト（赤枠）が残っていたら一旦すべて消去する
 	if (window.mirrorHelpers && window.mirrorHelpers.length > 0) {
 		window.mirrorHelpers.forEach(helper => {
@@ -33,10 +32,8 @@ window.updateMirrorsVisuals = function() {
 		});
 		window.mirrorHelpers = [];
 	}
-
 	// シーン、モデル、ミラーデータのいずれかが無ければここでストップ
 	if (!scene || !model || !data) return;
-
 	// mirrors.ini のデータから各ミラーのセクション（[MIRROR_0]など）をループ処理
 	for (const section in data) {
 		if (section.startsWith('MIRROR_')) {
@@ -44,7 +41,6 @@ window.updateMirrorsVisuals = function() {
 			if (mirrorName) {
 				// ★ここが要！ 3Dモデルの中から部品名（NAME）で検索をかける
 				const mirrorPart = model.getObjectByName(mirrorName);
-				
 				if (mirrorPart) {
 					console.log(`[MIRRORS] 🪞 ミラー部品を発見しました: ${mirrorName}`);
 					// 発見した部品を赤い枠線（BoxHelper）で囲んでハイライトする
@@ -758,10 +754,18 @@ window.updateSuspensionEditorUI = function(data) {
 	if (!container || !data) return;
 	// ★ここから追加：初期起動時でも枠組みを表示させるための初期化
 	if (!data._EXTENSION) {
-		data._EXTENSION = { TORQUE_MODE_EX: '2', FIX_PROGRESSIVE_RATE: '1', _ENABLED: false };
+		data._EXTENSION = {
+			TORQUE_MODE_EX: '2',
+			FIX_PROGRESSIVE_RATE: '1',
+			_ENABLED: false
+		};
 	}
 	if (!data._EXTENSION_FLEX) {
-		data._EXTENSION_FLEX = { TORSIONAL_STIFFNESS: '12000', TORSIONAL_DAMPING: '150', _ENABLED: false };
+		data._EXTENSION_FLEX = {
+			TORSIONAL_STIFFNESS: '12000',
+			TORSIONAL_DAMPING: '150',
+			_ENABLED: false
+		};
 	}
 	// --- 1. TYPEごとのスキーマ定義は window.SUSPENSION_EXTRA_SCHEMA を参照 ---
 	// アクティブタブの記憶
@@ -855,7 +859,6 @@ window.updateSuspensionEditorUI = function(data) {
 		itemDiv.dataset.key = key;
 		// ★判定ロジック：セクション名で拡張物理かどうかを判定する（VERSIONキーは除外）
 		const isExtendedSection = window.EXTENDED_PHYSICS_TARGETS.sections.includes(section);
-
 		// 1. 拡張セクション（_EXTENSION等）はスイッチがOFFの時だけロックする
 		if (isExtendedSection) {
 			if (!window.isExtendedPhysicsEnabled) {
@@ -868,7 +871,6 @@ window.updateSuspensionEditorUI = function(data) {
 				itemDiv.classList.remove('is-extended-locked');
 			}
 		}
-
 		// 2. VERSION 項目は、スイッチの状態に関わらず常に操作可能（ロックしない）
 		if (key === 'VERSION') {
 			itemDiv.style.opacity = '1';
@@ -890,17 +892,12 @@ window.updateSuspensionEditorUI = function(data) {
 			const isRange = rangeKeys.includes(key);
 			let minVal = (key === 'ROD_LENGTH') ? "-0.2" : "0";
 			let maxVal = (key === 'ROD_LENGTH') ? "0.2" : "0.3";
-
 			// ★修正：VERSIONの場合は自動拡張機能付きのセレクトボックスにする
 			if (key === 'VERSION') {
 				const options = ['1', '2', 'extended-2'];
 				// 未知のバージョンが来たら、その場だけ選択肢に追加する
 				if (!options.includes(v) && v !== "") options.push(v);
-				
-				const optionsHtml = options.map(opt => 
-					`<option value="${opt}" ${opt === v ? 'selected' : ''}>${opt}</option>`
-				).join('');
-				
+				const optionsHtml = options.map(opt => `<option value="${opt}" ${opt === v ? 'selected' : ''}>${opt}</option>`).join('');
 				innerHtml = `<div class="input-unit"><label>${displayLabel || key}</label><div class="input-with-range">
 					<select class="text-input">${optionsHtml}</select>
 				</div></div>`;
@@ -1549,7 +1546,6 @@ window.updateSuspensionVisuals = function(data) {
 document.addEventListener('change', (e) => {
 	if (e.target.id === 'extendedPhysicsSwitch') {
 		window.isExtendedPhysicsEnabled = e.target.checked;
-
 		// --- ★追加：ON/OFFテキストの切り替え ---
 		const statusText = document.getElementById('extendedStatusText');
 		if (statusText) {
@@ -1562,17 +1558,14 @@ document.addEventListener('change', (e) => {
 			}
 		}
 		// ------------------------------------
-		
 		// 1. car.ini の VERSION 書き換え
 		if (window.currentCarData && window.currentCarData.HEADER) {
 			window.currentCarData.HEADER.VERSION = window.isExtendedPhysicsEnabled ? 'extended-2' : '1';
 		}
-
 		// ★追加：suspensions.ini の VERSION も同時に書き換える命令
 		if (window.currentSuspensionData && window.currentSuspensionData.HEADER) {
 			window.currentSuspensionData.HEADER.VERSION = window.isExtendedPhysicsEnabled ? 'extended-2' : '2';
 		}
-
 		// 2. ONになった時、データに項目がなければデフォルト値を補完
 		if (window.isExtendedPhysicsEnabled && window.currentSuspensionData) {
 			if (!window.currentSuspensionData._EXTENSION) {

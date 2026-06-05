@@ -373,23 +373,18 @@ window.syncSus = function() {
 // ==========================================================================
 setTimeout(() => {
 	const originalUpdateSuspensionEditorUI = window.updateSuspensionEditorUI;
-	
 	window.updateSuspensionEditorUI = function(data) {
 		// 1. まず本来のUI生成処理を通常通り走らせる
 		if (typeof originalUpdateSuspensionEditorUI === 'function') {
 			originalUpdateSuspensionEditorUI(data);
 		}
-		
 		if (!data) return;
-
 		// 2. 生成された HTML の中から _EXTENSION と _EXTENSION_FLEX を探してスイッチを仕込む
 		['_EXTENSION', '_EXTENSION_FLEX'].forEach(section => {
 			if (!data[section]) return;
-
 			// 画面上の該当セクションの article 要素をタイトルテキストから特定する
 			const articles = document.querySelectorAll('#suspension-data-container article, .suspension-tab-panel article, #sus-editor article');
 			let targetArticle = null;
-			
 			articles.forEach(art => {
 				const titleText = art.querySelector('.suspension-item-title_box p')?.textContent;
 				// ★修正1：startsWith から「完全一致 (===)」に変更して、名前の競合を完全に防ぐ
@@ -397,20 +392,16 @@ setTimeout(() => {
 					targetArticle = art;
 				}
 			});
-
 			if (!targetArticle) return;
 			if (data[section]._ENABLED === undefined) {
 				data[section]._ENABLED = false; // 初期状態はOFF（半透明）
 			}
 			const isItemEnabled = data[section]._ENABLED;
-
 			// ★修正：外箱（targetArticle）は常に操作可能にしてスイッチを押せるようにする
 			targetArticle.style.opacity = '1';
 			targetArticle.style.pointerEvents = 'auto';
-
 			const titleBox = targetArticle.querySelector('.suspension-item-title_box');
 			const contentBox = targetArticle.querySelector('.suspension-item_box');
-
 			// ★修正：半透明と操作ロックは、入力欄の入った中身（contentBox）だけに適用する
 			if (contentBox) {
 				if (!window.isExtendedPhysicsEnabled || !isItemEnabled) {
@@ -421,13 +412,11 @@ setTimeout(() => {
 					contentBox.style.pointerEvents = 'auto';
 				}
 			}
-
 			// 重複生成を防ぎつつ、右側にトグルスイッチを埋め込む
 			if (titleBox && contentBox && !titleBox.querySelector('.suspension-item-toggle')) {
 				titleBox.style.display = 'flex';
 				titleBox.style.justifyContent = 'space-between';
 				titleBox.style.alignItems = 'center';
-
 				const toggleLabel = document.createElement('label');
 				toggleLabel.className = 'toggle-switch';
 				toggleLabel.style.marginRight = '15px';
@@ -437,13 +426,11 @@ setTimeout(() => {
 					<span class="toggle-slider round"></span>
 				`;
 				titleBox.appendChild(toggleLabel);
-
 				// 初期状態の見た目（半透明ロック）を反映
 				if (!isItemEnabled) {
 					contentBox.style.opacity = '0.4';
 					contentBox.style.pointerEvents = 'none';
 				}
-
 				// スイッチ切り替え時のイベントリスナーをバインド
 				toggleLabel.querySelector('input').addEventListener('change', (e) => {
 					const isChecked = e.target.checked;
@@ -460,7 +447,6 @@ setTimeout(() => {
 						contentBox.style.opacity = '0.4';
 						contentBox.style.pointerEvents = 'none';
 					}
-
 					if (window.modifiedStatus) window.modifiedStatus.suspensions = true;
 					if (typeof window.updateSuspensionVisuals === 'function') {
 						window.updateSuspensionVisuals(window.currentSuspensionData);

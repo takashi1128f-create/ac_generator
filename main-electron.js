@@ -10,10 +10,10 @@ const {
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-
-const { exec } = require('child_process');
+const {
+	exec
+} = require('child_process');
 const https = require('https');
-
 const IS_DEV_MODE = !app.isPackaged;
 if (IS_DEV_MODE) {
 	try {
@@ -29,7 +29,6 @@ if (!IS_DEV_MODE) {
 	console.warn = function() {};
 	// ※ console.error は致命的なクラッシュ原因を探るために残すことが多いです
 }
-
 // ==========================================
 // ★ アプリ全体の設定管理（司令塔）
 // ==========================================
@@ -39,27 +38,23 @@ const SERVER_CONFIG = {
 		splashDuration: 1000, // スプラッシュ画面を表示する時間（ミリ秒）
 	},
 	flow: {
-		autoSkipLogin: true,      // トークンがあれば自動ログインを試みる
+		autoSkipLogin: true, // トークンがあれば自動ログインを試みる
 		showSplashAfterLogin: true // ログイン後にスプラッシュを表示する
 	},
 	auth: {
-		trialDays: 7,              // 毎月の試用可能日数（合計7日間）
-		trialFreeDays: 3,          // 完全無料枠（Discord参加のみ）の試用日数
+		trialDays: 7, // 毎月の試用可能日数（合計7日間）
+		trialFreeDays: 3, // 完全無料枠（Discord参加のみ）の試用日数
 		guildId: '838421006011990047', // DiscordサーバーのID
 		roles: {
 			// 手動付与（モニター・協力者など）
 			permManual: ['1497866893871026216'],
-			
 			// YouTubeメンバーシップ「永続アクセス権」ランク（複数指定可能）
-			permYoutube: [
-				'1497853055469879337', // 私を支持する者（ランクA）
-				'1499372842347794578'  // 手動永続権
+			permYoutube: ['1497853055469879337', // 私を支持する者（ランクA）
+				'1499372842347794578' // 手動永続権
 			],
-			
 			// YouTubeメンバーシップ「毎月7日間」ランク（複数指定可能）
-			trialYoutube: [
-				'1496677743125856328', // 支援者（心の支え）
-				'1497875383658221568'  // 新しく追加したテスト用や別ランク
+			trialYoutube: ['1496677743125856328', // 支援者（心の支え）
+				'1497875383658221568' // 新しく追加したテスト用や別ランク
 			]
 		}
 	}
@@ -70,7 +65,6 @@ const PATHS = {
 	recent: path.join(app.getPath('userData'), 'recent_projects.json'),
 	root: path.join(app.getPath('documents'), 'AC_Generator_Projects')
 };
-
 let mainWindow;
 let splash;
 const PROTOCOL = 'ac-file-gen';
@@ -92,36 +86,47 @@ if (!gotTheLock) {
 		app.setAsDefaultProtocolClient(PROTOCOL);
 	}
 }
-
 // --- 部品A：スプラッシュ画面 ---
 function createSplashWindow() {
 	splash = new BrowserWindow({
-		width: 700, height: 1000, transparent: true, frame: false, alwaysOnTop: true, resizable: false,
+		width: 700,
+		height: 1000,
+		transparent: true,
+		frame: false,
+		alwaysOnTop: true,
+		resizable: false,
 		icon: path.join(__dirname, '/image/icon.png'),
-		webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, webSecurity: false }
+		webPreferences: {
+			preload: path.join(__dirname, 'preload.js'),
+			contextIsolation: true,
+			webSecurity: false
+		}
 	});
 	splash.loadFile('splash.html');
 }
-
 // --- 部品B：メインエディター画面 ---
 function createMainWindow() {
 	// ★追加：package.json からバージョン番号を自動取得する
 	const appVersion = app.getVersion();
-
 	mainWindow = new BrowserWindow({
-		width: 1340, height: 750, minWidth: 1340, minHeight: 750,
+		width: 1340,
+		height: 750,
+		minWidth: 1340,
+		minHeight: 750,
 		title: `AC FILE GENERATOR v${appVersion}`, // ★追加：タイトルバーに名前とバージョンを設定
 		show: false, // ★安全のために最初は隠す（Aの強み）
-		autoHideMenuBar: false, backgroundColor: '#ffffff',
+		autoHideMenuBar: false,
+		backgroundColor: '#ffffff',
 		icon: path.join(__dirname, '/image/icon.png'),
-		webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true }
+		webPreferences: {
+			preload: path.join(__dirname, 'preload.js'),
+			contextIsolation: true
+		}
 	});
-
 	// ★追加：index.html の <title> タグによってタイトルが上書きされるのを防ぐ
 	// mainWindow.on('page-title-updated', (e) => {
 	// 	e.preventDefault();
 	// });
-
 	mainWindow.on('close', (e) => {
 		e.preventDefault();
 		// ★修正：ボタンの並び順とテキストを変更
@@ -145,19 +150,33 @@ function createMainWindow() {
 		}
 		// キャンセルの場合は何もしない（ウィンドウを開いたままにする）
 	});
-
 	mainWindow.webContents.on('context-menu', (event, params) => {
 		const menuTemplate = [];
-		if (params.editFlags.canCut) menuTemplate.push({ role: 'cut', label: '切り取り' });
-		if (params.editFlags.canCopy) menuTemplate.push({ role: 'copy', label: 'コピー' });
-		if (params.editFlags.canPaste) menuTemplate.push({ role: 'paste', label: '貼り付け' });
+		if (params.editFlags.canCut) menuTemplate.push({
+			role: 'cut',
+			label: '切り取り'
+		});
+		if (params.editFlags.canCopy) menuTemplate.push({
+			role: 'copy',
+			label: 'コピー'
+		});
+		if (params.editFlags.canPaste) menuTemplate.push({
+			role: 'paste',
+			label: '貼り付け'
+		});
 		if (IS_DEV_MODE) {
-			menuTemplate.push({ type: 'separator' });
-			menuTemplate.push({ label: '要素を検証', click: () => { mainWindow.webContents.inspectElement(params.x, params.y); } });
+			menuTemplate.push({
+				type: 'separator'
+			});
+			menuTemplate.push({
+				label: '要素を検証',
+				click: () => {
+					mainWindow.webContents.inspectElement(params.x, params.y);
+				}
+			});
 		}
 		if (menuTemplate.length > 0) Menu.buildFromTemplate(menuTemplate).popup();
 	});
-
 	mainWindow.setAspectRatio(16 / 10);
 	mainWindow.loadFile('index.html');
 	// ★ ここを追加：画面の読み込みが完了したら、バージョン番号を送る
@@ -165,93 +184,131 @@ function createMainWindow() {
 		mainWindow.webContents.send('send-app-version', appVersion);
 	});
 }
-
-const template = [
-	{
-		label: 'ファイル',
-		submenu: [
-			{ label: '新規プロジェクトを作成', accelerator: 'CmdOrCtrl+N', click: () => { if (mainWindow) mainWindow.webContents.send('menu-request-new'); } },
-			{ label: '既存のプロジェクトを開く', accelerator: 'CmdOrCtrl+O', click: () => { if (mainWindow) mainWindow.webContents.send('menu-request-open'); } },
-			{ type: 'separator' },
-			{ 
-				label: 'dataフォルダを一括読込', 
-				click: async () => { 
-					if (!mainWindow) return;
-					const result = await dialog.showOpenDialog(mainWindow, {
-						properties: ['openDirectory'],
-						title: 'dataフォルダを選択してください'
-					});
-					if (result.canceled || result.filePaths.length === 0) return;
-					const folderPath = result.filePaths[0];
-					const ALLOWED_FILES = [
-						'aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini',
-						'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini'
-					];
-					const filesToSend = [];
-					try {
-						const files = fs.readdirSync(folderPath);
-						for (const file of files) {
-							const lowerFile = file.toLowerCase();
-							
-							// ① 通常の設定ファイル（テキスト）の場合
-							if (ALLOWED_FILES.includes(lowerFile)) {
-								const fullPath = path.join(folderPath, file);
-								if (fs.statSync(fullPath).isFile()) {
-									const content = fs.readFileSync(fullPath, 'utf8');
-									filesToSend.push({
-										name: file,
-										content: content,
-										path: fullPath
-									});
-								}
-							} 
-							else if (lowerFile.endsWith('.glb') || lowerFile.endsWith('.fbx')) {
-								const fullPath = path.join(folderPath, file);
-								if (fs.statSync(fullPath).isFile()) {
-									filesToSend.push({
-										name: file,
-										path: fullPath,
-										isModel: true
-									});
-								}
-							}
+const template = [{
+	label: 'ファイル',
+	submenu: [{
+		label: '新規プロジェクトを作成',
+		accelerator: 'CmdOrCtrl+N',
+		click: () => {
+			if (mainWindow) mainWindow.webContents.send('menu-request-new');
+		}
+	}, {
+		label: '既存のプロジェクトを開く',
+		accelerator: 'CmdOrCtrl+O',
+		click: () => {
+			if (mainWindow) mainWindow.webContents.send('menu-request-open');
+		}
+	}, {
+		type: 'separator'
+	}, {
+		label: 'dataフォルダを一括読込',
+		click: async () => {
+			if (!mainWindow) return;
+			const result = await dialog.showOpenDialog(mainWindow, {
+				properties: ['openDirectory'],
+				title: 'dataフォルダを選択してください'
+			});
+			if (result.canceled || result.filePaths.length === 0) return;
+			const folderPath = result.filePaths[0];
+			const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini'];
+			const filesToSend = [];
+			try {
+				const files = fs.readdirSync(folderPath);
+				for (const file of files) {
+					const lowerFile = file.toLowerCase();
+					// ① 通常の設定ファイル（テキスト）の場合
+					if (ALLOWED_FILES.includes(lowerFile)) {
+						const fullPath = path.join(folderPath, file);
+						if (fs.statSync(fullPath).isFile()) {
+							const content = fs.readFileSync(fullPath, 'utf8');
+							filesToSend.push({
+								name: file,
+								content: content,
+								path: fullPath
+							});
 						}
-						mainWindow.webContents.send('menu-request-import-folder-data', filesToSend);
-					} catch (err) {
-						console.error("裏側でのフォルダ一括読込に失敗しました:", err);
+					} else if (lowerFile.endsWith('.glb') || lowerFile.endsWith('.fbx')) {
+						const fullPath = path.join(folderPath, file);
+						if (fs.statSync(fullPath).isFile()) {
+							filesToSend.push({
+								name: file,
+								path: fullPath,
+								isModel: true
+							});
+						}
 					}
-				} 
-			},
-			{ type: 'separator' },
-			{ label: '保存', accelerator: 'CmdOrCtrl+S', click: () => { if (mainWindow) mainWindow.webContents.send('menu-request-save'); } },
-			{ label: '別名でプロジェクトを保存', accelerator: 'CmdOrCtrl+Shift+S', click: () => { if (mainWindow) mainWindow.webContents.send('menu-request-save-as'); } },
-			{ label: '復元', click: () => { if (mainWindow) mainWindow.webContents.send('menu-request-restore'); } },
-			{ label: '書き出し', accelerator: 'CmdOrCtrl+E', click: () => { if (mainWindow) mainWindow.webContents.send('menu-request-export'); } },
-			{ type: 'separator' },
-			{ role: 'quit', label: '終了' }
-		]
-	},
-	{ 
-		label: '編集', 
-		submenu: [
-			{ role: 'undo', label: '元に戻す' }, 
-			{ role: 'redo', label: 'やり直す' }, 
-			{ type: 'separator' }, 
-			{ role: 'cut', label: '切り取り' }, 
-			{ role: 'copy', label: 'コピー (Ctrl+C)' }, 
-			{ role: 'paste', label: '貼り付け (Ctrl+V)' }, 
-			{ role: 'selectAll', label: 'すべて選択 (Ctrl+A)' }
-		] 
-	}
-];
+				}
+				mainWindow.webContents.send('menu-request-import-folder-data', filesToSend);
+			} catch (err) {
+				console.error("裏側でのフォルダ一括読込に失敗しました:", err);
+			}
+		}
+	}, {
+		type: 'separator'
+	}, {
+		label: '保存',
+		accelerator: 'CmdOrCtrl+S',
+		click: () => {
+			if (mainWindow) mainWindow.webContents.send('menu-request-save');
+		}
+	}, {
+		label: '別名でプロジェクトを保存',
+		accelerator: 'CmdOrCtrl+Shift+S',
+		click: () => {
+			if (mainWindow) mainWindow.webContents.send('menu-request-save-as');
+		}
+	}, {
+		label: '復元',
+		click: () => {
+			if (mainWindow) mainWindow.webContents.send('menu-request-restore');
+		}
+	}, {
+		label: '書き出し',
+		accelerator: 'CmdOrCtrl+E',
+		click: () => {
+			if (mainWindow) mainWindow.webContents.send('menu-request-export');
+		}
+	}, {
+		type: 'separator'
+	}, {
+		role: 'quit',
+		label: '終了'
+	}]
+}, {
+	label: '編集',
+	submenu: [{
+		role: 'undo',
+		label: '元に戻す'
+	}, {
+		role: 'redo',
+		label: 'やり直す'
+	}, {
+		type: 'separator'
+	}, {
+		role: 'cut',
+		label: '切り取り'
+	}, {
+		role: 'copy',
+		label: 'コピー (Ctrl+C)'
+	}, {
+		role: 'paste',
+		label: '貼り付け (Ctrl+V)'
+	}, {
+		role: 'selectAll',
+		label: 'すべて選択 (Ctrl+A)'
+	}]
+}];
 // ★開発モード（npm start）の時だけ「開発」メニューを配列の最後に追加する
 if (IS_DEV_MODE) {
 	template.push({
 		label: '開発',
-		submenu: [
-			{ role: 'reload', label: '再読み込み (Ctrl+R)' },
-			{ role: 'toggleDevTools', label: 'デバッグツール (F12)' }
-		]
+		submenu: [{
+			role: 'reload',
+			label: '再読み込み (Ctrl+R)'
+		}, {
+			role: 'toggleDevTools',
+			label: 'デバッグツール (F12)'
+		}]
 	});
 }
 // ==========================================
@@ -259,19 +316,20 @@ if (IS_DEV_MODE) {
 // ==========================================
 app.whenReady().then(async () => {
 	let isUpdating = false; // ★追加：アップデート中かどうかを覚える旗
-	
 	protocol.registerFileProtocol('local-model', (request, callback) => {
 		const url = request.url.replace('local-model://', '');
-		try { return callback(decodeURIComponent(url)); } catch (error) { console.error(error); }
+		try {
+			return callback(decodeURIComponent(url));
+		} catch (error) {
+			console.error(error);
+		}
 	});
-
 	// ★ アップデート確認（Bのマイルドな警告）
 	try {
 		const currentVersion = app.getVersion();
 		const CHECK_URL = 'https://gist.githubusercontent.com/takashi1128f-create/934c8931f8e2a39bc12596d5fbd1b0ed/raw/update.json';
 		const response = await fetch(CHECK_URL + '?' + Date.now());
 		const data = await response.json();
-
 		if (data.latestVersion !== currentVersion) {
 			const result = await dialog.showMessageBox({
 				type: 'info',
@@ -282,31 +340,24 @@ app.whenReady().then(async () => {
 				defaultId: 0,
 				cancelId: 1
 			});
-
 			if (result.response === 0) {
 				isUpdating = true; // 旗を揚げる
-				
 				// ★修正：普段使っているブラウザを開いて、そこにダウンロードを任せる
 				shell.openExternal(data.downloadUrl);
-				
 				// ★修正：ブラウザが開いたら、このアプリ自体はスパッと終了させる
 				app.exit();
 			}
 		}
-	} catch (err) { 
-		console.log('アップデート確認に失敗しました（オフライン等）'); 
+	} catch (err) {
+		console.log('アップデート確認に失敗しました（オフライン等）');
 	}
-	
 	if (isUpdating) return;
-
 	// 外部ブラウザでリンクを開く窓口（エラー回避用）
 	ipcMain.handle('open-external', (event, url) => shell.openExternal(url));
-
 	// ★修正：ダウンロードしてインストーラーを起動する専用の箱（関数）
 	function startBackgroundUpdate(url) {
 		const tempPath = path.join(app.getPath('temp'), 'ac-generator-setup.exe');
 		const file = fs.createWriteStream(tempPath);
-
 		https.get(url, (response) => {
 			// リダイレクト（Googleドライブなど）に対応
 			if (response.statusCode === 301 || response.statusCode === 302) {
@@ -325,10 +376,8 @@ app.whenReady().then(async () => {
 			if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
 		});
 	}
-	
 	Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 	createMainWindow();
-
 	// ★ 賢い分岐ルート（Aの強み）
 	const hasToken = fs.existsSync(PATHS.token);
 	if (hasToken && SERVER_CONFIG.flow.autoSkipLogin) {
@@ -339,10 +388,8 @@ app.whenReady().then(async () => {
 			mainWindow.maximize();
 		});
 	}
-
 	startAuthServer();
 });
-
 // スプラッシュ表示フロー（Aの強み）
 function startSplashFlow() {
 	createSplashWindow();
@@ -354,15 +401,12 @@ function startSplashFlow() {
 				mainWindow.maximize();
 				mainWindow.webContents.send('main-window-shown');
 			}
-
 			// 2. ★修正：一番手前にあるスプラッシュを、いきなり壊さずに「徐々に透明」にする
 			if (splash && !splash.isDestroyed()) {
 				let opacity = 1.0; // 最初の濃さ（100%）
-				
 				// 30ミリ秒ごとに、少しずつ透明にするタイマーを発動
 				const fadeInterval = setInterval(() => {
 					opacity -= 0.05; // 0.05ずつ薄くする
-					
 					if (opacity <= 0) {
 						// 完全に透明になったら、タイマーを止めて窓を完全に破壊する
 						clearInterval(fadeInterval);
@@ -376,48 +420,51 @@ function startSplashFlow() {
 		}, SERVER_CONFIG.timing.splashDuration);
 	});
 }
-
 // ==========================================
 // ★ 認証システムと自動ログイン
 // ==========================================
 const CLIENT_ID = '1496540447684952144';
 const CLIENT_SECRET = '0cuEaDUXJ-6DCT00wRkPRTFROFlX-Elm';
 const REDIRECT_URI = 'http://localhost:34567/auth';
-
 const checkUserPlan = (roles, userId, username = "不明") => {
-	if (!roles || !userId) return { success: false, reason: 'no_role' };
-
+	if (!roles || !userId) return {
+		success: false,
+		reason: 'no_role'
+	};
 	// 1. 永続プラン
-	const isPermanent = SERVER_CONFIG.auth.roles.permManual.some(r => roles.includes(r)) || 
-	                    SERVER_CONFIG.auth.roles.permYoutube.some(r => roles.includes(r));
-	if (isPermanent) return { success: true, plan: 'permanent' };
-	
+	const isPermanent = SERVER_CONFIG.auth.roles.permManual.some(r => roles.includes(r)) || SERVER_CONFIG.auth.roles.permYoutube.some(r => roles.includes(r));
+	if (isPermanent) return {
+		success: true,
+		plan: 'permanent'
+	};
 	// 2. プラン判定
 	const isTrialYoutube = SERVER_CONFIG.auth.roles.trialYoutube.some(r => roles.includes(r));
 	let currentPlan = isTrialYoutube ? 'trial' : 'free';
 	let maxDays = isTrialYoutube ? SERVER_CONFIG.auth.trialDays : SERVER_CONFIG.auth.trialFreeDays;
-
 	// 3. データ読み込み
 	let db = {};
 	if (fs.existsSync(PATHS.trial)) {
-		try { db = JSON.parse(fs.readFileSync(PATHS.trial, 'utf8')); } catch (e) { db = {}; }
+		try {
+			db = JSON.parse(fs.readFileSync(PATHS.trial, 'utf8'));
+		} catch (e) {
+			db = {};
+		}
 	}
-
 	const now = new Date();
 	const currentMonth = `${now.getFullYear()}-${now.getMonth() + 1}`;
 	const todayStr = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
-
 	// 新規ユーザー判定（月の記録を作成）
 	if (!db[userId]) {
-		db[userId] = { month: currentMonth, usedDates: [] };
+		db[userId] = {
+			month: currentMonth,
+			usedDates: []
+		};
 	}
-
 	// メンバー枠(trial)だけを毎月リセットし、Free版はリセットしない
 	if (currentPlan === 'trial' && db[userId].month !== currentMonth) {
 		db[userId].month = currentMonth;
-		db[userId].usedDates = []; 
+		db[userId].usedDates = [];
 	}
-
 	// 今日まだ使っていなければ追加して保存
 	if (!db[userId].usedDates.includes(todayStr)) {
 		if (db[userId].usedDates.length < maxDays) {
@@ -425,55 +472,81 @@ const checkUserPlan = (roles, userId, username = "不明") => {
 			fs.writeFileSync(PATHS.trial, JSON.stringify(db, null, 2), 'utf8');
 		}
 	}
-
 	const usedCount = db[userId].usedDates.length;
-
 	if (usedCount <= maxDays && db[userId].usedDates.includes(todayStr)) {
-		return { 
-			success: true, 
+		return {
+			success: true,
 			plan: currentPlan,
 			daysLeft: (maxDays - usedCount + 1)
 		};
 	}
-
-	return { success: false, reason: 'trial_expired' };
+	return {
+		success: false,
+		reason: 'trial_expired'
+	};
 };
-
 // ★ 詳細な監視カメラ（Bの強み）
 ipcMain.handle('check-auto-login', async () => {
 	// 開発中だけ無条件で成功を返すように一時的に書き換え
 	if (IS_DEV_MODE) {
 		console.log("【開発モード】Discord認証をスキップし、永続プランとして起動します");
-		return { success: true, plan: 'permanent' };
+		return {
+			success: true,
+			plan: 'permanent'
+		};
 	}
 	try {
-		if (!fs.existsSync(PATHS.token)) return { success: false, reason: 'no_token' };
+		if (!fs.existsSync(PATHS.token)) return {
+			success: false,
+			reason: 'no_token'
+		};
 		let data = JSON.parse(fs.readFileSync(PATHS.token, 'utf8'));
 		let accessToken = data.accessToken;
-		let memberResponse = await fetch(`https://discord.com/api/users/@me/guilds/${SERVER_CONFIG.auth.guildId}/member`, { headers: { Authorization: `Bearer ${accessToken}` } });
-
+		let memberResponse = await fetch(`https://discord.com/api/users/@me/guilds/${SERVER_CONFIG.auth.guildId}/member`, {
+			headers: {
+				Authorization: `Bearer ${accessToken}`
+			}
+		});
 		if (!memberResponse.ok) {
 			const refreshResponse = await fetch('https://discord.com/api/oauth2/token', {
 				method: 'POST',
-				body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'refresh_token', refresh_token: data.refreshToken }),
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: new URLSearchParams({
+					client_id: CLIENT_ID,
+					client_secret: CLIENT_SECRET,
+					grant_type: 'refresh_token',
+					refresh_token: data.refreshToken
+				}),
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded'
+				},
 			});
-			if (!refreshResponse.ok) return { success: false, reason: 'token_expired' };
+			if (!refreshResponse.ok) return {
+				success: false,
+				reason: 'token_expired'
+			};
 			const newTokens = await refreshResponse.json();
 			accessToken = newTokens.access_token;
-			fs.writeFileSync(PATHS.token, JSON.stringify({ accessToken: newTokens.access_token, refreshToken: newTokens.refresh_token }), 'utf8');
-			memberResponse = await fetch(`https://discord.com/api/users/@me/guilds/${SERVER_CONFIG.auth.guildId}/member`, { headers: { Authorization: `Bearer ${accessToken}` } });
+			fs.writeFileSync(PATHS.token, JSON.stringify({
+				accessToken: newTokens.access_token,
+				refreshToken: newTokens.refresh_token
+			}), 'utf8');
+			memberResponse = await fetch(`https://discord.com/api/users/@me/guilds/${SERVER_CONFIG.auth.guildId}/member`, {
+				headers: {
+					Authorization: `Bearer ${accessToken}`
+				}
+			});
 		}
 		const memberData = await memberResponse.json();
-		
 		console.log("【裏側】Discordからの役職データ:", memberData.roles);
 		const result = checkUserPlan(memberData.roles, memberData.user.id);
 		console.log("【裏側】判定結果:", result);
 		return result;
-
 	} catch (error) {
 		console.error('Auto login check failed:', error);
-		return { success: false, reason: 'error' };
+		return {
+			success: false,
+			reason: 'error'
+		};
 	}
 });
 
@@ -483,21 +556,36 @@ function startAuthServer() {
 			const urlParams = new URL(req.url, `http://${req.headers.host}`);
 			const code = urlParams.searchParams.get('code');
 			if (!code) return res.end('Code not found.');
-
 			try {
 				const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
 					method: 'POST',
-					body: new URLSearchParams({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'authorization_code', code: code, redirect_uri: REDIRECT_URI }),
-					headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams({
+						client_id: CLIENT_ID,
+						client_secret: CLIENT_SECRET,
+						grant_type: 'authorization_code',
+						code: code,
+						redirect_uri: REDIRECT_URI
+					}),
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded'
+					},
 				});
 				const tokenData = await tokenResponse.json();
-				const memberResponse = await fetch(`https://discord.com/api/users/@me/guilds/${SERVER_CONFIG.auth.guildId}/member`, { headers: { Authorization: `Bearer ${tokenData.access_token}` } });
+				const memberResponse = await fetch(`https://discord.com/api/users/@me/guilds/${SERVER_CONFIG.auth.guildId}/member`, {
+					headers: {
+						Authorization: `Bearer ${tokenData.access_token}`
+					}
+				});
 				const memberData = await memberResponse.json();
 				const authResult = checkUserPlan(memberData.roles, memberData.user.id);
-
-				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+				res.writeHead(200, {
+					'Content-Type': 'text/html; charset=utf-8'
+				});
 				if (authResult.success) {
-					fs.writeFileSync(PATHS.token, JSON.stringify({ accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token }), 'utf8');
+					fs.writeFileSync(PATHS.token, JSON.stringify({
+						accessToken: tokenData.access_token,
+						refreshToken: tokenData.refresh_token
+					}), 'utf8');
 					if (mainWindow) mainWindow.webContents.send('discord-auth-callback', authResult);
 					// ★削除（コメントアウト）：手動ログイン後にスプラッシュを再起動させない
 					// if (SERVER_CONFIG.flow.showSplashAfterLogin) startSplashFlow();
@@ -514,61 +602,104 @@ function startAuthServer() {
 					if (fs.existsSync(PATHS.token)) fs.unlinkSync(PATHS.token);
 					res.end('<h1 style="color:#ff6b6b; text-align:center; font-family:sans-serif; margin-top:50px;">認証失敗</h1>');
 				}
-			} catch (error) { res.end('Error occurred.'); }
+			} catch (error) {
+				res.end('Error occurred.');
+			}
 		}
 	});
 	authServer.listen(34567);
 }
-
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-ipcMain.on('force-quit', () => { app.exit(); });
-
+app.on('window-all-closed', () => {
+	if (process.platform !== 'darwin') app.quit();
+});
+ipcMain.on('force-quit', () => {
+	app.exit();
+});
 // ==========================================
 // ★ プロジェクト管理システム
 // ==========================================
 const PROJECTS_ROOT = path.join(app.getPath('documents'), 'AC_Generator_Projects');
-if (!fs.existsSync(PROJECTS_ROOT)) fs.mkdirSync(PROJECTS_ROOT, { recursive: true });
-
+if (!fs.existsSync(PROJECTS_ROOT)) fs.mkdirSync(PROJECTS_ROOT, {
+	recursive: true
+});
 ipcMain.handle('open-project', async () => {
-	const result = await dialog.showOpenDialog(mainWindow, { title: 'プロジェクトフォルダを選択', defaultPath: PROJECTS_ROOT, properties: ['openDirectory'] });
+	const result = await dialog.showOpenDialog(mainWindow, {
+		title: 'プロジェクトフォルダを選択',
+		defaultPath: PROJECTS_ROOT,
+		properties: ['openDirectory']
+	});
 	if (mainWindow) mainWindow.focus(); // ★追加：ダイアログが閉じたらメイン画面にピントを強制的に戻す
-	if (result.canceled || result.filePaths.length === 0) return { success: false };
+	if (result.canceled || result.filePaths.length === 0) return {
+		success: false
+	};
 	try {
 		const filePath = path.join(result.filePaths[0], 'project.json');
 		if (!fs.existsSync(filePath)) throw new Error('指定されたフォルダに project.json が見つかりません。');
 		const projectData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 		saveToRecent(projectData.projectName || "名称未設定", filePath);
-		return { success: true, data: projectData, path: filePath };
-	} catch (err) { return { success: false, error: err.message }; }
+		return {
+			success: true,
+			data: projectData,
+			path: filePath
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
-
 ipcMain.handle('load-project-path', async (event, filePath) => {
 	try {
 		const projectData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 		saveToRecent(projectData.projectName || "名称未設定", filePath);
-		return { success: true, data: projectData, path: filePath };
-	} catch (err) { return { success: false, error: err.message }; }
+		return {
+			success: true,
+			data: projectData,
+			path: filePath
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
-
 ipcMain.handle('save-project', async (event, projectData) => {
 	try {
 		const targetDir = path.join(PROJECTS_ROOT, projectData.projectName);
-		if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+		if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {
+			recursive: true
+		});
 		const jsonPath = path.join(targetDir, 'project.json');
 		if (fs.existsSync(jsonPath)) fs.copyFileSync(jsonPath, path.join(targetDir, 'project.json.bak'));
 		fs.writeFileSync(jsonPath, JSON.stringify(projectData, null, 2), 'utf8');
-		return { success: true, path: jsonPath };
-	} catch (err) { return { success: false, error: err.message }; }
+		return {
+			success: true,
+			path: jsonPath
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
-
 ipcMain.handle('restore-project', async (event, currentJsonPath) => {
 	try {
 		const backupPath = path.join(path.dirname(currentJsonPath), 'project.json.bak');
 		if (!fs.existsSync(backupPath)) throw new Error("バックアップが見つかりません。");
-		return { success: true, data: JSON.parse(fs.readFileSync(backupPath, 'utf8')) };
-	} catch (err) { return { success: false, error: err.message }; }
+		return {
+			success: true,
+			data: JSON.parse(fs.readFileSync(backupPath, 'utf8'))
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
-
 ipcMain.handle('get-recent-projects', async () => {
 	try {
 		if (!fs.existsSync(PROJECTS_ROOT)) return [];
@@ -577,44 +708,68 @@ ipcMain.handle('get-recent-projects', async () => {
 			const targetDir = path.join(PROJECTS_ROOT, folderName);
 			const jsonPath = path.join(targetDir, 'project.json');
 			if (fs.statSync(targetDir).isDirectory() && fs.existsSync(jsonPath)) {
-				try { list.push({ name: folderName, path: jsonPath, mtime: fs.statSync(jsonPath).mtime }); } catch (e) {}
+				try {
+					list.push({
+						name: folderName,
+						path: jsonPath,
+						mtime: fs.statSync(jsonPath).mtime
+					});
+				} catch (e) {}
 			}
 		});
 		return list.sort((a, b) => b.mtime - a.mtime);
-	} catch (err) { return []; }
+	} catch (err) {
+		return [];
+	}
 });
-
 ipcMain.handle('delete-project', async (event, projectPath) => {
 	try {
 		const projectFolder = path.dirname(projectPath);
-		if (fs.existsSync(projectFolder)) fs.rmSync(projectFolder, { recursive: true, force: true });
+		if (fs.existsSync(projectFolder)) fs.rmSync(projectFolder, {
+			recursive: true,
+			force: true
+		});
 		if (fs.existsSync(PATHS.recent)) {
 			let list = JSON.parse(fs.readFileSync(PATHS.recent, 'utf8')).filter(p => p.path !== projectPath);
 			fs.writeFileSync(PATHS.recent, JSON.stringify(list, null, 2));
 		}
-		return { success: true };
-	} catch (err) { return { success: false, error: err.message }; }
+		return {
+			success: true
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 
 function saveToRecent(name, filePath) {
 	let list = [];
-	if (fs.existsSync(PATHS.recent)) { try { list = JSON.parse(fs.readFileSync(PATHS.recent, 'utf8')); } catch (e) {} }
+	if (fs.existsSync(PATHS.recent)) {
+		try {
+			list = JSON.parse(fs.readFileSync(PATHS.recent, 'utf8'));
+		} catch (e) {}
+	}
 	list = list.filter(p => p.path !== filePath);
-	list.unshift({ name, path: filePath, date: new Date().toISOString() });
+	list.unshift({
+		name,
+		path: filePath,
+		date: new Date().toISOString()
+	});
 	fs.writeFileSync(PATHS.recent, JSON.stringify(list.slice(0, 10), null, 2));
 }
-
 ipcMain.handle('open-directory-dialog', async () => {
-	const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+	const result = await dialog.showOpenDialog({
+		properties: ['openDirectory']
+	});
 	if (mainWindow) mainWindow.focus(); // ★追加：ダイアログが閉じたらピントを戻す
 	return result.canceled ? null : result.filePaths[0];
 });
-
 // ★引数を (event, baseDir, folderName, files, isOverwrite, sourcePath) であることを確認
 ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files, isOverwrite, sourcePath) => {
 	try {
 		let targetDir = "";
-
 		if (isOverwrite) {
 			// 🔄 【スイッチON：元のデータに上書き】
 			if (!sourcePath) {
@@ -624,24 +779,26 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 					title: '上書き先のデータフォルダ（dataフォルダなど）を選択してください'
 				});
 				if (result.canceled || result.filePaths.length === 0) {
-					return { success: false, error: 'キャンセルされました' };
+					return {
+						success: false,
+						error: 'キャンセルされました'
+					};
 				}
 				targetDir = result.filePaths[0];
 			} else {
 				targetDir = sourcePath; // パスを知っていればダイアログを出さずに即座に上書き
 			}
-
 			// ★修正：上書き用バックアップフォルダの準備
 			const backupDir = path.join(targetDir, 'data_backup');
 			if (!fs.existsSync(backupDir)) {
-				fs.mkdirSync(backupDir, { recursive: true });
+				fs.mkdirSync(backupDir, {
+					recursive: true
+				});
 			}
-
 			// ★修正：送られてきた「書き出し予定のファイル」だけを狙い撃ちしてバックアップ（GLBなどは無視）
 			for (const file of files) {
 				const srcFile = path.join(targetDir, file.name);
 				const destFile = path.join(backupDir, file.name);
-
 				// 元のフォルダにそのファイルが存在しており、かつ「まだバックアップされていない」場合のみコピー
 				if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
 					if (fs.statSync(srcFile).isFile()) {
@@ -658,36 +815,43 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 					title: '保存先の親フォルダを選択してください'
 				});
 				if (result.canceled || result.filePaths.length === 0) {
-					return { success: false, error: 'キャンセルされました' };
+					return {
+						success: false,
+						error: 'キャンセルされました'
+					};
 				}
 				targetDir = path.join(result.filePaths[0], folderName);
 			} else {
 				targetDir = path.join(baseDir, folderName);
 			}
 		}
-
 		// 📁 共通：ファイルの書き出し処理
 		if (!fs.existsSync(targetDir)) {
-			fs.mkdirSync(targetDir, { recursive: true });
+			fs.mkdirSync(targetDir, {
+				recursive: true
+			});
 		}
 		for (const file of files) {
 			const fullPath = path.join(targetDir, file.name);
-
 			// ratios.rto がすでに存在する場合はスキップ
 			if (file.name === 'ratios.rto' && fs.existsSync(fullPath)) {
 				continue;
 			}
-
 			try {
 				fs.writeFileSync(fullPath, file.content, 'utf8');
 			} catch (writeErr) {
 				console.error(`ファイル ${file.name} の書き込みに失敗しました:`, writeErr.message);
 			}
 		}
-
-		return { success: true, path: targetDir };
+		return {
+			success: true,
+			path: targetDir
+		};
 	} catch (error) {
-		return { success: false, error: error.message };
+		return {
+			success: false,
+			error: error.message
+		};
 	}
 });
 ipcMain.handle('check-folder-exists', async (event, baseDir, folderName) => fs.existsSync(path.join(baseDir, folderName)));
@@ -698,8 +862,9 @@ ipcMain.handle('set-window-title', (event, projectName) => {
 		mainWindow.setTitle(`AC FILE GENERATOR v${appVersion} - ${projectName}`);
 	}
 });
+
 function sendDiscordLog() {
-    // Webhookなどは行わないが、呼び出されてもエラーにならないようにする
+	// Webhookなどは行わないが、呼び出されてもエラーにならないようにする
 }
 // 【追加】フロントエンドからの要求に応じて安全にモデルファイルを読み込む処理
 ipcMain.handle('read-model-file', async (event, filePath) => {
@@ -713,88 +878,88 @@ ipcMain.handle('read-model-file', async (event, filePath) => {
 		throw error;
 	}
 });
-
 // ==========================================
 // ★ マイドキュメントの view.ini との通信処理（詳細な探索ログ出力版）
 // ==========================================
-
 // ヘルパー関数：本物の Assetto Corsa フォルダを探し出す
 function getAssettoCorsaCfgPath(carName) {
 	// ★追加：アセットコルサの仕様（マイドキュメント内はすべて小文字）に自動で強制変換する
 	// if (carName) carName = carName.toLowerCase();
-
 	const profile = process.env.USERPROFILE || '';
 	// 可能性のある「ドキュメント」のパスをすべてリストアップ
 	const possibleDocs = [
-		app.getPath('documents'),                      // 1. ElectronがOSから聞いた標準
-		path.join(profile, 'Documents'),               // 2. ローカルのドキュメント強制
-		path.join(profile, 'OneDrive', 'Documents'),   // 3. OneDrive (英語名)
-		path.join(profile, 'OneDrive', 'ドキュメント')  // 4. OneDrive (日本語名)
+		app.getPath('documents'), // 1. ElectronがOSから聞いた標準
+		path.join(profile, 'Documents'), // 2. ローカルのドキュメント強制
+		path.join(profile, 'OneDrive', 'Documents'), // 3. OneDrive (英語名)
+		path.join(profile, 'OneDrive', 'ドキュメント') // 4. OneDrive (日本語名)
 	];
-
 	console.log(`\n--- 🔍 [裏側] ${carName} のマイドキュメントフォルダ探索を開始 ---`);
-
 	for (const docs of possibleDocs) {
 		const testPath = path.join(docs, 'Assetto Corsa', 'cfg', 'cars', carName);
-		
 		// ★追加：どこを探しているかすべてログに出す
 		console.log(`[探索] チェック中... : ${testPath}`);
-
 		// もしこの場所にフォルダが実在していれば、そこが「本物」！
 		if (fs.existsSync(testPath)) {
 			console.log(`✅ [発見] ここに実在しました！ : ${testPath}\n`);
 			return testPath;
 		}
 	}
-	
 	// どこにも無ければ、とりあえず標準の場所を返す（新規作成時用）
 	const fallbackPath = path.join(app.getPath('documents'), 'Assetto Corsa', 'cfg', 'cars', carName);
 	console.log(`❌ [失敗] フォルダがどこにも見つかりませんでした。デフォルトの場所を返します: ${fallbackPath}\n`);
 	return fallbackPath;
 }
-
 ipcMain.handle('read-view-ini', async (event, carName) => {
 	try {
 		const targetDir = getAssettoCorsaCfgPath(carName);
 		const targetFile = path.join(targetDir, 'view.ini');
-
 		console.log(`【裏側】最終的に読み込みに挑戦する view.ini のパス: ${targetFile}`);
-
 		if (fs.existsSync(targetFile)) {
 			const content = fs.readFileSync(targetFile, 'utf8');
 			console.log(`【裏側】✅ view.ini の読み込みに成功しました！`);
-			return { success: true, content: content };
+			return {
+				success: true,
+				content: content
+			};
 		}
-		
 		console.log(`【裏側】⚠️ パスは特定しましたが、中に view.ini というファイル自体が存在しませんでした。`);
-		return { success: false, reason: 'not_found' };
+		return {
+			success: false,
+			reason: 'not_found'
+		};
 	} catch (error) {
 		console.error(`【裏側】❌ view.ini の読み込み処理自体がエラーでクラッシュしました:`, error);
-		return { success: false, error: error.message };
+		return {
+			success: false,
+			error: error.message
+		};
 	}
 });
-
 ipcMain.handle('save-view-ini', async (event, carName, content) => {
 	try {
 		const targetDir = getAssettoCorsaCfgPath(carName);
-		
 		// 1. 保存先のフォルダが無ければ自動で作る
 		if (!fs.existsSync(targetDir)) {
-			fs.mkdirSync(targetDir, { recursive: true });
+			fs.mkdirSync(targetDir, {
+				recursive: true
+			});
 		}
-
 		const targetFile = path.join(targetDir, 'view.ini');
-		
 		// 2. 既に古いファイルが存在する場合は、安全のために「.bak」をつけてバックアップ
 		if (fs.existsSync(targetFile)) {
 			fs.copyFileSync(targetFile, path.join(targetDir, 'view.ini.bak'));
 		}
-
 		// 3. 新しい設定データを書き込む
 		fs.writeFileSync(targetFile, content, 'utf8');
-		return { success: true, path: targetFile };
+		return {
+			success: true,
+			path: targetFile
+		};
 	} catch (error) {
 		console.error(`【裏側】view.ini の保存に失敗:`, error);
-		return { success: false, error: error.message };
+		return {
+			success: false,
+			error: error.message
+		};
 	}
 });
