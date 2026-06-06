@@ -77,7 +77,7 @@ function init() {
 			renderer.toneMapping = THREE.ACESFilmicToneMapping;
 			renderers.push(renderer);
 		}
-		const planeSize = 200;
+		const planeSize = 50;
 		const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
 		const planeMat = new THREE.MeshStandardMaterial({
 			color: initialEarthColor,
@@ -119,7 +119,7 @@ function init() {
 	const suspSun = new THREE.DirectionalLight(0xffffff, 1.2);
 	suspSun.position.set(5, 10, 7.5);
 	suspensionScene.add(suspSun);
-	const planeGeo = new THREE.PlaneGeometry(200, 200);
+	const planeGeo = new THREE.PlaneGeometry(50, 50);
 	const planeMat = new THREE.MeshStandardMaterial({
 		color: initialEarthColor,
 		side: THREE.DoubleSide
@@ -127,7 +127,7 @@ function init() {
 	suspensionGround = new THREE.Mesh(planeGeo, planeMat);
 	suspensionGround.rotation.x = -Math.PI / 2;
 	suspensionScene.add(suspensionGround);
-	const suspGrid = new THREE.GridHelper(200, 100, 0x444444, 0x333333);
+	const suspGrid = new THREE.GridHelper(50, 20, 0x444444, 0x333333);
 	suspensionScene.add(suspGrid);
 	//スライダーなどを設定している項目
 	setupDialControls();
