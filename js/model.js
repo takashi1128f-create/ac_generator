@@ -42,11 +42,14 @@ let suspensionLineCache = {};
 let colliderHelper = null;
 
 function init() {
-	//カラーピッカーの初期化
-	//地面（アース）の色をオレンジ系の色（#e07d0d）に設定し、HTML上のカラーピッカーの初期値に反映させています。
-	const initialEarthColor = "#fcb15d";
-	const earthPicker = document.getElementById('earthColorPicker');
-	if (earthPicker) earthPicker.value = initialEarthColor;
+	// ★追加：床用テクスチャの読み込みとタイル状（リピート）設定
+	const loader = new THREE.TextureLoader();
+	const floorTexture = loader.load('image/asphalt.jpg');
+	floorTexture.wrapS = THREE.RepeatWrapping;
+	floorTexture.wrapT = THREE.RepeatWrapping;
+	// 50m四方に対して10回繰り返す設定（1枚あたり5m四方になり自然に見えます）
+	floorTexture.repeat.set(10, 10);
+	floorTexture.colorSpace = THREE.SRGBColorSpace;
 	//6つのカメラ・シーンのループ生成
 	for (let i = 0; i < NUM_CAMERAS; i++) {
 		//設定の保存: cameraConfigs に初期位置（y=1, fov=60など）を格納し、リセット用に initialConfigs へコピーを保存します。
@@ -79,18 +82,17 @@ function init() {
 		}
 		const planeSize = 50;
 		const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
-		const planeMat = new THREE.MeshStandardMaterial({
-			color: initialEarthColor,
-			roughness: 0.9,
-			metalness: 0.1,
-			side: THREE.DoubleSide
+		// ★変更：colorをmap(画像)に変更し、roughnessを1.0にしてマット（つや消し）に設定
+		const planeMat = new THREE.MeshStandardMaterial({ 
+			map: floorTexture, 
+			roughness: 1.0, 
+			metalness: 0.0, 
+			side: THREE.DoubleSide 
 		});
 		const ground = new THREE.Mesh(planeGeo, planeMat);
 		ground.rotation.x = -Math.PI / 2;
 		scene.add(ground);
 		groundMeshes.push(ground);
-		const grid = new THREE.GridHelper(planeSize, 100, 0x444444, 0x333333);
-		scene.add(grid);
 		// 各シーンにライトを追加
 		scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 		const sun = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -120,15 +122,16 @@ function init() {
 	suspSun.position.set(5, 10, 7.5);
 	suspensionScene.add(suspSun);
 	const planeGeo = new THREE.PlaneGeometry(50, 50);
-	const planeMat = new THREE.MeshStandardMaterial({
-		color: initialEarthColor,
-		side: THREE.DoubleSide
+	// ★変更：ここもテクスチャを適用し、マットな質感に設定
+	const planeMat = new THREE.MeshStandardMaterial({ 
+		map: floorTexture, 
+		roughness: 1.0, 
+		metalness: 0.0, 
+		side: THREE.DoubleSide 
 	});
 	suspensionGround = new THREE.Mesh(planeGeo, planeMat);
 	suspensionGround.rotation.x = -Math.PI / 2;
 	suspensionScene.add(suspensionGround);
-	const suspGrid = new THREE.GridHelper(50, 20, 0x444444, 0x333333);
-	suspensionScene.add(suspGrid);
 	//スライダーなどを設定している項目
 	setupDialControls();
 	setupSliderControls();
@@ -197,22 +200,6 @@ function setupRightClickReset() {
 			updateUIFromConfig(id);
 			requestRender();
 		}
-	});
-}
-//カラーピッカーで選択した色を、すべての画面の地面（アース）にリアルタイムで反映させる処理
-const earthPicker = document.getElementById('earthColorPicker');
-if (earthPicker) {
-	earthPicker.addEventListener('input', (e) => {
-		const color = e.target.value;
-		groundMeshes.forEach(mesh => {
-			mesh.material.color.set(color);
-		});
-		//条件分岐でサスペンション画面への反映
-		if (suspensionGround) {
-			suspensionGround.material.color.set(color);
-		}
-		//更新で表示されないのを改めて読み込み直し
-		requestRender();
 	});
 }
 //マウス操作でCAMERAのエディター操作
