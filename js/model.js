@@ -461,7 +461,13 @@ if (bgImgFile) {
 			});
 			if (suspensionScene) {
 				new THREE.TextureLoader().load(url, (texture) => {
+					// ★追加：テクスチャを「球状（パノラマ）マッピング」に変更します
+					texture.mapping = THREE.EquirectangularReflectionMapping;
+					// ★追加：画像の色味を正しく表示するための設定です
+					texture.colorSpace = THREE.SRGBColorSpace;
+
 					suspensionScene.background = texture;
+					suspensionScene.environment = null;
 					requestRender();
 				});
 			}
