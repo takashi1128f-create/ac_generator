@@ -130,13 +130,15 @@ img{
 	display: none;
 	height: 60vh;
 }
-/* リンクパネル（通常のブロック）がactiveになった時 */
 #modaltab-links.active {
 	display: block;
 }
-/* マニュアルパネルがactiveになった時（ここで初めてflexを発動させる！） */
 #modaltab-manual.active {
 	display: flex;
+}
+/* ★追加：アップデート情報パネルが表示されるように設定 */
+#modaltab-update.active {
+	display: block;
 }
 /* スクロールエリアと画像 */
 .modal-scroll-area {
