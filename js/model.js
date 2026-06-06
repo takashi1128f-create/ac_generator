@@ -137,6 +137,47 @@ function init() {
 	if (typeof window.initModelApp === 'function') {
 		window.initModelApp();
 	}
+	// ★追加：起動時に背景画像を自動読み込みする
+	autoLoadDefaultSky();
+}
+// --- 背景画像の自動読み込み機能 ---
+function autoLoadDefaultSky() {
+	const localSkyPath = 'image/sky.jpg';
+	const loader = new THREE.TextureLoader();
+
+	loader.load(localSkyPath, (texture) => {
+		// パノラマ（球状）表示と色味の最適化
+		texture.mapping = THREE.EquirectangularReflectionMapping;
+		texture.colorSpace = THREE.SRGBColorSpace;
+
+		// 1. サスペンションシーン（メイン3D空間）に適用
+		if (typeof suspensionScene !== 'undefined' && suspensionScene) {
+			suspensionScene.background = texture;
+			suspensionScene.environment = null; 
+		}
+
+		// 2. 6つのカメラプレビュー用シーンすべてに適用
+		if (window.scenes && window.scenes.length > 0) {
+			window.scenes.forEach(scene => {
+				scene.background = texture;
+				scene.environment = null;
+			});
+		}
+
+		// 3. 画面を再描画して反映
+		if (typeof requestRender === 'function') {
+			requestRender();
+		}
+		console.log("Panoramic background 'sky.jpg' has been auto-loaded to all scenes.");
+	});
+
+	// CSS側の背景設定（3D描画前の隙間埋め用）
+	document.querySelectorAll('.preview-area').forEach(el => {
+		el.style.backgroundImage = `url(${localSkyPath})`;
+		el.style.backgroundSize = 'cover';
+		el.style.backgroundPosition = 'center';
+		el.style.backgroundColor = 'transparent'; // 背景色は不要なので透明に
+	});
 }
 //カメラの部分のエディターをマウスクリックでリセット
 function setupRightClickReset() {
@@ -435,45 +476,45 @@ if (mColorPicker) {
 		requestRender();
 	});
 }
-const bColorPicker = document.getElementById('bgColorPicker');
-if (bColorPicker) {
-	bColorPicker.addEventListener('input', (e) => {
-		const color = e.target.value;
-		document.querySelectorAll('.preview-area').forEach(el => {
-			el.style.backgroundImage = 'none';
-			el.style.backgroundColor = color;
-		});
-		if (suspensionScene) {
-			suspensionScene.background = new THREE.Color(color);
-		}
-		requestRender();
-	});
-}
-const bgImgFile = document.getElementById('bgImageFile');
-if (bgImgFile) {
-	bgImgFile.addEventListener('change', (e) => {
-		if (e.target.files[0]) {
-			const url = URL.createObjectURL(e.target.files[0]);
-			document.querySelectorAll('.preview-area').forEach(el => {
-				el.style.backgroundImage = `url(${url})`;
-				el.style.backgroundSize = 'cover';
-				el.style.backgroundPosition = 'center';
-			});
-			if (suspensionScene) {
-				new THREE.TextureLoader().load(url, (texture) => {
-					// ★追加：テクスチャを「球状（パノラマ）マッピング」に変更します
-					texture.mapping = THREE.EquirectangularReflectionMapping;
-					// ★追加：画像の色味を正しく表示するための設定です
-					texture.colorSpace = THREE.SRGBColorSpace;
+// const bColorPicker = document.getElementById('bgColorPicker');
+// if (bColorPicker) {
+// 	bColorPicker.addEventListener('input', (e) => {
+// 		const color = e.target.value;
+// 		document.querySelectorAll('.preview-area').forEach(el => {
+// 			el.style.backgroundImage = 'none';
+// 			el.style.backgroundColor = color;
+// 		});
+// 		if (suspensionScene) {
+// 			suspensionScene.background = new THREE.Color(color);
+// 		}
+// 		requestRender();
+// 	});
+// }
+// const bgImgFile = document.getElementById('bgImageFile');
+// if (bgImgFile) {
+// 	bgImgFile.addEventListener('change', (e) => {
+// 		if (e.target.files[0]) {
+// 			const url = URL.createObjectURL(e.target.files[0]);
+// 			document.querySelectorAll('.preview-area').forEach(el => {
+// 				el.style.backgroundImage = `url(${url})`;
+// 				el.style.backgroundSize = 'cover';
+// 				el.style.backgroundPosition = 'center';
+// 			});
+// 			if (suspensionScene) {
+// 				new THREE.TextureLoader().load(url, (texture) => {
+// 					// ★追加：テクスチャを「球状（パノラマ）マッピング」に変更します
+// 					texture.mapping = THREE.EquirectangularReflectionMapping;
+// 					// ★追加：画像の色味を正しく表示するための設定です
+// 					texture.colorSpace = THREE.SRGBColorSpace;
 
-					suspensionScene.background = texture;
-					suspensionScene.environment = null;
-					requestRender();
-				});
-			}
-		}
-	});
-}
+// 					suspensionScene.background = texture;
+// 					suspensionScene.environment = null;
+// 					requestRender();
+// 				});
+// 			}
+// 		}
+// 	});
+// }
 const mFile = document.getElementById('modelFile');
 if (mFile) {
 	mFile.addEventListener('change', (e) => {
