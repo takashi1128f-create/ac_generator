@@ -131,6 +131,12 @@ input, textarea {
 .top-toggle-outer_box .extended-physics-switch-container .switch-label{
 	color: #333;
 }
+.control-panel .visibility-controls {
+	gap: 0.1em 3em;
+}
+.visibility-controls .control-row{
+	justify-content: space-between;
+}
 .tyres_select-outer_box{
 	display: flex;
 	flex-direction: column;
