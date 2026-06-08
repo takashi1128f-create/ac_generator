@@ -1619,6 +1619,6 @@ label {
 	display: block;
 	/* overlay.style.pointerEvents = 'none';  */
 }
-#setup-editor-container .suspension-tab-panel {
+.suspension-tab-content .suspension-tab-panel {
 	grid-template-columns: repeat(5, 1fr);
 }
