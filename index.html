@@ -35,15 +35,6 @@
 					<button id="openExportModalBtn" class="primary save-btn">💾 書き出し</button>
 				</div>
 				<div class="info-icon_box">使い方はこちら　☞ <button type="button" class="info-icon" id="info-btn">📖</button>
-				<!-- <button type="button" id="toggle-all-visibility" class="reset-btn" checked>表示/非表示</button> -->
-				<div class="control-row">
-					<span class="switch-label">LINE</span>
-					<label class="toggle-switch">
-						<input type="checkbox" id="toggle-all-visibility" class="reset-btn">
-						<span class="toggle-slider round"></span>
-					</label>
-				</div>
-
 				</div>
 			</div>
 			<div class="main-setting-outer_box">
@@ -135,7 +126,16 @@
 						<input type="checkbox" id="toggle-tyre-tooltip" checked onchange="window.toggleTyreTooltips()">
 						<span class="toggle-slider round"></span>
 					</label>
-					<span class="status-text on">ON</span>
+					<span id="tyreTooltipStatusText" class="status-text on">OFF</span>
+				</div>
+				<!-- <button type="button" id="toggle-all-visibility" class="reset-btn" checked>表示/非表示</button> -->
+				<div class="extended-physics-switch-container">
+					<span class="switch-label">LINE</span>
+					<label class="toggle-switch">
+						<input type="checkbox" id="toggle-all-visibility" class="reset-btn">
+						<span class="toggle-slider round"></span>
+					</label>
+					<span id="lineStatusText" class="status-text off">OFF</span>
 				</div>
 			</article>
 			<div class="button_box old-export-button">

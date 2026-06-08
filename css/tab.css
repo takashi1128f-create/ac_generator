@@ -108,7 +108,7 @@
 	content: "";
 	width: 0.85rem;
 	left: 2px;
-	bottom: 2.3px;
+	bottom: 0.2em;
 	background-color: white;
 	transition: .4s;
 	aspect-ratio: 1;

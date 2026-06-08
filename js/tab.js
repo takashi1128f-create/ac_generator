@@ -329,7 +329,12 @@ document.addEventListener('DOMContentLoaded', () => {
 		// ボタン形式ではなくトグル形式で反応するように change イベントに変更
 		toggleAllBtn.addEventListener('change', (e) => {
 			const isMasterOn = e.target.checked; // マスターがONかOFFか
-			
+			// ★追加：LINEトグルの文字と色を切り替える
+			const lineStatus = document.getElementById('lineStatusText');
+			if (lineStatus) {
+				lineStatus.textContent = isMasterOn ? 'ON' : 'OFF';
+				lineStatus.className = isMasterOn ? 'status-text on' : 'status-text off';
+			}
 			// IDとデータキーの紐付けリスト
 			const mapping = {
 				'check-arms': 'arms',
@@ -366,3 +371,13 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 });
+// ★追加：「解説ポップアップ」トグルの文字と色を切り替える設定
+	const tyreTooltipSwitch = document.getElementById('toggle-tyre-tooltip');
+	const tyreTooltipStatus = document.getElementById('tyreTooltipStatusText');
+	if (tyreTooltipSwitch && tyreTooltipStatus) {
+		tyreTooltipSwitch.addEventListener('change', (e) => {
+			const isChecked = e.target.checked;
+			tyreTooltipStatus.textContent = isChecked ? 'ON' : 'OFF';
+			tyreTooltipStatus.className = isChecked ? 'status-text on' : 'status-text off';
+		});
+	}
