@@ -313,13 +313,37 @@ window.triggerLiveSync = function() {
 		// ここでは簡易的に、現在編集中の全ファイルを data フォルダへ流し込みます
 		const filesToExport = [];
 		for (const file of window.EXPORT_CONFIG) {
+			// 1. 🛡️ 安全ガード：データが読み込まれていない項目はスキップ
+			if (file.id === 'view' && !window.currentCarData) continue;
+			if (file.id === 'dash_cam' && !window.currentCarData) continue;
+			if (file.id === 'tyres' && (!window.tyreCompoundList || window.tyreCompoundList.length === 0)) continue;
+			if (file.id === 'suspensions' && !window.currentSuspensionData) continue;
+			if (file.id === 'car' && !window.currentCarData) continue;
+			if (file.id === 'engine' && !window.currentEngineData) continue;
+			if (file.id === 'aero' && !window.currentAeroData) continue;
+			if (file.id === 'setup' && !window.currentSetupData) continue;
+			if (file.id === 'mirrors' && !window.currentMirrorsData) continue;
+			if (file.id === 'drivetrain' && !window.currentDrivetrainData) continue;
+
+			// 2. ⚡ 効率化 ＆ クラッシュ防止：
+			// マウス操作で実際に編集された（modifiedStatusがtrue）ファイルのみを処理対象にします。
+			// これにより、起動時の「自動復元」による勝手な上書きを完全にブロックします。
+			const statusKey = (file.id === 'view' || file.id === 'dash_cam') ? 'car' : file.id;
+			if (!window.modifiedStatus || !window.modifiedStatus[statusKey]) continue;
+
 			const getFunc = window[file.func];
 			if (typeof getFunc === 'function') {
-				const content = getFunc(true);
-				if (content) filesToExport.push({ name: file.name, content: content });
+				const content = getFunc(true); // 一括書き出しモードで呼び出し
+				if (content) {
+					filesToExport.push({ name: file.name, content: content });
+				}
 			}
 		}
-		await window.electronAPI.exportFilesToFolder(null, "", filesToExport, true, window.currentDataFolderPath);
+		// 3. 変更があったファイルがある場合のみ、Electron経由で実ファイルを上書き
+		if (filesToExport.length > 0) {
+			console.log(`📤 [LIVE SYNC] ${filesToExport.length}個の変更を反映中...`);
+			await window.electronAPI.exportFilesToFolder(null, "", filesToExport, true, window.currentDataFolderPath);
+		}
 	}, 300); // 0.3秒間操作が止まったら書き出し
 };
 window.downloadFinalRto = function(isExport = false) {

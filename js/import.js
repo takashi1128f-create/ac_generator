@@ -994,6 +994,10 @@ document.addEventListener('input', (e) => {
 			console.log(`📝 [LOG] 編集を検知しました: lut (Textarea)`);
 		}
 	}
+	// ★提案：編集があったので、LIVE SYNC が有効なら書き出しを実行する
+		if (typeof window.triggerLiveSync === 'function') {
+			window.triggerLiveSync();
+		}
 });
 const exportFiles = [{
 		id: 'suspension',
