@@ -873,6 +873,8 @@ label {
 #setup-preview-container .preview-area_box {
 	pointer-events: auto;
 }
+
+.suspension-tab-content .setup-panel-SUSPENSIONS,
 .suspension-tab-content .setup-panel-SUSPENSION,
 .suspension-tab-content .setup-panel-TYRES,
 .suspension-tab-content .setup-panel-DAMPERS,

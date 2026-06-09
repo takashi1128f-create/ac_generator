@@ -65,7 +65,7 @@ window.renderSetupUI = function() {
 	for (const sectionName in activeGroup) {
 		let subTab = 'General';
 		const nameUpper = sectionName.toUpperCase();
-		if (window.activeSetupTab === 'SUSPENSION') {
+		if (window.activeSetupTab === 'SUSPENSION' || window.activeSetupTab === 'SUSPENSIONS') {
 			if (nameUpper.includes('SPRING')) subTab = 'Springs';
 			else if (nameUpper.includes('ROD_LENGTH')) subTab = 'Heights';
 			else if (nameUpper.includes('ARB')) subTab = 'ARB';
@@ -291,62 +291,62 @@ window.setSetupSubTab = function(subTab) {
 	window.renderSetupUI();
 };
 // 4. AC風ピット画面プレビューを生成する関数
-window.renderSetupPreview = function() {
-	let previewArea = document.getElementById('preview-setup') || document.querySelector('#section-setup .preview-area_box');
-	if (!previewArea) return;
-	const data = window.currentSetupData;
-	if (!data) return;
-	const activeTab = window.activeSetupTab || 'BASIC';
-	let colLeft = '',
-		colCenter = '',
-		colRight = '';
-	const rowHeight = 45;
-	for (const section in data) {
-		const item = data[section];
-		if (item.__is_active === false) continue;
-		const itemTab = item.TAB || 'BASIC';
-		if (itemTab !== activeTab) continue;
-		const name = item.NAME || section;
-		const min = parseFloat(item.MIN) || 0;
-		const max = parseFloat(item.MAX) || 0;
-		const step = parseFloat(item.STEP) || 1;
-		const posX = parseFloat(item.POS_X) || 0;
-		const posY = parseFloat(item.POS_Y) || 0;
-		let currentValue = min + ((max - min) / 2);
-		let percentage = ((currentValue - min) / (max - min)) * 100;
-		if (isNaN(percentage)) percentage = 0;
-		const topPos = posY * rowHeight;
-		const sliderHtml = `
-			<div class="ac-slider-wrapper" style="top: ${topPos}px;" id="preview-wrap-${section}">
-				<button class="ac-slider-btn" onclick="document.getElementById('preview-input-${section}').stepDown(); document.getElementById('preview-input-${section}').dispatchEvent(new Event('input'))">◀</button>
-				<div class="ac-slider-track-area">
-					<div class="ac-slider-fill" id="preview-fill-${section}" style="width: ${percentage}%;"></div>
-					<div class="ac-slider-text">
-						<span class="ac-slider-name">${name}</span>
-						<span class="ac-slider-value" id="preview-val-${section}">${currentValue}</span>
-					</div>
-					<input type="range" class="ac-slider-input" id="preview-input-${section}" 
-						min="${min}" max="${max}" step="${step}" value="${currentValue}"
-						oninput="
-							document.getElementById('preview-val-${section}').innerText = this.value;
-							document.getElementById('preview-fill-${section}').style.width = ((this.value - this.min) / (this.max - this.min) * 100) + '%';
-						">
-				</div>
-				<button class="ac-slider-btn" onclick="document.getElementById('preview-input-${section}').stepUp(); document.getElementById('preview-input-${section}').dispatchEvent(new Event('input'))">▶</button>
-			</div>
-		`;
-		if (posX === 0) colLeft += sliderHtml;
-		else if (posX === 0.5) colCenter += sliderHtml;
-		else if (posX === 1) colRight += sliderHtml;
-	}
-	previewArea.innerHTML = `
-		<div class="setup-preview-container">
-			<div class="setup-col left-col">${colLeft}</div>
-			<div class="setup-col center-col">${colCenter}</div>
-			<div class="setup-col right-col">${colRight}</div>
-		</div>
-	`;
-};
+// window.renderSetupPreview = function() {
+// 	let previewArea = document.getElementById('preview-setup') || document.querySelector('#section-setup .preview-area_box');
+// 	if (!previewArea) return;
+// 	const data = window.currentSetupData;
+// 	if (!data) return;
+// 	const activeTab = window.activeSetupTab || 'BASIC';
+// 	let colLeft = '',
+// 		colCenter = '',
+// 		colRight = '';
+// 	const rowHeight = 45;
+// 	for (const section in data) {
+// 		const item = data[section];
+// 		if (item.__is_active === false) continue;
+// 		const itemTab = item.TAB || 'BASIC';
+// 		if (itemTab !== activeTab) continue;
+// 		const name = item.NAME || section;
+// 		const min = parseFloat(item.MIN) || 0;
+// 		const max = parseFloat(item.MAX) || 0;
+// 		const step = parseFloat(item.STEP) || 1;
+// 		const posX = parseFloat(item.POS_X) || 0;
+// 		const posY = parseFloat(item.POS_Y) || 0;
+// 		let currentValue = min + ((max - min) / 2);
+// 		let percentage = ((currentValue - min) / (max - min)) * 100;
+// 		if (isNaN(percentage)) percentage = 0;
+// 		const topPos = posY * rowHeight;
+// 		const sliderHtml = `
+// 			<div class="ac-slider-wrapper" style="top: ${topPos}px;" id="preview-wrap-${section}">
+// 				<button class="ac-slider-btn" onclick="document.getElementById('preview-input-${section}').stepDown(); document.getElementById('preview-input-${section}').dispatchEvent(new Event('input'))">◀</button>
+// 				<div class="ac-slider-track-area">
+// 					<div class="ac-slider-fill" id="preview-fill-${section}" style="width: ${percentage}%;"></div>
+// 					<div class="ac-slider-text">
+// 						<span class="ac-slider-name">${name}</span>
+// 						<span class="ac-slider-value" id="preview-val-${section}">${currentValue}</span>
+// 					</div>
+// 					<input type="range" class="ac-slider-input" id="preview-input-${section}" 
+// 						min="${min}" max="${max}" step="${step}" value="${currentValue}"
+// 						oninput="
+// 							document.getElementById('preview-val-${section}').innerText = this.value;
+// 							document.getElementById('preview-fill-${section}').style.width = ((this.value - this.min) / (this.max - this.min) * 100) + '%';
+// 						">
+// 				</div>
+// 				<button class="ac-slider-btn" onclick="document.getElementById('preview-input-${section}').stepUp(); document.getElementById('preview-input-${section}').dispatchEvent(new Event('input'))">▶</button>
+// 			</div>
+// 		`;
+// 		if (posX === 0) colLeft += sliderHtml;
+// 		else if (posX === 0.5) colCenter += sliderHtml;
+// 		else if (posX === 1) colRight += sliderHtml;
+// 	}
+// 	previewArea.innerHTML = `
+// 		<div class="setup-preview-container">
+// 			<div class="setup-col left-col">${colLeft}</div>
+// 			<div class="setup-col center-col">${colCenter}</div>
+// 			<div class="setup-col right-col">${colRight}</div>
+// 		</div>
+// 	`;
+// };
 // 仮想ピットのトランスミッション・プレビューを描画する
 // プレビュー操作用のインデックス
 window.previewSetupGearIdx = 0;
