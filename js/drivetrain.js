@@ -58,6 +58,25 @@ window.initDrivetrainEditor = function(initialData = null) {
 			console.warn("⚙️ [DEBUG-DT] ❌ drivetrain.ini のデータも見つからなかったため、生成できませんでした。");
 		}
 	}
+	// 🛠️ ギア数の自動同期：
+	// データ内に GEAR_6 や GEAR_7 があれば、COUNT（速数）を自動的にその最大値に合わせます。
+	// これにより、読み込み直後に手動で COUNT を書き換える手間がなくなります。
+	window.gearSetList.forEach(set => {
+		if (set.data && set.data.GEARS) {
+			const gears = set.data.GEARS;
+			let maxGearFound = parseInt(gears.COUNT) || 0;
+
+			Object.keys(gears).forEach(key => {
+				if (key.startsWith('GEAR_') && key !== 'GEAR_R') {
+					const num = parseInt(key.replace('GEAR_', ''));
+					if (!isNaN(num) && num > maxGearFound) {
+						maxGearFound = num;
+					}
+				}
+			});
+			gears.COUNT = maxGearFound.toString();
+		}
+	});
 	// 🚨【ガード節】データ構築が完了した後に、HTML要素の存在チェックを行う！
 	// タブを開いていない時は、ここで安全に処理を抜けます（データはすでに裏で作られています）
 	const container = document.getElementById('gear-editor');
