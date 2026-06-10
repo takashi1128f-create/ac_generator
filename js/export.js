@@ -70,9 +70,9 @@ window.executeBulkExport = async function() {
 						// ==========================================
 						// ★ここが3分岐の仕分けコア：view.ini の場合は data フォルダに入れない
 						// ==========================================
-						if (file.id === 'view') {
+						if (file.id === 'view' && isOverwrite) {
 							viewIniContent = content;
-							console.log(`   └ 💺 view.ini はマイドキュメント保存用に別ルートへ仕分けました`);
+							console.log(`   └ 💺 view.ini は上書きモードのためマイドキュメント保存用へ仕分けました`);
 						} else {
 							filesToExport.push({
 								name: file.name,
@@ -242,9 +242,9 @@ window.executeBulkExport = async function() {
 		}
 	}
 	// ==========================================
-	// 💺 【3分岐の自動仕分け】収集された viewIniContent があれば、マイドキュメントへダイレクトに保存
+	// 💺 【3分岐の自動仕分け】上書きモードで、収集された viewIniContent があれば、マイドキュメントへダイレクトに保存
 	// ==========================================
-	if (viewIniContent) {
+	if (isOverwrite && viewIniContent) {
 		if (window.electronAPI && window.electronAPI.saveViewIni) {
 			// インポート時にガチッと特定した本物の「車名（小文字対応）」のフォルダへ送る
 			const carName = window.currentCarDirectoryName || exportFolderName;

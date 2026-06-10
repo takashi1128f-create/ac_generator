@@ -340,7 +340,7 @@ app.whenReady().then(async () => {
 				type: 'info',
 				title: 'アップデートのお知らせ',
 				message: `新しいバージョン（${data.latestVersion}）が公開されています！`,
-				detail: `現在のバージョン：${currentVersion} -> 最新：${data.latestVersion}\n\n「今すぐ更新」を押すとダウンロードを開始し、インストーラーを起動します。`,
+				detail: `現在のバージョン：${currentVersion} -> 最新：${data.latestVersion}\n\n「今すぐ更新」を押すとダウンロードを先に移動します。`,
 				buttons: ['今すぐ更新', '後で'],
 				defaultId: 0,
 				cancelId: 1
