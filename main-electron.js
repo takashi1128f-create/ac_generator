@@ -123,8 +123,6 @@ function createMainWindow() {
 	// });
 	mainWindow.on('close', (e) => {
 		if (isUpdating) {
-			// アップデート時はデフォルト動作（終了）を許可しつつ、プロセスを確実に殺す
-			app.exit(0);
 			return;
 		}
 		e.preventDefault();
@@ -353,20 +351,18 @@ app.whenReady().then(async () => {
 			console.log('進捗イベント: mainWindowがまだ準備されていません');
 		}
 	});
-
+	autoUpdater.checkForUpdatesAndNotify();
 	// ダウンロードが完了した時の動作
-	autoUpdater.on('update-downloaded', () => {
+	autoUpdater.removeAllListeners('update-downloaded');
+	autoUpdater.on('update-downloaded', (info) => {
 		const result = dialog.showMessageBoxSync({
 			type: 'info',
-			title: 'ダウンロード完了',
-			message: '最新バージョンのダウンロードが完了しました。\n今すぐ再起動してインストールしますか？',
+			title: '更新のインストール',
+			message: '最新版の準備が整いました。再起動してインストールしますか？',
 			buttons: ['今すぐ再起動', '後で']
 		});
 		if (result === 0) {
-			isUpdating = true; // ← このフラグを立てる
-			// ★修正: 確実に終了させるため、まず終了処理を走らせる
-			app.removeAllListeners('window-all-closed'); // 終了を阻害するリスナーを解除
-			autoUpdater.quitAndInstall(false, true); 
+			autoUpdater.quitAndInstall();
 		}
 	});
 
