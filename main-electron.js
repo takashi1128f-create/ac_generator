@@ -1,6 +1,5 @@
 const { app, BrowserWindow, Menu, dialog, shell, ipcMain, protocol } = require('electron');
 const { autoUpdater } = require('electron-updater');
-autoUpdater.autoDownload = true;
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -61,7 +60,6 @@ const PATHS = {
 };
 let mainWindow;
 let splash;
-let isUpdating = false;
 const PROTOCOL = 'ac-file-gen';
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -123,11 +121,32 @@ function createMainWindow() {
 	// 	e.preventDefault();
 	// });
 	mainWindow.on('close', (e) => {
-		// アップデート中、または通常の終了時はダイアログを出さずに終了処理へ
+		e.preventDefault();
+		// ★修正：ボタンの並び順とテキストを変更
+		const choice = dialog.showMessageBoxSync(mainWindow, {
+			type: 'question',
+			buttons: ['終了', '保存して終了', 'キャンセル'],
+			defaultId: 1,
+			cancelId: 2,
+			title: 'AC FILE GENERATOR',
+			message: 'プロジェクトを保存して終了しますか？',
+			detail: '保存していない変更は失われます。',
+			noLink: true // ← 左のアローを消す
+		});
+		// 0: 終了 (保存しない)
+	// 1: 保存して終了
+	// 2: キャンセル
+	if (choice === 0) {
+		// ★「終了（保存しない）」なら、連動中であれば【復元】してから終了する
 		if (activeSyncFolderPath) {
 			cleanupSyncBackup(activeSyncFolderPath, true);
 		}
-		// e.preventDefault() を削除したため、ここを抜けるとウィンドウは閉じられます
+		app.exit();
+	} else if (choice === 1) {
+		// 「保存して終了」の場合はプロジェクト保存後に force-quit が来るので、そちらで処理します
+		mainWindow.webContents.send('trigger-save-and-close');
+	}
+		// キャンセルの場合は何もしない（ウィンドウを開いたままにする）
 	});
 	mainWindow.webContents.on('context-menu', (event, params) => {
 		const menuTemplate = [];
@@ -275,10 +294,7 @@ const template = [{
 	}, {
 		role: 'selectAll',
 		label: 'すべて選択 (Ctrl+A)'
-	},{
-			role: 'toggleDevTools',
-			label: 'デバッグツール (F12)'
-		}
+	},
 ]
 }];
 // ★開発モード（npm start）の時だけ「開発」メニューを配列の最後に追加する
@@ -331,25 +347,23 @@ app.whenReady().then(async () => {
 			console.log('進捗イベント: mainWindowがまだ準備されていません');
 		}
 	});
-	autoUpdater.checkForUpdatesAndNotify();
+
 	// ダウンロードが完了した時の動作
-	autoUpdater.removeAllListeners('update-downloaded');
-	autoUpdater.on('update-downloaded', (info) => {
-		const result = dialog.showMessageBoxSync(mainWindow, {
+	autoUpdater.on('update-downloaded', () => {
+		const result = dialog.showMessageBoxSync({
 			type: 'info',
-			title: '更新のインストール',
-			message: '最新版の準備が整いました。再起動してインストールしますか？',
+			title: 'ダウンロード完了',
+			message: '最新バージョンのダウンロードが完了しました。\n今すぐ再起動してインストールしますか？',
 			buttons: ['今すぐ再起動', '後で']
 		});
 		if (result === 0) {
-			isUpdating = true;
-			autoUpdater.quitAndInstall();
+			autoUpdater.quitAndInstall(); // 勝手に再起動してインストールします
 		}
 	});
 
 	// エラー発生時（開発用ログ出力）
 	autoUpdater.on('error', (err) => {
-		dialog.showErrorBox('アップデートエラー', err.message);
+		console.log('アップデート確認エラー:\n' + err);
 	});
 
 	// アプリ起動時にアップデートを確認（開発モード時はスキップされます）
