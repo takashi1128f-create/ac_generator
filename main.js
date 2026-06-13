@@ -11,8 +11,8 @@ window.currentProject = {
 window.electronAPI.setProjectLoaded(true);
 
 // プロジェクトを閉じた時（または終了時）に実行
-window.electronAPI.setProjectLoaded(false);
-window.currentProjectPath = ""; // 現在開いているプロジェクトのパス
+// window.electronAPI.setProjectLoaded(false);
+// window.currentProjectPath = ""; // 現在開いているプロジェクトのパス
 // ==========================================
 // ★ アプリ全体の設定管理（フロントエンド）
 // ==========================================
@@ -34,8 +34,8 @@ window.APP_CONFIG = {
 		manualSuccess: "認証に成功しました！\n間もなく起動します...",
 		autoSuccess: "自動認証成功！",
 		// ★ 追加・修正
-		free: (days) => `無料体験版として起動しました。\n残り利用可能日数は ${days} 日です。\nメンバーシップにご参加いただくと制限が解除されます！`,
-		trial: (days) => `YouTube メンバーシップ「支援者（心の支え）」様\n今月の残り利用可能日数は ${days} 日です。\nいつも応援ありがとうございます！`,
+		free: (days) => `無料体験版\n残り利用可能日数は ${days} 日です。\nメンバーシップにご参加いただくと制限が解除されます！`,
+		trial: (days) => `YouTube メンバーシップ「支援者（心の支え）」\n今月の残り利用可能日数は ${days} 日です。\nいつも応援ありがとうございます！`,
 		permanent: "YouTube メンバーシップ「私を支持する者」様\n無制限アクセス権が有効です。ありがとうございます！",
 		expired: "今月の利用枠を使い切りました。\n来月1日にリセットされます。\nすぐに使い続けたい場合は、メンバーシップの登録・レベルアップをご検討ください。"
 	}
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 			if (window.electronAPI) window.electronAPI.openExternalLink(DISCORD_AUTH_URL);
 		});
 	}
-	// ★追加：手動ログイン成功時の処理（ブラウザ認証が終わったあと画面を消す）
+	// 手動ログイン成功時の処理（ブラウザ認証が終わったあと画面を消す）
 	if (window.electronAPI && window.electronAPI.onDiscordCallback) {
 		window.electronAPI.onDiscordCallback((authResult) => {
 			console.log("【表側】手動ログイン成功の通知を受信:", authResult);
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 		});
 	}
 	// 3. 自動ログインのチェック
-	// ★追加：ダウンロード進捗の監視
+	// ダウンロード進捗の監視
 	if (window.electronAPI && window.electronAPI.onDownloadProgress) {
 		window.electronAPI.onDownloadProgress((percent) => {
 			const updateArea = document.getElementById('update-area');

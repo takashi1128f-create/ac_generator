@@ -28,8 +28,8 @@ if (!IS_DEV_MODE) {
 // ==========================================
 const SERVER_CONFIG = {
 	timing: {
-		//splashDuration: 13000, // スプラッシュ画面を表示する時間（ミリ秒）
-		splashDuration: 1000, // スプラッシュ画面を表示する時間（ミリ秒）
+		splashDuration: 13000, // スプラッシュ画面を表示する時間（ミリ秒）
+		// splashDuration: 1000, // スプラッシュ画面を表示する時間（ミリ秒）
 	},
 	flow: {
 		autoSkipLogin: true, // トークンがあれば自動ログインを試みる
@@ -38,16 +38,21 @@ const SERVER_CONFIG = {
 	auth: {
 		trialDays: 7, // 毎月の試用可能日数（合計7日間）
 		trialFreeDays: 3, // 完全無料枠（Discord参加のみ）の試用日数
-		guildId: '838421006011990047', // DiscordサーバーのID
+		guildId: 
+			'838421006011990047', // DiscordサーバーのID
 		roles: {
 			// 手動付与（モニター・協力者など）
-			permManual: ['1497866893871026216'],
+			permManual: [
+				'1497866893871026216'
+			],
 			// YouTubeメンバーシップ「永続アクセス権」ランク（複数指定可能）
-			permYoutube: ['1497853055469879337', // 私を支持する者（ランクA）
+			permYoutube: [
+				'1497853055469879337', // 私を支持する者（ランクA）
 				'1499372842347794578' // 手動永続権
 			],
 			// YouTubeメンバーシップ「毎月7日間」ランク（複数指定可能）
-			trialYoutube: ['1496677743125856328', // 支援者（心の支え）
+			trialYoutube: [
+				'1496677743125856328', // 支援者（心の支え）
 				'1497875383658221568' // 新しく追加したテスト用や別ランク
 			]
 		}
@@ -61,6 +66,7 @@ const PATHS = {
 };
 let mainWindow;
 let isProjectLoaded = false;
+let isUpdating = false;
 let splash;
 const PROTOCOL = 'ac-file-gen';
 const gotTheLock = app.requestSingleInstanceLock();
@@ -98,10 +104,11 @@ function createSplashWindow() {
 		}
 	});
 	splash.loadFile('splash.html');
+	splash.setIgnoreMouseEvents(true);
 }
 // --- 部品B：メインエディター画面 ---
 function createMainWindow() {
-	// ★追加：package.json からバージョン番号を自動取得する
+	// package.json からバージョン番号を自動取得する
 	const appVersion = app.getVersion();
 	mainWindow = new BrowserWindow({
 		width: 1340,
@@ -109,7 +116,7 @@ function createMainWindow() {
 		minWidth: 1340,
 		minHeight: 750,
 		title: `AC FILE GENERATOR v${appVersion}`, // ★追加：タイトルバーに名前とバージョンを設定
-		show: false, // ★安全のために最初は隠す（Aの強み）
+		show: false, // ★安全のために最初は隠す
 		autoHideMenuBar: false,
 		backgroundColor: '#ffffff',
 		icon: path.join(__dirname, '/image/icon.png'),
@@ -118,14 +125,13 @@ function createMainWindow() {
 			contextIsolation: true
 		}
 	});
-	// ★追加：index.html の <title> タグによってタイトルが上書きされるのを防ぐ
-	// mainWindow.on('page-title-updated', (e) => {
-	// 	e.preventDefault();
-	// });
 	mainWindow.on('close', (e) => {
+		console.log('--- closeイベント発生 ---');
+		console.log('isProjectLoadedの値:', isProjectLoaded);
+		if (isUpdating) return;
 		if (!isProjectLoaded) return;
 		e.preventDefault();
-		// ★修正：ボタンの並び順とテキストを変更
+		// ボタンの並び順とテキストを変更
 		const choice = dialog.showMessageBoxSync(mainWindow, {
 			type: 'question',
 			buttons: ['終了', '保存して終了', 'キャンセル'],
@@ -136,7 +142,7 @@ function createMainWindow() {
 			detail: '保存していない変更は失われます。',
 			noLink: true // ← 左のアローを消す
 		});
-		// 0: 終了 (保存しない)
+	// 0: 終了 (保存しない)
 	// 1: 保存して終了
 	// 2: キャンセル
 	if (choice === 0) {
@@ -297,7 +303,10 @@ const template = [{
 	}, {
 		role: 'selectAll',
 		label: 'すべて選択 (Ctrl+A)'
-	},
+	}, {
+		role: 'toggleDevTools',
+		label: 'デバッグツール (F12)'
+	}
 ]
 }];
 // ★開発モード（npm start）の時だけ「開発」メニューを配列の最後に追加する
@@ -370,7 +379,7 @@ app.whenReady().then(async () => {
 
 	Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 	createMainWindow();
-	// ★ 賢い分岐ルート（Aの強み）
+	// ★ 賢い分岐ルート
 	const hasToken = fs.existsSync(PATHS.token);
 	if (hasToken && SERVER_CONFIG.flow.autoSkipLogin) {
 		startSplashFlow();
@@ -382,7 +391,7 @@ app.whenReady().then(async () => {
 	}
 	startAuthServer();
 });
-// スプラッシュ表示フロー（Aの強み）
+// スプラッシュ表示フロー
 function startSplashFlow() {
 	createSplashWindow();
 	mainWindow.once('ready-to-show', () => {
@@ -613,6 +622,7 @@ ipcMain.on('force-quit', () => {
 	app.exit();
 });
 ipcMain.on('set-project-loaded', (event, status) => {
+	console.log('★ set-project-loaded が呼ばれました。新しい状態:', status);
 	isProjectLoaded = status;
 });
 // ==========================================
