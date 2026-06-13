@@ -138,6 +138,9 @@ img{
 #modaltab-manual.active {
 	display: flex;
 }
+#modaltab-update{
+	overflow-y: auto;
+}
 /* ★追加：アップデート情報パネルが表示されるように設定 */
 #modaltab-update.active {
 	display: block;

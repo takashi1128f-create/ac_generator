@@ -151,7 +151,7 @@ window.renderDrivetrainUI = function() {
 		// 2. GEARS入力 (7速固定でCOUNT連動)
 		const ratioBox = document.getElementById('gear-ratio-inputs');
 		const gearsData = activeSet.data.GEARS || {};
-		const gearOrder = ["COUNT", "GEAR_R", "GEAR_1", "GEAR_2", "GEAR_3", "GEAR_4", "GEAR_5", "GEAR_6", "GEAR_7", "FINAL"];
+		const gearOrder = ["COUNT", "GEAR_1", "GEAR_2", "GEAR_3", "GEAR_4", "GEAR_5", "GEAR_6", "GEAR_7", "GEAR_R", "FINAL"];
 		const countVal = parseInt(gearsData.COUNT) || 7;
 		const currentGearKeys = Object.keys(gearsData);
 		const keysToDisplay = [...gearOrder];
@@ -186,16 +186,30 @@ window.renderDrivetrainUI = function() {
 			const div = document.createElement('div');
 			div.className = 'suspension-item';
 			div.style.opacity = opacity;
-			div.innerHTML = `<div class="input-unit"><label>${key}</label><input type="${isText ? 'text' : 'number'}" step="${currentStep}"${currentMin}${currentMax} value="${val}" class="text-input" ${isDisabled ? 'disabled' : ''}></div>`;
-			div.querySelector('input').addEventListener('input', (e) => {
-				activeSet.data.GEARS[key] = e.target.value;
-				if (key === 'COUNT') {
+
+			if (key === 'COUNT') {
+				let options = '';
+				for (let i = 1; i <= 7; i++) {
+					options += `<option value="${i}" ${parseInt(val) === i ? 'selected' : ''}>${i}</option>`;
+				}
+				div.innerHTML = `<div class="input-unit"><label>${key}</label><select class="text-input">${options}</select></div>`;
+				div.querySelector('select').addEventListener('change', (e) => {
+					activeSet.data.GEARS[key] = e.target.value;
 					window.renderDrivetrainUI();
-				}
-				if (key.startsWith('GEAR_') || key === 'FINAL' || key === 'COUNT') {
 					window.updateGearChart();
-				}
-			});
+				});
+			} else {
+				div.innerHTML = `<div class="input-unit"><label>${key}</label><input type="${isText ? 'text' : 'number'}" step="${currentStep}"${currentMin}${currentMax} value="${val}" class="text-input" ${isDisabled ? 'disabled' : ''}></div>`;
+				div.querySelector('input').addEventListener('input', (e) => {
+					activeSet.data.GEARS[key] = e.target.value;
+					if (key === 'COUNT') {
+						window.renderDrivetrainUI();
+					}
+					if (key.startsWith('GEAR_') || key === 'FINAL' || key === 'COUNT') {
+						window.updateGearChart();
+					}
+				});
+			}
 			ratioBox.appendChild(div);
 		});
 	} else if (window.activeDrivetrainTab === 'FINAL') {

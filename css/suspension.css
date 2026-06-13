@@ -87,6 +87,7 @@ div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
 	font-size: 11px;
 	color: #333;
 }
+.suspension-item select,
 .suspension-item input {
 	width: 100%;
 	background: #ffffff;
@@ -110,6 +111,7 @@ div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
 	min-width: 70px;
 	flex: 1;
 }
+.suspension-item select,
 .suspension-item {
 	width: 100%;
 	overflow: hidden;

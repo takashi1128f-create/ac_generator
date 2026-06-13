@@ -1,6 +1,6 @@
 {
 	"name": "ac-file-generator",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "Assetto Corsa File Generator",
 	"author": "nerutakachan",
 	"main": "main-electron.js",
@@ -27,7 +27,8 @@
 		"win": {
 			"target": "nsis",
 			"icon": "image/icon.ico",
-			"requestedExecutionLevel": "asInvoker"
+			"requestedExecutionLevel": "asInvoker",
+			"artifactName": "AC-FILE-GENERATOR-Setup.exe"
 		},
 		"nsis": {
 			"oneClick": false,
