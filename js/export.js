@@ -581,14 +581,25 @@ window.downloadAeroIni = function(isExport = false) {
 };
 window.downloadEngineIni = function(isExport = false) {
 	const data = window.currentEngineData;
-	if (!data) {
-		alert("エンジンデータが存在しません。");
-		return;
-	}
+	if (!data) { alert("エンジンデータが存在しません。"); return; }
+	
+	// ★追加：UI（セレクトボックス）で選ばれているターボの総数を取得する
+	const turboCountSelect = document.getElementById('turbo-count-select');
+	const turboCount = turboCountSelect ? parseInt(turboCountSelect.value) : 1;
+
 	let iniContent = "";
 	for (const section in data) {
+		// ★追加：設定された数以上のターボセクション（例：2基設定ならTURBO_2以降）は書き出さない
+		if (section.startsWith('TURBO_')) {
+			const idx = parseInt(section.replace('TURBO_', ''));
+			if (idx >= turboCount) continue;
+		}
+
 		iniContent += `[${section}]\n`;
 		for (const key in data[section]) {
+			// ★追加：アプリ内部のグラフ計算用設定（USER_SETTING）は INI に含めない
+			if (key === 'USER_SETTING') continue;
+
 			iniContent += `${key}=${data[section][key]}\n`;
 		}
 		iniContent += "\n";
