@@ -57,9 +57,9 @@ function renderUpdateList() {
 		<ul>
 			<li>
 				<h3>${u.version}${u.date ? `<small>${u.date}</small>` : ''}</h3>
-				${typeof u.items[0] === 'object' ? 
-					u.items.map(sub => `<h4>${sub.title}</h4><ul>${sub.list.map(i => `<li>${i}</li>`).join('')}</ul>`).join('') :
-					`<p>${u.desc}</p>${u.items ? `<h4>更新項目</h4><ul>${u.items.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}`
+				${(u.items && typeof u.items[0] === 'object') ? 
+					u.items.map(sub => `<h4>${sub.title}</h4><ul class="update-data_box">${sub.list.map(i => `<li>${i}</li>`).join('')}</ul>`).join('') :
+					`<p>${u.desc}</p>${u.items ? `<h4>更新項目</h4><ul class="update-data_box">${u.items.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}`
 				}
 			</li>
 		</ul>
