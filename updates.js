@@ -1,5 +1,11 @@
 const updateData = [
 	{
+		version: "V0.0.7",
+		date: "2026/06/16",
+		desc: "engine.iniの調整(テスト)",
+		items: ["engine.iniのツインターボ以上に対応", "engine.iniのターボの書き出し変更","engineのグラフの調整"]
+	},
+	{
 		version: "V0.0.6",
 		date: "2026/06/14",
 		desc: "view.iniの動き修正。",
@@ -43,7 +49,7 @@ function renderUpdateList() {
 			<li>
 				<h3>${u.version}${u.date ? `<small>${u.date}</small>` : ''}</h3>
 				<p>${u.desc}</p>
-				${u.items ? `<h4>更新項目</h4><ul>${u.items.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
+				${u.items ? `<h4>更新項目</h4><ul class="update-data_box">${u.items.map(i => `<li>${i}</li>`).join('')}</ul>` : ''}
 			</li>
 		</ul>
 	`).join('');
