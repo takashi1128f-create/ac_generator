@@ -2,6 +2,7 @@
 window.currentEngineData = null;
 window.currentPowerLut = [];
 window.currentPowerLutRaw = "";
+window.ctrlTurboData = {};
 window.engineChartInstance = null;
 // LUTパース
 window.parsePowerLut = function(text) {
@@ -26,6 +27,112 @@ window.parsePowerLut = function(text) {
 	}
 	window.updateEngineGraph();
 };
+// --- ターボ専用UIの生成関数 ---
+window.renderTurboUI = function(container, data) {
+	// 1. ctrl_turbo_*.ini のコンテナ
+	const ctrlWrapper = document.createElement('article');
+	ctrlWrapper.innerHTML = `<div class="suspension-item-title_box"><p>CONTROLLERS (ctrl_turbo_*.ini)</p></div>`;
+	const ctrlBox = document.createElement('div');
+	ctrlBox.id = 'ctrl-turbo-container';
+	ctrlBox.className = 'suspension-item_box';
+	ctrlWrapper.appendChild(ctrlBox);
+	container.appendChild(ctrlWrapper);
+
+	// 2. TURBOコンテナとSelectボックス
+	const turboWrapper = document.createElement('article');
+	
+	let turboCount = 1;
+	while (data[`TURBO_${turboCount}`]) {
+		turboCount++;
+	}
+	let currentSelectValue = Math.max(1, turboCount);
+
+	const turboHeader = document.createElement('div');
+	turboHeader.className = 'suspension-item-title_box';
+	turboHeader.innerHTML = `
+		<p>TURBO</p>
+		<select id="turbo-count-select" class="text-input turbo-select">
+			${[1,2,3,4,5,6,7,8].map(i => `<option value="${i}" ${currentSelectValue === i ? 'selected' : ''}>${i}</option>`).join('')}
+		</select>
+	`;
+	turboWrapper.appendChild(turboHeader);
+
+	const turboTabHeader = document.createElement('div');
+	turboTabHeader.className = 'tab-header';
+	const turboTabContent = document.createElement('div');
+	turboTabContent.className = 'tab-content-container';
+
+	const allTurbos = [];
+	const pages = [];
+	const tabBtns = [];
+
+	const createTurboItem = (index) => {
+		const section = `TURBO_${index}`;
+		const tBox = document.createElement('div');
+		tBox.className = 'turbo-item_box';
+		tBox.id = `turbo-item-${index}`;
+		if (index >= currentSelectValue) tBox.classList.add('disabled-turbo');
+
+		tBox.innerHTML = `<div class="suspension-item-title_box"><p>${section}</p></div>`;
+		const innerBox = document.createElement('div');
+		innerBox.className = 'suspension-item_box';
+
+		if (!data[section]) data[section] = data['TURBO_0'] ? JSON.parse(JSON.stringify(data['TURBO_0'])) : {};
+
+		Object.keys(data[section]).forEach(key => {
+			const val = data[section][key];
+			const editorRule = window.getEditorStep(key, val);
+			const step = typeof editorRule === 'object' ? editorRule.step : editorRule;
+			const item = document.createElement('div');
+			item.className = 'suspension-item';
+			item.innerHTML = `<div class="input-unit"><label>${key}</label><input type="number" class="text-input" value="${val}" step="${step}"></div>`;
+			item.querySelector('input').addEventListener('input', (e) => {
+				window.currentEngineData[section][key] = e.target.value;
+				window.updateEngineGraph();
+				if (typeof window.renderSetupUI === 'function') window.renderSetupUI();
+			});
+			innerBox.appendChild(item);
+		});
+		tBox.appendChild(innerBox);
+		return tBox;
+	};
+
+	for (let i = 0; i < 8; i++) allTurbos.push(createTurboItem(i));
+
+	for (let p = 0; p < 4; p++) {
+		const btn = document.createElement('button');
+		btn.className = `tab-btn ${p === 0 ? 'active' : ''}`;
+		btn.textContent = `${p * 2 + 1}.${p * 2 + 2}`;
+		btn.addEventListener('click', () => {
+			tabBtns.forEach(b => b.classList.remove('active'));
+			btn.classList.add('active');
+			pages.forEach(pg => pg.classList.add('tab-hidden'));
+			pages[p].classList.remove('tab-hidden');
+		});
+		turboTabHeader.appendChild(btn);
+		tabBtns.push(btn);
+
+		const pageDiv = document.createElement('div');
+		pageDiv.className = `turbo-item-outer_box ${p === 0 ? '' : 'tab-hidden'}`;
+		pageDiv.appendChild(allTurbos[p * 2]);
+		pageDiv.appendChild(allTurbos[p * 2 + 1]);
+		turboTabContent.appendChild(pageDiv);
+		pages.push(pageDiv);
+	}
+
+	const selectEl = turboHeader.querySelector('#turbo-count-select');
+	selectEl.addEventListener('change', (e) => {
+		currentSelectValue = parseInt(e.target.value, 10);
+		allTurbos.forEach((tBox, idx) => {
+			idx >= currentSelectValue ? tBox.classList.add('disabled-turbo') : tBox.classList.remove('disabled-turbo');
+		});
+		window.updateEngineGraph();
+	});
+
+	turboWrapper.appendChild(turboTabHeader);
+	turboWrapper.appendChild(turboTabContent);
+	container.appendChild(turboWrapper);
+};
 // 2. エディターUIの生成
 window.initEngineEditor = function(data) {
 	const iniContainer = document.getElementById('engine-data-container');
@@ -33,7 +140,7 @@ window.initEngineEditor = function(data) {
 	// --- A. engine.ini 用のコンテナ処理 ---
 	if (iniContainer && data) {
 		iniContainer.innerHTML = ''; // 案内テキストを消去
-		['ENGINE_DATA', 'TURBO_0'].forEach(section => {
+		['ENGINE_DATA'].forEach(section => {
 			if (!data[section]) return;
 			const wrapper = document.createElement('article');
 			wrapper.innerHTML = `<div class="suspension-item-title_box"><p>${section}</p></div>`;
@@ -62,6 +169,9 @@ window.initEngineEditor = function(data) {
 			wrapper.appendChild(box);
 			iniContainer.appendChild(wrapper);
 		});
+		if (typeof window.renderTurboUI === 'function') {
+			window.renderTurboUI(iniContainer, data);
+		}
 	}
 	// --- B. power.lut 用のコンテナ処理 ---
 	if (lutContainer) {

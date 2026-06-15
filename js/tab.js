@@ -273,6 +273,14 @@ document.addEventListener('DOMContentLoaded', () => {
 				page.classList.remove('active');
 			}
 		});
+		if (indicator) {
+			let pageLabel = '';
+			if (currentManualPage === 1) pageLabel = '1.2';
+			else if (currentManualPage === 2) pageLabel = '3.4';
+			else if (currentManualPage === 3) pageLabel = '5.6';
+			else if (currentManualPage === 4) pageLabel = '7.8';
+			indicator.textContent = pageLabel;
+		}
 		if (indicator) indicator.textContent = `${currentManualPage} / ${totalManualPages}`;
 		if (btnPrev) btnPrev.disabled = (currentManualPage === 1);
 		if (btnNext) btnNext.disabled = (currentManualPage === totalManualPages);

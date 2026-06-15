@@ -578,8 +578,13 @@ label {
 	width: 100%;
 }
 .engine-ini_box {
-	display: flex;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 0.5rem;
+}
+.disabled-turbo {
+	opacity: 0.5;
+	pointer-events: none;
 }
 #power-lut-data-container article {
 	display: flex;
@@ -591,7 +596,7 @@ label {
 	display: flex;
 }
 #engine-data-container article {
-	width: 50%;
+	width: 100%;
 	flex: 1;
 }
 #power-lut-textarea {
@@ -613,10 +618,29 @@ label {
 	max-height: 475px;
 }
 #power-lut-data-container {
-	width: 38%;
+	width: 33%;
 }
 #engine-data-container {
-	width: 58%;
+	width: 66%;
+}
+.engine-ini_box article:nth-last-of-type(1){
+	grid-column: span 2;
+}
+.turbo-item-outer_box{
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.5em;
+}
+.engine-ini_box article:nth-last-of-type(1) .suspension-item-title_box{
+	display: flex;
+	justify-content: space-between;
+}
+.disabled-turbo {
+	opacity: 0.5;
+	pointer-events: none;
+}
+.tab-hidden {
+	display: none;
 }
 /* ギア */
 .engine-section {
