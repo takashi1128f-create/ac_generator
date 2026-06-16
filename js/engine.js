@@ -5,6 +5,7 @@ window.currentPowerLutRaw = "";
 window.ctrlTurboData = {};
 window.engineChartInstance = null;
 window.activeTurboIndex = 0;
+window.activeEngineTab = 'ENGINE';
 // LUTパース
 window.parsePowerLut = function(text) {
 	window.currentPowerLutRaw = text;
