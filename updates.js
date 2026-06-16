@@ -12,7 +12,7 @@ const updateData = [
 		version: "V0.0.7",
 		date: "2026/06/16",
 		desc: "engine.iniの調整(テスト)",
-		items: ["engine.iniのツインターボ以上に対応", "engine.iniのターボの書き出し変更","engineのグラフの調整"]
+		items: ["engine.iniのツインターボ以上に対応", "engine.iniの複数のターボの書き出し変更","上記変更に伴いengineのグラフの調整"]
 	},
 	{
 		version: "V0.0.6",

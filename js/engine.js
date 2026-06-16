@@ -30,19 +30,12 @@ window.parsePowerLut = function(text) {
 };
 // --- ターボ専用UIの生成関数 ---
 window.renderTurboUI = function(container, data) {
-	// 1. ctrl_turbo_*.ini のコンテナ
-	const ctrlWrapper = document.createElement('article');
-	ctrlWrapper.innerHTML = `<div class="suspension-item-title_box"><p>CONTROLLERS (ctrl_turbo_*.ini)</p></div>`;
-	const ctrlBox = document.createElement('div');
-	ctrlBox.id = 'ctrl-turbo-container';
-	ctrlBox.className = 'suspension-item_box';
-	ctrlWrapper.appendChild(ctrlBox);
-	container.appendChild(ctrlWrapper);
+	if (!container || !data) return;
+	container.innerHTML = ''; // コンテナをクリア
 
-	// 2. TURBOコンテナとSelectボックス
 	const turboWrapper = document.createElement('article');
-	
-	let turboCount = 1;
+	// ターボの基数をカウント
+	let turboCount = 0;
 	while (data[`TURBO_${turboCount}`]) {
 		turboCount++;
 	}
@@ -73,11 +66,13 @@ window.renderTurboUI = function(container, data) {
 		tBox.className = 'turbo-item_box';
 		tBox.id = `turbo-item-${index}`;
 		if (index >= currentSelectValue) tBox.classList.add('disabled-turbo');
+
 		tBox.addEventListener('click', () => {
 			if (tBox.classList.contains('disabled-turbo')) return;
 			window.activeTurboIndex = index;
 			window.updateEngineGraph();
 		});
+
 		tBox.innerHTML = `<div class="suspension-item-title_box"><p>${section}</p></div>`;
 		const innerBox = document.createElement('div');
 		innerBox.className = 'suspension-item_box';
@@ -88,6 +83,7 @@ window.renderTurboUI = function(container, data) {
 			const val = data[section][key];
 			const editorRule = window.getEditorStep(key, val);
 			const step = typeof editorRule === 'object' ? editorRule.step : editorRule;
+
 			const item = document.createElement('div');
 			item.className = 'suspension-item';
 			item.innerHTML = `<div class="input-unit"><label>${key}</label><input type="number" class="text-input" value="${val}" step="${step}"></div>`;
@@ -113,7 +109,6 @@ window.renderTurboUI = function(container, data) {
 			btn.classList.add('active');
 			pages.forEach(pg => pg.classList.add('tab-hidden'));
 			pages[p].classList.remove('tab-hidden');
-			// ★追加：アクティブなターボインデックスを更新してグラフへ通知
 			window.activeTurboIndex = p * 2;
 			window.updateEngineGraph();
 		});
@@ -134,14 +129,12 @@ window.renderTurboUI = function(container, data) {
 		allTurbos.forEach((tBox, idx) => {
 			idx >= currentSelectValue ? tBox.classList.add('disabled-turbo') : tBox.classList.remove('disabled-turbo');
 		});
-		// ★ここから修正：ターボ数が減った際、現在選択中のインデックスが範囲外にならないようリセット
-		if (window.activeTurboIndex === undefined || window.activeTurboIndex >= currentSelectValue) {
+		if (window.activeTurboIndex >= currentSelectValue) {
 			window.activeTurboIndex = 0;
-			// 選択状態をタブの最初（0番目）に強制同期
 			tabBtns.forEach(b => b.classList.remove('active'));
-			tabBtns[0].classList.add('active');
+			tabBtns.classList.add('active');
 			pages.forEach(pg => pg.classList.add('tab-hidden'));
-			pages[0].classList.remove('tab-hidden');
+			pages.classList.remove('tab-hidden');
 		}
 		window.updateEngineGraph();
 	});
@@ -153,31 +146,53 @@ window.renderTurboUI = function(container, data) {
 // 2. エディターUIの生成
 window.initEngineEditor = function(data) {
 	const iniContainer = document.getElementById('engine-data-container');
-	const lutContainer = document.getElementById('power-lut-data-container');
-	// --- A. engine.ini 用のコンテナ処理 ---
-	if (iniContainer && data) {
-		iniContainer.innerHTML = ''; // 案内テキストを消去
+	if (!iniContainer || !data) return;
+
+	// 1. タブメニューの生成
+	iniContainer.innerHTML = `
+		<div class="suspension-tab-menu" style="margin-bottom:10px;">
+			<button class="suspension-tab-btn ${window.activeEngineTab === 'ENGINE' ? 'active' : ''}" id="engine-tab-btn-main">ENGINE</button>
+			<button class="suspension-tab-btn ${window.activeEngineTab === 'TURBO' ? 'active' : ''}" id="engine-tab-btn-turbo">TURBO</button>
+		</div>
+		<div id="engine-tab-content-area"></div>
+	`;
+
+	const contentArea = document.getElementById('engine-tab-content-area');
+
+	// タブ切り替え関数
+	const switchTab = (tabName) => {
+		window.activeEngineTab = tabName;
+		window.initEngineEditor(data); // 再描画して切り替え
+	};
+
+	iniContainer.querySelector('#engine-tab-btn-main').onclick = () => switchTab('ENGINE');
+	iniContainer.querySelector('#engine-tab-btn-turbo').onclick = () => switchTab('TURBO');
+
+	// 2. タブごとの中身を描画
+	if (window.activeEngineTab === 'ENGINE') {
+		// ENGINEタブ：基本設定 + コントローラーを表示
+		const engineGroup = document.createElement('div');
+		engineGroup.className = 'engine-ini_box';
+
 		['ENGINE_DATA', 'COAST_REF', 'COAST_DATA', 'COAST_CURVE', 'DAMAGE'].forEach(section => {
 			if (!data[section]) return;
 			const wrapper = document.createElement('article');
 			wrapper.innerHTML = `<div class="suspension-item-title_box"><p>${section}</p></div>`;
 			const box = document.createElement('div');
 			box.className = 'suspension-item_box';
+
 			Object.keys(data[section]).forEach(key => {
 				const val = data[section][key];
 				const editorRule = window.getEditorStep(key, val);
 				const currentStep = typeof editorRule === 'object' ? editorRule.step : editorRule;
 				const currentMin = typeof editorRule === 'object' && editorRule.min !== "" ? ` min="${editorRule.min}"` : "";
 				const currentMax = typeof editorRule === 'object' && editorRule.max !== "" ? ` max="${editorRule.max}"` : "";
-				
-				// 数値か文字列かで入力欄のタイプを切り替える（FILENAMEなどに対応）
 				const isNum = !isNaN(val) && val !== "";
 
 				const item = document.createElement('div');
 				item.className = 'suspension-item';
 				item.innerHTML = `<div class="input-unit"><label>${key}</label><div class="input-with-range"><input type="${isNum ? 'number' : 'text'}" class="text-input" value="${val}" step="${currentStep}"${currentMin}${currentMax}></div></div>`;
 				
-				// 入力時のイベント
 				item.querySelector('input').addEventListener('input', (e) => {
 					window.currentEngineData[section][key] = e.target.value;
 					window.updateEngineGraph();
@@ -186,13 +201,27 @@ window.initEngineEditor = function(data) {
 				box.appendChild(item);
 			});
 			wrapper.appendChild(box);
-			iniContainer.appendChild(wrapper);
+			engineGroup.appendChild(wrapper);
 		});
-		if (typeof window.renderTurboUI === 'function') {
-			window.renderTurboUI(iniContainer, data);
-		}
+
+		// CONTROLLERS（将来用）の空枠もここに追加
+		const ctrlWrapper = document.createElement('article');
+		ctrlWrapper.innerHTML = `<div class="suspension-item-title_box"><p>CONTROLLERS (ctrl_turbo_*.ini)</p></div>`;
+		const ctrlBox = document.createElement('div');
+		ctrlBox.id = 'ctrl-turbo-container';
+		ctrlBox.className = 'suspension-item_box';
+		ctrlWrapper.appendChild(ctrlBox);
+		engineGroup.appendChild(ctrlWrapper);
+
+		contentArea.appendChild(engineGroup);
+
+	} else {
+		// TURBOタブ：ターボ設定のみを表示
+		window.renderTurboUI(contentArea, data);
 	}
-	// --- B. power.lut 用のコンテナ処理 ---
+
+	// 補足：もう一つのコンテナ（power.lut 用）の処理
+	const lutContainer = document.getElementById('power-lut-data-container');
 	if (lutContainer) {
 		lutContainer.innerHTML = '';
 		const lutWrapper = document.createElement('article');
@@ -203,9 +232,7 @@ window.initEngineEditor = function(data) {
 		textarea.id = 'power-lut-textarea';
 		textarea.className = 'text-input';
 		textarea.value = window.currentPowerLutRaw;
-		textarea.addEventListener('input', (e) => {
-			window.parsePowerLut(e.target.value);
-		});
+		textarea.addEventListener('input', (e) => { window.parsePowerLut(e.target.value); });
 		lutBox.appendChild(textarea);
 		lutWrapper.appendChild(lutBox);
 		lutContainer.appendChild(lutWrapper);
