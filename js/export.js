@@ -583,9 +583,8 @@ window.downloadEngineIni = function(isExport = false) {
 	const data = window.currentEngineData;
 	if (!data) { alert("エンジンデータが存在しません。"); return; }
 	
-	// ★追加済み：UI（セレクトボックス）で選ばれているターボの総数を取得する
-	const turboCountSelect = document.getElementById('turbo-count-select');
-	const turboCount = turboCountSelect ? parseInt(turboCountSelect.value) : 1;
+	// ★修正：画面のUIが消えていても「記憶している基数」で確実に書き出す
+	const turboCount = window.currentEngineTurboCount || 1;
 
 	let iniContent = "";
 

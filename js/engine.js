@@ -6,6 +6,7 @@ window.ctrlTurboData = {};
 window.engineChartInstance = null;
 window.activeTurboIndex = 0;
 window.activeEngineTab = 'ENGINE';
+window.currentEngineTurboCount = 1; 
 // LUTパース
 window.parsePowerLut = function(text) {
 	window.currentPowerLutRaw = text;
@@ -35,14 +36,10 @@ window.renderTurboUI = function(container, data) {
 	container.innerHTML = ''; // コンテナをクリア
 
 	const turboWrapper = document.createElement('article');
-	// ターボの基数をカウント
-	let turboCount = 0;
-	while (data[`TURBO_${turboCount}`]) {
-		turboCount++;
-	}
-	let currentSelectValue = Math.max(1, turboCount);
+		// ★修正：推測（カウント）を止め、記憶している「本物の基数」をUIの初期値にする
+		let currentSelectValue = window.currentEngineTurboCount;
 
-	const turboHeader = document.createElement('div');
+		const turboHeader = document.createElement('div');
 	turboHeader.className = 'suspension-item-title_box';
 	turboHeader.innerHTML = `
 		<p>TURBO</p>
@@ -126,7 +123,8 @@ window.renderTurboUI = function(container, data) {
 
 	const selectEl = turboHeader.querySelector('#turbo-count-select');
 	selectEl.addEventListener('change', (e) => {
-		currentSelectValue = parseInt(e.target.value, 10);
+		const val = parseInt(e.target.value, 10);
+		window.currentEngineTurboCount = val; // ★追加：変えた瞬間に「本物の箱」を更新する
 		allTurbos.forEach((tBox, idx) => {
 			idx >= currentSelectValue ? tBox.classList.add('disabled-turbo') : tBox.classList.remove('disabled-turbo');
 		});
@@ -146,6 +144,13 @@ window.renderTurboUI = function(container, data) {
 };
 // 2. エディターUIの生成
 window.initEngineEditor = function(data) {
+	// ★追加：読み込み直後のみ、INIから実際のターボ数を数えて「箱」を初期化する
+	if (data && !window.activeEngineTab_initialized) {
+		let checkCount = 0;
+		while (data[`TURBO_${checkCount}`]) { checkCount++; }
+		window.currentEngineTurboCount = Math.max(1, checkCount);
+		window.activeEngineTab_initialized = true; // 二回目以降の初期化を防ぐ
+	}
 	const iniContainer = document.getElementById('engine-data-container');
 	if (!iniContainer || !data) return;
 
@@ -241,15 +246,10 @@ window.initEngineEditor = function(data) {
 };
 // グラフ描画
 window.updateEngineGraph = function() {
-	const canvas = document.getElementById('engineChart');
-	if (!canvas) return; // 描画対象がない場合は早期リターン
-
-	// 1. データの状態を確認（デバッグ用）
 	const engine = window.currentEngineData || {};
-		// ★ここを修正：TURBO_0 固定をやめ、UIで設定されたターボの総数を取得する
-		const turboCountSelect = document.getElementById('turbo-count-select');
-		const turboCount = turboCountSelect ? parseInt(turboCountSelect.value) : 1;
-		const limiter = parseFloat(engine.ENGINE_DATA?.LIMITER) || 8000;
+	// ★修正：画面のUIではなく「記憶している基数」を直接参照して計算する
+	const turboCount = window.currentEngineTurboCount || 1;
+	const limiter = parseFloat(engine.ENGINE_DATA?.LIMITER) || 8000;
 
 	const BHP_CONSTANT = 7120.8;
 	const labels = [], torNa = [], pwrNa = [], torTu = [], pwrTu = [];
