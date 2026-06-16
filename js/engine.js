@@ -157,7 +157,7 @@ window.initEngineEditor = function(data) {
 	// --- A. engine.ini 用のコンテナ処理 ---
 	if (iniContainer && data) {
 		iniContainer.innerHTML = ''; // 案内テキストを消去
-		['ENGINE_DATA'].forEach(section => {
+		['ENGINE_DATA', 'COAST_REF', 'COAST_DATA', 'COAST_CURVE', 'DAMAGE'].forEach(section => {
 			if (!data[section]) return;
 			const wrapper = document.createElement('article');
 			wrapper.innerHTML = `<div class="suspension-item-title_box"><p>${section}</p></div>`;
@@ -165,16 +165,21 @@ window.initEngineEditor = function(data) {
 			box.className = 'suspension-item_box';
 			Object.keys(data[section]).forEach(key => {
 				const val = data[section][key];
-				// ★大掃除：司令塔からステップ値を取得
 				const editorRule = window.getEditorStep(key, val);
 				const currentStep = typeof editorRule === 'object' ? editorRule.step : editorRule;
 				const currentMin = typeof editorRule === 'object' && editorRule.min !== "" ? ` min="${editorRule.min}"` : "";
 				const currentMax = typeof editorRule === 'object' && editorRule.max !== "" ? ` max="${editorRule.max}"` : "";
+				
+				// 数値か文字列かで入力欄のタイプを切り替える（FILENAMEなどに対応）
+				const isNum = !isNaN(val) && val !== "";
+
 				const item = document.createElement('div');
 				item.className = 'suspension-item';
-				item.innerHTML = `<div class="input-unit"><label>${key}</label><input type="number" class="text-input" value="${val}" step="${currentStep}"${currentMin}${currentMax}></div>`;
-				item.querySelector('input').addEventListener('change', (e) => {
-					window.currentEngineData[section][key] = parseFloat(e.target.value);
+				item.innerHTML = `<div class="input-unit"><label>${key}</label><div class="input-with-range"><input type="${isNum ? 'number' : 'text'}" class="text-input" value="${val}" step="${currentStep}"${currentMin}${currentMax}></div></div>`;
+				
+				// 入力時のイベント
+				item.querySelector('input').addEventListener('input', (e) => {
+					window.currentEngineData[section][key] = e.target.value;
 					window.updateEngineGraph();
 					if (typeof window.renderSetupUI === 'function') window.renderSetupUI();
 				});
