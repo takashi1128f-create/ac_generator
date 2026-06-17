@@ -758,6 +758,9 @@ window.deleteTyreCompound = function(idx) {
 	if (confirm(`「${window.tyreCompoundList[idx].name}」を削除しますか？`)) {
 		window.tyreCompoundList.splice(idx, 1);
 		window.activeTyreIdx = 0;
+		// ★追加：ここでフラグを立てて保存システムを動かす
+		if (window.modifiedStatus) window.modifiedStatus.tyres = true;
+		if (typeof window.triggerLiveSync === 'function') window.triggerLiveSync();
 		window.renderTyreUI();
 	}
 };
@@ -802,6 +805,8 @@ window.addTyreCompound = function() {
 	
 	window.tyreCompoundList.push(newSet);
 	window.activeTyreIdx = window.tyreCompoundList.length - 1;
+	if (window.modifiedStatus) window.modifiedStatus.tyres = true;
+	if (typeof window.triggerLiveSync === 'function') window.triggerLiveSync();
 	window.renderTyreUI();
 };
 

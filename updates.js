@@ -8,11 +8,20 @@ const updateData = [
 	// 		{ title: "タイトル", list: ["内容", "内容"] }
 	// 	]
 	// },
+	// {
+	// 	version: "V0.0.7",
+	// 	date: "2026/06/16",
+	// 	desc: "engine.iniの調整(テスト)",
+	// 	items: ["engine.iniのツインターボ以上に対応", "engine.iniの複数のターボの書き出し変更","上記変更に伴いengineのグラフの調整"]
+	// },
 	{
 		version: "V0.0.7",
-		date: "2026/06/16",
-		desc: "engine.iniの調整(テスト)",
-		items: ["engine.iniのツインターボ以上に対応", "engine.iniの複数のターボの書き出し変更","上記変更に伴いengineのグラフの調整"]
+		date: "2026/06/17",
+		desc: "engine.iniの調整およびLIVEでの調整",
+		items: [
+			{ title: "engine.ini", list: ["engine.iniのツインターボ以上に対応", "engine.iniの複数のターボの書き出し変更","上記変更に伴いengineのグラフの調整"] },
+			{ title: "LIVE", list: ["タイヤの複製でリアルタイムでの反映を修正"] }
+		]
 	},
 	{
 		version: "V0.0.6",
