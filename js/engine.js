@@ -108,6 +108,8 @@ window.renderTurboUI = function(container, data) {
 	for (let i = 0; i < 8; i++) allTurbos.push(createTurboItem(i));
 
 	for (let p = 0; p < 4; p++) {
+		// タブがカバーするインデックスの最小値（0, 2, 4, 6）が、選択された基数以上であればタブの生成自体をスキップする
+		if (p * 2 >= currentSelectValue) continue;
 		const btn = document.createElement('button');
 		btn.className = `tab-btn ${p === 0 ? 'active' : ''}`;
 		btn.textContent = `${p * 2 + 1}.${p * 2 + 2}`;
@@ -134,16 +136,9 @@ window.renderTurboUI = function(container, data) {
 	selectEl.addEventListener('change', (e) => {
 		currentSelectValue = parseInt(e.target.value, 10);
 		window.activeTurboCount = currentSelectValue; // ★追加: 選択値をグローバルに記憶する
-		allTurbos.forEach((tBox, idx) => {
-			idx >= currentSelectValue ? tBox.classList.add('disabled-turbo') : tBox.classList.remove('disabled-turbo');
-		});
-		if (window.activeTurboIndex >= currentSelectValue) {
-			window.activeTurboIndex = 0;
-			tabBtns.forEach(b => b.classList.remove('active'));
-			tabBtns.classList.add('active');
-			pages.forEach(pg => pg.classList.add('tab-hidden'));
-			pages.classList.remove('tab-hidden');
-		}
+
+		// 選択された基数に合わせてUI全体のタブボタンの生成をリフレッシュする
+		window.initEngineEditor(window.currentEngineData);
 		window.updateEngineGraph();
 	});
 
@@ -180,7 +175,7 @@ window.initEngineEditor = function(data) {
 	if (window.activeEngineTab === 'ENGINE') {
 		// ENGINEタブ：基本設定 + コントローラーを表示
 		const engineGroup = document.createElement('div');
-		engineGroup.className = 'engine-ini_box';
+		engineGroup.className = 'turbo-item-outer_box';
 
 		['ENGINE_DATA', 'DAMAGE', 'COAST_REF', 'COAST_DATA', 'COAST_CURVE'].forEach(section => {
 			if (!data[section]) return;
