@@ -1,18 +1,17 @@
 // logo-name.js
-
-/**
- * プロジェクトのデータフォルダからbadge.pngを表示する
- */
 export const updateBadgeImage = (dataFolder) => {
 	const badgeImg = document.getElementById('ui-badge');
-	if (!badgeImg || !dataFolder) return;
-
-	// /data/ が含まれている場合は削除して、直接 /ui/badge.png を繋ぐ
+	// 起動時の待機ガード：dataFolderが空、またはフォルダパスとして不完全な場合はここで停止
+	if (!badgeImg || !dataFolder || dataFolder === "") return;
 	const cleanFolder = dataFolder.replace(/\/data$/, '').replace(/\\data$/, '');
 	const badgePath = `${cleanFolder}/ui/badge.png`.replace(/\\/g, '/');
-	
-	console.log("🛠 [Badge] 設定パス:", `file:///${badgePath}`);
-	badgeImg.src = `file:///${badgePath}`;
+
+	const fs = require('fs');
+
+	// 実際にファイルが存在する場合のみsrcを書き換える
+	if (fs.existsSync(badgePath)) {
+		badgeImg.src = `file:///${badgePath}`;
+	}
 };
 
 // main.jsから呼び出せるように公開
@@ -51,3 +50,9 @@ export const initBadgeHandler = () => {
         }
     });
 };
+window.addEventListener('error', (event) => {
+    // 画像やリソースの読み込みエラーのみを捕捉
+    if (event.target.tagName === 'IMG' || event.target.tagName === 'LINK' || event.target.tagName === 'SCRIPT') {
+        console.error("🚨 読み込み失敗の犯人:", event.target.src || event.target.href);
+    }
+}, true);

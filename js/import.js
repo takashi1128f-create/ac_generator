@@ -348,7 +348,7 @@ export function readTextFile(file) {
 	});
 }
 export function parseINI(text) {
-	const lines = text.split(/\r?\n/);dddddddddddddddddddddddddddddddddddd
+	const lines = text.split(/\r?\n/);
 	let currentSection = null;
 	const result = {};
 	lines.forEach((line) => {
