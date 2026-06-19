@@ -231,7 +231,13 @@ window.executeBulkExport = async function() {
 	let exportSuccess = true;
 	let dataResultPath = "";
 	if (filesToExport.length > 0) {
-		const result = await window.electronAPI.exportFilesToFolder(baseDir, exportFolderName, filesToExport, isOverwrite, window.currentDataFolderPath || null);
+		const result = await window.electronAPI.exportFilesToFolder(
+        baseDir, 
+        projectName, 
+        window.EXPORT_CONFIG, 
+        isOverwrite, 
+        window.pendingBadgePath || null
+    );
 		console.log("🏁 [DEBUG] 書き出し結果:", result);
 		if (result && result.success) {
 			dataResultPath = result.path;

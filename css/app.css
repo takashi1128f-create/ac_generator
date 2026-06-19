@@ -1762,5 +1762,6 @@ label {
 .btn_box{
 	text-align: center;
 }
-
-								
+.hidden-input {
+	display: none;
+}				

@@ -23,7 +23,7 @@ import {
 	default_view_ini,
 	default_dash_cam_ini
 } from './ini-data.js';
-import { updateBadgeImage } from './logo-name.js';
+import { updateBadgeImage, initBadgeHandler } from './logo-name.js';
 // --- 1. データ保持・状態管理 ---
 window.THREE = THREE;
 // 各ファイルの編集状態（false:未編集, true:編集済み）を管理するオブジェクト
@@ -348,7 +348,7 @@ export function readTextFile(file) {
 	});
 }
 export function parseINI(text) {
-	const lines = text.split(/\r?\n/);
+	const lines = text.split(/\r?\n/);dddddddddddddddddddddddddddddddddddd
 	let currentSection = null;
 	const result = {};
 	lines.forEach((line) => {
@@ -896,6 +896,7 @@ export async function processSuspensionIni(file) {
 }
 // ★LIVE SYNC スイッチの初期化（グローバルで管理）
 document.addEventListener('DOMContentLoaded', () => {
+	initBadgeHandler();
 	const liveSyncSwitch = document.getElementById('liveSyncSwitch');
 	if (liveSyncSwitch) {
 		liveSyncSwitch.addEventListener('change', (e) => {

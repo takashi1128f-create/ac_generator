@@ -474,6 +474,9 @@ window.loadProjectToUI = async function(projectState) {
 	if (typeof window.updateSuspensionVisuals === 'function') window.updateSuspensionVisuals(window.currentSuspensionData);
 	if (typeof window.requestRender === 'function') window.requestRender();
 	console.log("✅ [同期完了] すべてのデータが復元されました。");
+	if (window.currentProject && window.currentProject.environment) {
+		window.updateBadgeImage(window.currentProject.environment.data_folder);
+	}
 };
 // 変更をブラウザに通知する（スライダー等を連動させるための魔法の関数）
 function triggerEvents(element) {

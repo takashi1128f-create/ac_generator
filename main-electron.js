@@ -873,6 +873,16 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 				console.error(`ファイル ${file.name} の書き込みに失敗しました:`, writeErr.message);
 			}
 		}
+		// ★ここに追加：ループが終わった直後、リターンする前
+    if (sourcePath && fs.existsSync(sourcePath)) {
+      const uiDirPath = path.join(targetDir, 'ui'); // targetDir は上で定義されています
+      if (!fs.existsSync(uiDirPath)) {
+        fs.mkdirSync(uiDirPath, { recursive: true });
+      }
+      const destPath = path.join(uiDirPath, 'badge.png');
+      fs.copyFileSync(sourcePath, destPath);
+      console.log("✅ バッジ画像をコピーしました:", destPath);
+    }
 		return {
 			success: true,
 			path: targetDir
