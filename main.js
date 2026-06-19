@@ -412,13 +412,6 @@ window.loadProjectToUI = async function(projectState) {
 	if (typeof window.initAeroEditor === 'function') window.initAeroEditor(window.currentAeroData);
 	if (typeof window.initSetupEditor === 'function') window.initSetupEditor(window.currentSetupData);
 	if (typeof window.initColliderEditor === 'function') window.initColliderEditor(window.currentCarData);
-	if (window.currentUiCarData && typeof window.updateLogoNameUI === 'function') {
-		window.updateLogoNameUI(window.currentUiCarData);
-		window.updateTorqueCurveChart(window.currentUiCarData);
-	}
-	if (typeof window.syncLogoNameFromOtherData === 'function') {
-		window.syncLogoNameFromOtherData();
-	}
 	// =======================================================
 	// 4. DRIVETRAINの復元
 	// =======================================================

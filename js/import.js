@@ -684,7 +684,7 @@ export function applyIniData(fileName, parsedData) {
  * 複数ファイルアップロード時のメインエントリポイント
  */
 // （今後UIを追加したら、このリストに名前を足すだけで自動対応します）
-const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json', 'badge.png'];
+const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini'];
 export async function handleMultiFileUpload(files) {
 	const fileArray = Array.from(files); // 使い回せるように一度配列に変換しておく
 	// ★追加：ドロップされたファイルの中に設定ファイル（.ini）が1つでもあるかチェック
@@ -757,20 +757,7 @@ export async function handleMultiFileUpload(files) {
 						window.parseIni(content);
 					} else if (typeof window.parseCamerasINI === 'function') {
 						window.parseCamerasINI(content);
-					}} else if (name === 'ui_car.json') {
-					try {
-						const jsonData = JSON.parse(content);
-						window.currentUiCarData = jsonData;
-						if (typeof window.updateLogoNameUI === 'function') window.updateLogoNameUI(jsonData);
-						if (typeof window.updateTorqueCurveChart === 'function') window.updateTorqueCurveChart(jsonData);
-					} catch (e) { console.error("ui_car.jsonの解析に失敗しました", e); }
-				} else if (name === 'badge.png') {
-					const reader = new FileReader();
-					reader.onload = (e) => {
-						const badgeImg = document.getElementById('ui-badge');
-						if (badgeImg) badgeImg.src = e.target.result;
-					};
-					reader.readAsDataURL(file);
+					}
 				} else {
 					// 通常のINIファイル
 					const parsedData = parseINI(content);

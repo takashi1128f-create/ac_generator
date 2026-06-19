@@ -63,9 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
 				// ★修正：subTargetの判定を追加
 				if (subTarget === 'logo-name-editor') {
 					if (logoNameContent) logoNameContent.classList.remove('tab-hidden');
-				if (typeof window.syncLogoNameFromOtherData === 'function') {
-					window.syncLogoNameFromOtherData();
-				}
 				} else {
 					if (suspensionContent) suspensionContent.classList.remove('tab-hidden');
 				}
