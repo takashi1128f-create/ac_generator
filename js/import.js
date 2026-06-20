@@ -685,9 +685,11 @@ export function applyIniData(fileName, parsedData) {
  * 複数ファイルアップロード時のメインエントリポイント
  */
 // （今後UIを追加したら、このリストに名前を足すだけで自動対応します）
-const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini'];
+const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
 export async function handleMultiFileUpload(files) {
 	const fileArray = Array.from(files); // 使い回せるように一度配列に変換しておく
+	console.log("[IMPORT DEBUG] 渡ってきた全ファイル:", fileArray.map(f => f.name));
+	console.log("[IMPORT DEBUG] 許可リスト:", ALLOWED_FILES);
 	// ★追加：ドロップされたファイルの中に設定ファイル（.ini）が1つでもあるかチェック
 	const hasIniFiles = fileArray.some(f => f.name && f.name.toLowerCase().endsWith('.ini'));
 	// ==========================================
@@ -726,11 +728,11 @@ export async function handleMultiFileUpload(files) {
 			if (!name.endsWith('.fbx') && !name.endsWith('.glb') && !name.endsWith('.gltf')) {
 				if (!ALLOWED_FILES.includes(name)) {
 					// 許可リストにないファイル（lights.iniなど）はここで華麗にスルー！
-					console.log(`[IMPORT] 対象外ファイルをスキップしました: ${name}`);
+					// console.log(`[IMPORT] 対象外ファイルをスキップしました: ${name}`);
 					continue;
 				}
 			}
-			if (name.endsWith('.ini') || name.endsWith('.lut') || name.endsWith('.rto')) {
+			if (name.endsWith('.ini') || name.endsWith('.lut') || name.endsWith('.rto') || name === 'ui_car.json') {
 				// ★修正：データファイル（ini等）だった場合のみ、その場所を「データ専用の箱」に記憶する
 				// ※ただし、ここは初回の一括読み込み時（またはパスが空の時）だけ記憶するように安全装置をかけます
 				if (file.path && !window.currentDataFolderPath) {
@@ -751,6 +753,13 @@ export async function handleMultiFileUpload(files) {
 					// ★追加：RTOファイルのパース
 					if (typeof window.parseFinalRto === 'function') {
 						window.parseFinalRto(content);
+					}
+				} else if (name === 'ui_car.json') {
+					console.log(`[IMPORT] ui_car.json を検知しました。処理を開始します。`);
+					if (typeof window.updateUiCarData === 'function') {
+						window.updateUiCarData(content);
+					} else {
+						console.warn("[IMPORT] updateUiCarData 関数が見つかりません。");
 					}
 				} else if (name === 'cameras.ini') {
 					// ★修正：cameras.ini は特殊な専用パーサーを通す

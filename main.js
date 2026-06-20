@@ -40,6 +40,18 @@ window.APP_CONFIG = {
 		expired: "今月の利用枠を使い切りました。\n来月1日にリセットされます。\nすぐに使い続けたい場合は、メンバーシップの登録・レベルアップをご検討ください。"
 	}
 };
+// ==========================================\n
+// ★ここに追加：入力操作を監視し、スペックをリアルタイムで再計算する
+// ==========================================\n
+document.addEventListener('input', (e) => {
+	if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+		if (typeof window.updateSpecsFromPhysics === 'function') {
+			window.updateSpecsFromPhysics();
+		}
+	}
+});
+
+// 以下、既存のコードが続く...
 // 起動時のチラつき防止（目印がある場合は最初から透明にしておく）
 if (window.location.search.includes('action=newProject')) {
 	document.documentElement.style.opacity = '0';
@@ -412,6 +424,13 @@ window.loadProjectToUI = async function(projectState) {
 	if (typeof window.initAeroEditor === 'function') window.initAeroEditor(window.currentAeroData);
 	if (typeof window.initSetupEditor === 'function') window.initSetupEditor(window.currentSetupData);
 	if (typeof window.initColliderEditor === 'function') window.initColliderEditor(window.currentCarData);
+	// ★追加：ui_carデータの復元
+	if (files['ui_car']) {
+		window.uiCarData = files['ui_car'].currentData;
+		if (typeof window.updateUiCarData === 'function') {
+			window.updateUiCarData(window.uiCarData);
+		}
+	}
 	// =======================================================
 	// 4. DRIVETRAINの復元
 	// =======================================================
@@ -476,6 +495,17 @@ window.loadProjectToUI = async function(projectState) {
 	console.log("✅ [同期完了] すべてのデータが復元されました。");
 	if (window.currentProject && window.currentProject.environment) {
 		window.updateBadgeImage(window.currentProject.environment.data_folder);
+	}
+	// =======================================================
+	// 3. 各画面のUI更新 (タブの中身を再描画)
+	// =======================================================
+	if (typeof window.updateSuspensionEditorUI === 'function') window.updateSuspensionEditorUI(window.currentSuspensionData);
+	// ... (既存のコード) ...
+	if (typeof window.initColliderEditor === 'function') window.initColliderEditor(window.currentCarData);
+
+	// ★追加：物理データに基づくスペック更新
+	if (typeof window.updateSpecsFromPhysics === 'function') {
+		window.updateSpecsFromPhysics();
 	}
 };
 // 変更をブラウザに通知する（スライダー等を連動させるための魔法の関数）
@@ -586,8 +616,10 @@ document.addEventListener('DOMContentLoaded', () => {
 				'modified_status': window.modifiedStatus,
 				// カメラ
 				'camera_configs': window.cameraConfigs,
-				'camera_raw': window.originalRawData
+				'camera_raw': window.originalRawData,
+				'ui_car': window.collectUiCarData(),
 			};
+			console.log('DEBUG [SAVE] dataMapの中身:', dataMap);
 			for (const [key, data] of Object.entries(dataMap)) {
 				if (data && (Array.isArray(data) ? data.length > 0 : Object.keys(data).length > 0)) {
 					window.currentProject.files[key] = {
@@ -981,27 +1013,43 @@ document.addEventListener('drop', async (e) => {
 				item.file(file => resolve([file]));
 			} else if (item.isDirectory) {
 				const dirReader = item.createReader();
+			const allEntries = [];
+			const readRecursive = () => {
 				dirReader.readEntries(async (entries) => {
-					if (item.name === 'ui') {
-						entries.forEach(entry => {
+					if (entries.length > 0) {
+						allEntries.push(...entries);
+						readRecursive();
+					} else {
+						console.log(`[DEBUG] 現在探索中: ${item.name}`);
+						if (item.name === 'ui') {
+						console.log(`[DEBUG] UIフォルダ内のエントリ数: ${allEntries.length}`);
+						allEntries.forEach(entry => {
+							console.log(`[DEBUG] 探索中のファイル名: ${entry.name}`);
 							if (entry.name.toLowerCase() === 'badge.png') {
-									entry.file(file => {
-											const badgeImg = document.getElementById('ui-badge');
-											if (badgeImg) {
-													const formattedPath = file.path.replace(/\\/g, '/');
-													badgeImg.src = 'file:///' + formattedPath;
-											}
-									});
+								console.log(`[DEBUG] badge.png を発見しました！`);
+								entry.file(file => {
+									const badgeImg = document.getElementById('ui-badge');
+									console.log(`[DEBUG] ui-badge 要素の存在確認: ${!!badgeImg}`);
+									if (badgeImg) {
+										const formattedPath = file.path.replace(/\\/g, '/');
+										console.log(`[DEBUG] セットするパス: ${formattedPath}`);
+										// badgeImg.src = 'file:///' + formattedPath;
+										badgeImg.src = URL.createObjectURL(file);
+									}
+								});
 							}
 						});
 					}
-					let entryFiles = [];
-					for (let entry of entries) {
-						const files = await traverseFileTree(entry);
-						entryFiles = entryFiles.concat(files);
+						let entryFiles = [];
+						for (let entry of allEntries) {
+							const files = await traverseFileTree(entry);
+							entryFiles = entryFiles.concat(files);
+						}
+						resolve(entryFiles);
 					}
-					resolve(entryFiles);
 				});
+			};
+			readRecursive();
 			} else {
 				resolve([]);
 			}
@@ -1023,8 +1071,21 @@ document.addEventListener('drop', async (e) => {
 			if (module.handleMultiFileUpload) {
 				module.handleMultiFileUpload(filesToProcess).then(() => {
 					window.isMultiUploading = false;
+					// ★追加：すべての読み込みが完了した後に、物理スペックを最終確定させる
+					if (typeof window.updateSpecsFromPhysics === 'function') {
+						window.updateSpecsFromPhysics();
+					}
 					console.log("[D&D] すべての読み込みが完了しました！");
 				});
+				// 入力操作を監視し、スペックをリアルタイムで再計算する
+				// document.addEventListener('input', (e) => {
+				// 	// 何らかの入力（input, select, textarea）が発生したら再計算
+				// 	if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+				// 		if (typeof window.updateSpecsFromPhysics === 'function') {
+				// 			window.updateSpecsFromPhysics();
+				// 		}
+				// 	}
+				// });
 			}
 		});
 	} else {

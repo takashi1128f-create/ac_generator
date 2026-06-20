@@ -22,7 +22,7 @@ window.__lastDrivetrainData = null;
 window.activeDrivetrainTab = 'GEAR'; // 開いた時の初期タブを「ギア」に設定
 window.initDrivetrainEditor = function(initialData = null) {
 	// ★修正：データ構築を先に行うため、ログを先頭に移動
-	console.log("⚙️ [DEBUG-DT] initDrivetrainEditor開始: 現在のギアセット数 =", window.gearSetList.length);
+	// console.log("⚙️ [DEBUG-DT] initDrivetrainEditor開始: 現在のギアセット数 =", window.gearSetList.length);
 	// ==========================================
 	// ★ 古いギアセットの居座り（ゴミデータ）を掃除する（要素チェックの前に実行！）
 	// ==========================================
@@ -135,7 +135,7 @@ window.renderDrivetrainUI = function() {
 			return `
 			<div class="gear-set-item ${isActive ? 'active' : ''}">
 				<input type="radio" name="main_gear_radio" ${isMain ? 'checked' : ''} 
-					onchange="window.setMainGear(${idx})" title="drivetrain.ini に書き出すメインギアに設定">
+					id="radio-main-${idx}" title="drivetrain.ini に書き出すメインギアに設定">
 				
 				<input type="text" class="set-name-input" value="${set.name}" 
 					onchange="window.updateGearSetName(${idx}, this.value)">
@@ -148,6 +148,14 @@ window.renderDrivetrainUI = function() {
 			</div>
 			`;
 		}).join('');
+		window.gearSetList.forEach((_, idx) => {
+            const radio = document.getElementById(`radio-main-${idx}`);
+            if (radio) {
+                radio.addEventListener('change', () => {
+                    window.setMainGear(idx);
+                });
+            }
+        });
 		// 2. GEARS入力 (7速固定でCOUNT連動)
 		const ratioBox = document.getElementById('gear-ratio-inputs');
 		const gearsData = activeSet.data.GEARS || {};
@@ -207,6 +215,10 @@ window.renderDrivetrainUI = function() {
 					}
 					if (key.startsWith('GEAR_') || key === 'FINAL' || key === 'COUNT') {
 						window.updateGearChart();
+						// ★追加：ギア比が変更されたらスペックを再計算
+						if (typeof window.updateSpecsFromPhysics === 'function') {
+							window.updateSpecsFromPhysics();
+						}
 					}
 				});
 			}
@@ -653,12 +665,17 @@ window.updateGearSetName = (idx, newName) => {
 // ラジオボタンが押された時の処理
 window.setMainGear = (idx) => {
 	window.mainGearIdx = idx;
+	window.activeGearIdx = idx;
 	window.previewSetupGearIdx = idx; // ★追加：プレビュー用のインデックスも同時に切り替える
 	window.renderDrivetrainUI();
 	window.updateGearChart();
 	// セットアッププレビュー画面も裏で更新しておく
 	if (typeof window.renderTransmissionPreview === 'function') {
 		window.renderTransmissionPreview();
+	}
+	// ★追加：メインギアが変更されたらスペックを再計算
+	if (typeof window.updateSpecsFromPhysics === 'function') {
+		window.updateSpecsFromPhysics();
 	}
 };
 window.updateGearChart = function() {
@@ -871,10 +888,17 @@ window.setMainFinal = function(idx) {
 		if (typeof window.renderTransmissionPreview === 'function') {
 			window.renderTransmissionPreview();
 		}
+		// ★追加：メインファイナルが変更されたらスペックを再計算
+		if (typeof window.updateSpecsFromPhysics === 'function') {
+			window.updateSpecsFromPhysics();
+		}
 	}
 };
 window.updateFinalRto = function(idx, field, value) {
 	window.finalRtoList[idx][field] = value;
+	if (typeof window.updateSpecsFromPhysics === 'function') {
+		window.updateSpecsFromPhysics();
+	}
 	// ★追加：ギア比(value)が変更されたら、ピット表示名(label)も自動で「値:1」に連動させる
 	if (field === 'value') {
 		const newLabel = value + ":1";

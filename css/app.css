@@ -1709,14 +1709,26 @@ label {
 	font-size: 0.3em;
 }
 /* ロゴとネーム */
+.logo-name-inner_box article{
+	padding: 0.5em;
+	border: 1px solid #333333;
+	border-radius: 0.5em;
+	background-color: rgb(0 0 0 / 30%);
+	box-shadow: inset -3px -2px 5px 0px rgba(0, 0, 0, 0.7), inset 3px 3px 5px 0px rgba(255, 255, 255, 0.7);
+}
+#logo-name-content{
+	padding: 0.5em;
+}
+.logo-name-inner_box article:not(:last-of-type){
+	margin-bottom: 0.5em;
+}
+.logo-name_box,
 .logo-name-outer_box{
 	display: flex;
+	gap: 0.5em;
 }
 .logo-name-outer_box > div{
 	width: 50%;
-}
-.logo-name_box{
-	display: flex;
 }
 .logo-editor_box{
 	width: 30%;
@@ -1725,11 +1737,17 @@ label {
 .logo-editor-img_box img{
 	aspect-ratio: 1;
 }
+.logo-editor-img-outer_box{
+	background-color: #b3b3b3;
+	padding: 1rem;
+	margin-bottom: 0.5em;
+}
 .logo-editor-img_box{
 	max-width: 128px;
-	width:100%;
-	background: aqua;
+	background: #fff;
 	margin: 1rem auto;
+	box-shadow: -1px -1px 1px 1px rgba(0, 0, 0, 0.64), 1px 1px 1px 1px rgba(255, 255, 255, 1);
+	border-radius: 0.5em;
 }
 .logo-editor-img_box img{
 	width: 100%;
@@ -1746,22 +1764,35 @@ label {
 	align-items: center;
 }
 .car-data_box > div:not(:last-of-type){
-	margin-bottom: 1.5em;
+	margin-bottom: 1em;
 }
 .car-data_box > div,
 .car-data_box > div input{
 	font-size: 1rem;
 }
+.car-spec-inner-data_box,
 .car-data_box > div input{
 	width: 100%;
-	padding: 0.5em;
+	padding: 0.3em;
+	border: 1px solid #333;
+	border-radius: 0.5em;
+	box-shadow: -1px -1px 1px 1px rgba(0, 0, 0, 0.64), 1px 1px 1px 1px rgba(255, 255, 255, 1);
 }
+.car-spec-data_box > p,
 .car-data_box > div p{
 	width: 7em;
+	flex-shrink: 0;
 }
 .btn_box{
 	text-align: center;
 }
 .hidden-input {
 	display: none;
-}				
+}
+.car-spec-data_box > p{
+	display: inline-block;
+	margin-bottom: auto;
+}
+.car-spec-inner-data_box{
+	background-color: #fff;
+}

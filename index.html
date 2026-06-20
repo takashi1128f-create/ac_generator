@@ -198,11 +198,13 @@
 						<div class="logo-name_box">
 							<div class="logo-editor_box">
 								<h4>ロゴ画像</h4>
-								<div class="logo-editor-img_box">
-									<img id="ui-badge" src="./image/sample-logo.png" alt="Car Badge">
+								<div class="logo-editor-img-outer_box">
+									<div class="logo-editor-img_box">
+										<img id="ui-badge" src="./image/sample-logo.png" alt="Car Badge">
+									</div>
 								</div>
 								<div class="btn_box">
-									<button id="btn-change-badge">置換</button>
+									<button id="btn-change-badge" class="select-set-btn">置換</button>
 									<input type="file" id="badge-file-input" accept="image/*" class="hidden-input">
 								</div>
 							</div>
@@ -210,6 +212,10 @@
 								<div>
 									<p>車両名</p>
 									<input type="text" id="ui-name">
+								</div>
+								<div>
+									<p>制作者</p>
+									<input type="text" id="ui-author">
 								</div>
 								<div>
 									<p>ブランド</p>
@@ -223,9 +229,9 @@
 									<p>クラス</p>
 									<input type="text" id="ui-class">
 								</div>
-								<div>
+								<div class="car-spec-data_box">
 									<p>仕様</p>
-									<div>
+									<div class="car-spec-inner-data_box">
 										<div id="ui-specs-bhp"></div>
 										<div id="ui-specs-torque"></div>
 										<div id="ui-specs-weight"></div>

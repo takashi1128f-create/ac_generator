@@ -29,6 +29,9 @@ window.parsePowerLut = function(text) {
 		window.initEngineEditor(window.currentEngineData);
 	}
 	window.updateEngineGraph();
+	if (typeof window.updateSpecsFromPhysics === 'function') {
+		window.updateSpecsFromPhysics();
+	}
 };
 // --- ターボ専用UIの生成関数 ---
 window.renderTurboUI = function(container, data) {
@@ -140,6 +143,9 @@ window.renderTurboUI = function(container, data) {
 		// 選択された基数に合わせてUI全体のタブボタンの生成をリフレッシュする
 		window.initEngineEditor(window.currentEngineData);
 		window.updateEngineGraph();
+		if (typeof window.updateSpecsFromPhysics === 'function') {
+			window.updateSpecsFromPhysics();
+		}
 	});
 
 	turboWrapper.appendChild(turboTabHeader);

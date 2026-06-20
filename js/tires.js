@@ -178,6 +178,9 @@ window.updateTyreEditorUI = function(data) {
 	window.isTyreFirstLoad = false;
 
 	window.renderTyreUI();
+	if (typeof window.updateSpecsFromPhysics === 'function') {
+		window.updateSpecsFromPhysics();
+	}
 };
 
 /**
