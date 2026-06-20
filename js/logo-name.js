@@ -78,14 +78,17 @@ export const updateUiCarData = (data) => {
 			setVal('ui-tags', parsedData.tags);
 			setVal('ui-class', parsedData.class);
 
-			if (parsedData.specs) {
-				setVal('ui-specs-bhp', parsedData.specs.bhp);
-				setVal('ui-specs-torque', parsedData.specs.torque);
-				setVal('ui-specs-weight', parsedData.specs.weight);
-				setVal('ui-specs-topspeed', parsedData.specs.topspeed);
-				setVal('ui-specs-acceleration', parsedData.specs.acceleration);
-				setVal('ui-specs-pwratio', parsedData.specs.pwratio);
-			}
+			// if (parsedData.specs) {
+			// 	setVal('ui-specs-bhp', parsedData.specs.bhp);
+			// 	setVal('ui-specs-torque', parsedData.specs.torque);
+			// 	setVal('ui-specs-weight', parsedData.specs.weight);
+			// 	setVal('ui-specs-topspeed', parsedData.specs.topspeed);
+			// 	setVal('ui-specs-acceleration', parsedData.specs.acceleration);
+			// 	setVal('ui-specs-pwratio', parsedData.specs.pwratio);
+			// }
+			if (typeof window.updateSpecsFromPhysics === 'function') {
+			window.updateSpecsFromPhysics();
+		}
 		}
 	} catch (e) {
 		console.error("[Logo-Name] ui_car.json 適用エラー:", e);
@@ -233,27 +236,24 @@ console.log("[DEBUG-DATA] CurrentSetupData:", window.currentSetupData);
 		let finalRatio = 0;
 		let topGearRatio = 0;
 		
+		// ギアセットから COUNT と該当する GEAR_x、および FINAL を取得
 		const gearIdx = window.activeGearIdx !== undefined ? window.activeGearIdx : 0;
 		const activeGearSet = window.gearSetList[gearIdx];
 		
-		// ★修正: データが `data.GEARS` の中にある仕様に合わせました
-		if (activeGearSet && activeGearSet.data && activeGearSet.data.GEARS) {
-			const gears = activeGearSet.data.GEARS;
-			
+		if (activeGearSet && activeGearSet.data) {
 			// COUNT(最大段数) を取得し、それを元にトップギア(例: GEAR_5)の数値を取得
-			const count = parseInt(gears.COUNT) || 5;
-			topGearRatio = parseFloat(gears[`GEAR_${count}`]);
+			const count = parseInt(activeGearSet.data.COUNT);
+			topGearRatio = parseFloat(activeGearSet.data[`GEAR_${count}`]);
 			
 			// ギアセット内に FINAL が存在する場合は取得
-			if (gears.FINAL !== undefined) {
-				finalRatio = parseFloat(gears.FINAL);
+			if (activeGearSet.data.FINAL !== undefined) {
+				finalRatio = parseFloat(activeGearSet.data.FINAL);
 			}
 		}
 		
 		// もしギアセット内に FINAL が無く、finalRtoList 側に存在する場合の処理
 		if ((!finalRatio || isNaN(finalRatio)) && window.finalRtoList && window.finalRtoList.length > 0) {
-			// drivetrain.js の仕様に合わせ、プレビュー用のインデックスを参照
-			const finalIdx = window.previewSetupFinalIdx !== undefined ? window.previewSetupFinalIdx : 0;
+			const finalIdx = window.mainFinalIdx !== undefined ? window.mainFinalIdx : 0;
 			if (window.finalRtoList[finalIdx]) {
 				finalRatio = parseFloat(window.finalRtoList[finalIdx].value || window.finalRtoList[finalIdx].ratio);
 			}

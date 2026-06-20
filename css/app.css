@@ -1741,13 +1741,13 @@ label {
 	background-color: #b3b3b3;
 	padding: 1rem;
 	margin-bottom: 0.5em;
+	box-shadow: -1px -1px 1px 1px rgba(0, 0, 0, 0.64), 1px 1px 1px 1px rgba(255, 255, 255, 1);
+    border-radius: 0.5em;
 }
 .logo-editor-img_box{
 	max-width: 128px;
 	background: #fff;
 	margin: 1rem auto;
-	box-shadow: -1px -1px 1px 1px rgba(0, 0, 0, 0.64), 1px 1px 1px 1px rgba(255, 255, 255, 1);
-	border-radius: 0.5em;
 }
 .logo-editor-img_box img{
 	width: 100%;
