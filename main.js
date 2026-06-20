@@ -492,6 +492,9 @@ window.loadProjectToUI = async function(projectState) {
 	// =======================================================
 	if (typeof window.updateSuspensionVisuals === 'function') window.updateSuspensionVisuals(window.currentSuspensionData);
 	if (typeof window.requestRender === 'function') window.requestRender();
+	if (window.currentProject.files.ui_car && window.restoreUiCarData) {
+				window.restoreUiCarData(window.currentProject.files.ui_car.currentData);
+			}
 	console.log("✅ [同期完了] すべてのデータが復元されました。");
 	if (window.currentProject && window.currentProject.environment) {
 		window.updateBadgeImage(window.currentProject.environment.data_folder);
@@ -617,9 +620,11 @@ document.addEventListener('DOMContentLoaded', () => {
 				// カメラ
 				'camera_configs': window.cameraConfigs,
 				'camera_raw': window.originalRawData,
-				'ui_car': window.collectUiCarData(),
+				'ui_car': (typeof window.collectUiCarData === 'function') ? window.collectUiCarData() : {},
 			};
 			console.log('DEBUG [SAVE] dataMapの中身:', dataMap);
+			console.log("🔍 [SAVE DEBUG] ui_car の中身:", dataMap.ui_car);
+			console.log("🔍 [SAVE DEBUG] キーの数:", Object.keys(dataMap.ui_car).length);
 			for (const [key, data] of Object.entries(dataMap)) {
 				if (data && (Array.isArray(data) ? data.length > 0 : Object.keys(data).length > 0)) {
 					window.currentProject.files[key] = {

@@ -23,7 +23,7 @@ import {
 	default_view_ini,
 	default_dash_cam_ini
 } from './ini-data.js';
-import { updateBadgeImage, initBadgeHandler } from './logo-name.js';
+import { updateBadgeImage, initBadgeHandler, updateUiCarData, collectUiCarData } from './logo-name.js';
 // --- 1. データ保持・状態管理 ---
 window.THREE = THREE;
 // 各ファイルの編集状態（false:未編集, true:編集済み）を管理するオブジェクト
