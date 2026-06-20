@@ -78,17 +78,14 @@ export const updateUiCarData = (data) => {
 			setVal('ui-tags', parsedData.tags);
 			setVal('ui-class', parsedData.class);
 
-			// if (parsedData.specs) {
-			// 	setVal('ui-specs-bhp', parsedData.specs.bhp);
-			// 	setVal('ui-specs-torque', parsedData.specs.torque);
-			// 	setVal('ui-specs-weight', parsedData.specs.weight);
-			// 	setVal('ui-specs-topspeed', parsedData.specs.topspeed);
-			// 	setVal('ui-specs-acceleration', parsedData.specs.acceleration);
-			// 	setVal('ui-specs-pwratio', parsedData.specs.pwratio);
-			// }
-			if (typeof window.updateSpecsFromPhysics === 'function') {
-			window.updateSpecsFromPhysics();
-		}
+			if (parsedData.specs) {
+				setVal('ui-specs-bhp', parsedData.specs.bhp);
+				setVal('ui-specs-torque', parsedData.specs.torque);
+				setVal('ui-specs-weight', parsedData.specs.weight);
+				setVal('ui-specs-topspeed', parsedData.specs.topspeed);
+				setVal('ui-specs-acceleration', parsedData.specs.acceleration);
+				setVal('ui-specs-pwratio', parsedData.specs.pwratio);
+			}
 		}
 	} catch (e) {
 		console.error("[Logo-Name] ui_car.json 適用エラー:", e);
