@@ -1796,3 +1796,15 @@ label {
 .car-spec-inner-data_box{
 	background-color: #fff;
 }
+.car-spec-inner-data_box > div{
+	display: flex;
+	line-height: 1.2em;
+}
+.car-spec-inner-data_box > div div:first-of-type{
+	width: 7em;
+	display: flex;
+	justify-content: space-between;
+}
+.car-spec-inner-data_box > div div:first-of-type::after{
+	content: '：';
+}

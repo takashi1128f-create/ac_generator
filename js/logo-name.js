@@ -187,6 +187,6 @@ window.updateSpecsDisplay = function(specs) {
     setSpec('ui-specs-torque', 'torque', 'Nm');
     setSpec('ui-specs-weight', 'weight', 'kg');
     setSpec('ui-specs-topspeed', 'topspeed', 'km/h');
-    setSpec('ui-specs-acceleration', 'acceleration', '0-100km/h');
+    setSpec('ui-specs-acceleration', 'acceleration', 's');
     setSpec('ui-specs-pwratio', 'pwratio', 'kg/ps');
 };

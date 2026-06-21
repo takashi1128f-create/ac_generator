@@ -32,6 +32,9 @@ window.parsePowerLut = function(text) {
 	if (typeof window.updateSpecsFromPhysics === 'function') {
 		window.updateSpecsFromPhysics();
 	}
+	if (typeof window.updateUiCurveGraph === 'function') {
+    window.updateUiCurveGraph();
+}
 };
 // --- ターボ専用UIの生成関数 ---
 window.renderTurboUI = function(container, data) {
@@ -497,36 +500,135 @@ window.calculateEngineParams = function(rpm, engine, turboCount, baseTorque) {
 };
 // 物理設定から馬力を算出してUIを更新する関数
 window.updateSpecsFromPhysics = function() {
-	if (window.isMultiUploading || window.isRestoring) return;
-	// データが揃っていない場合は計算せず、UI更新も行わない（前回の値を保持するため）
-	if (!window.currentEngineData || !window.currentPowerLut || window.currentPowerLut.length === 0) {
-		return;
-	}
-	
-	const engine = window.currentEngineData;
-	const limiter = parseFloat(engine.ENGINE_DATA?.LIMITER) || 8000;
-	// 読み込み直後でturboCountが不明な場合、エンジンデータから自動判定する
-	let turboCount = window.activeTurboCount;
-	if (turboCount === null || turboCount === undefined) {
-		turboCount = Object.keys(engine).filter(key => key.startsWith('TURBO_')).length;
-		console.log("🛠 [DEBUG] ターボ数を自動判定しました:", turboCount);
-	}
-	let maxPowerBhp = 0, maxTorque = 0;
-	
+    if (window.isMultiUploading || window.isRestoring) return;
+    
+    // 1. データの存在チェック
+    if (!window.currentEngineData || !window.currentPowerLut || window.currentPowerLut.length === 0) {
+        return;
+    }
+    
+    const engine = window.currentEngineData;
+    const limiter = parseFloat(engine.ENGINE_DATA?.LIMITER) || 8000;
+    
+    // ターボ数の判定
+    let turboCount = window.activeTurboCount;
+    if (turboCount === null || turboCount === undefined) {
+        turboCount = Object.keys(engine).filter(key => key.startsWith('TURBO_')).length;
+    }
+    
+    // 2. 馬力・トルクのピーク値を計算
+    let maxPowerBhp = 0, maxTorque = 0;
+    for (let rpm = 0; rpm <= limiter; rpm += 100) {
+        let baseTorque = window.getInterpolatedTorque(rpm, window.currentPowerLut);
+        let params = window.calculateEngineParams(rpm, engine, turboCount, baseTorque);
+        if (params.power > maxPowerBhp) maxPowerBhp = params.power;
+        if (params.torque > maxTorque) maxTorque = params.torque;
+    }
+    const maxPowerPs = Math.round(maxPowerBhp * 1.01387);
 
-	for (let rpm = 0; rpm <= limiter; rpm += 100) {
-		let baseTorque = window.getInterpolatedTorque(rpm, window.currentPowerLut);
-		let params = window.calculateEngineParams(rpm, engine, turboCount, baseTorque);
-		if (params.power > maxPowerBhp) maxPowerBhp = params.power;
-		if (params.torque > maxTorque) maxTorque = params.torque;
-	}
+    // 3. パワーウェイトレシオの計算
+    let pwRatio = null;
+    const currentWeight = parseFloat(window.currentSpecs.weight);
+    if (currentWeight > 0 && maxPowerPs > 0) {
+        pwRatio = (currentWeight / maxPowerPs).toFixed(2);
+    }
 
-	const maxPowerPs = Math.round(maxPowerBhp * 1.01387);
-	
-	// ★計算結果をログ出力
-	console.log("🛠 [DEBUG] 計算された馬力:", maxPowerPs, "BHP:", maxPowerBhp);
+    // --- 各種パフォーマンス・スペックの計算 ---
+    let topSpeed = null;
+    let acceleration = null;
 
-	if (typeof window.updateSpecsDisplay === 'function') {
-		window.updateSpecsDisplay({ whp: maxPowerPs, torque: Math.round(maxTorque) });
-	}
+    if (window.gearSetList && window.gearSetList[window.activeGearIdx]) {
+        const activeSet = window.gearSetList[window.activeGearIdx].data || {};
+        const gears = activeSet.GEARS || {};
+        const finalRatio = parseFloat(gears.FINAL) || 0;
+        const gearCount = parseInt(gears.COUNT) || 1;
+        const topGearRatio = parseFloat(gears["GEAR_" + gearCount]) || 0;
+        
+        const tyre = window.tyreCompoundList[window.activeTyreIdx]?.data?.REAR || {};
+        const tireRadius = parseFloat(tyre.RADIUS) || 0.3;
+
+        // 4. 理論上の最高速計算
+        if (limiter > 0 && finalRatio > 0 && topGearRatio > 0) {
+            topSpeed = Math.round((limiter * (tireRadius * 2 * Math.PI) * 60) / (topGearRatio * finalRatio * 1000));
+        }
+
+        // 5. ★0-100km/h 加速の概算ロジック (追加)
+        if (currentWeight > 0 && maxPowerPs > 0) {
+            // シフトタイムを取得（ミリ秒から秒へ変換）[cite: 155, 180]
+            const shiftTime = (parseFloat(activeSet.GEARBOX?.CHANGE_UP_TIME) || 250) / 1000;
+            
+            // 物理推算式: (P/W比に基づく基本加速) + (シフトロス) + (発進ロス)
+            // 0.72 は一般的な駆動効率とタイヤのグリップを考慮した係数
+            const baseAccel = (currentWeight / maxPowerPs) * 0.72;
+            
+            // 0-100km/h到達までに通常2回のシフト（1→2速、2→3速）が必要と仮定
+            const totalShiftLoss = 2 * shiftTime;
+            
+            // 合計。ローンチ時のラグとして一律 0.4秒 を加算
+            let estimatedTime = baseAccel + totalShiftLoss + 0.4;
+            
+            // トラクションの物理的限界として、どれだけハイパワーでも 2.2秒 以下にはならないように制限
+            if (estimatedTime < 2.2) estimatedTime = 2.2;
+            
+            acceleration = estimatedTime.toFixed(1);
+        }
+    }
+
+    // 6. 全ての計算結果をUIに一括反映
+    if (typeof window.updateSpecsDisplay === 'function') {
+        window.updateSpecsDisplay({ 
+            whp: maxPowerPs,
+            torque: Math.round(maxTorque),
+            pwratio: pwRatio,
+            topspeed: topSpeed,
+            acceleration: acceleration // ここでUIに渡されます
+        });
+    }
+};
+window.updateUiCurveGraph = function() {
+    const canvas = document.getElementById('ui-torqueCurve');
+    if (!canvas || !window.currentEngineData || !window.currentPowerLut) return;
+
+    const engine = window.currentEngineData;
+    const turboCount = window.activeTurboCount || 0;
+    const limiter = parseFloat(engine.ENGINE_DATA?.LIMITER) || 8000;
+    
+    const labels = [], torqueData = [], powerData = [];
+    const BHP_CONSTANT = 7120.8;
+
+    // 物理計算ロジックを使用して全域のデータを生成
+    for (let rpm = 0; rpm <= limiter; rpm += 200) {
+        labels.push(rpm);
+        let baseTorque = window.getInterpolatedTorque(rpm, window.currentPowerLut);
+        let params = window.calculateEngineParams(rpm, engine, turboCount, baseTorque);
+        
+        torqueData.push(params.torque);
+        // BHPをPS(仏馬力)に変換して格納
+        powerData.push(params.power * 1.01387);
+    }
+
+    // Chart.js を使用して描画
+    if (window.uiCurveChartInstance) window.uiCurveChartInstance.destroy();
+    
+    window.uiCurveChartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Torque', data: torqueData, borderColor: '#3498db', yAxisID: 'yTorque', pointRadius: 0, borderWidth: 2 },
+                { label: 'Power', data: powerData, borderColor: '#e74c3c', yAxisID: 'yPower', pointRadius: 0, borderWidth: 2 }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            scales: {
+                x: { ticks: { color: '#ccc' }, grid: { color: '#333' } },
+                yTorque: { position: 'left', beginAtZero: true, title: { display: true, text: 'Nm', color: '#3498db' } },
+                yPower: { position: 'right', beginAtZero: true, title: { display: true, text: 'PS', color: '#e74c3c' } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
 };
