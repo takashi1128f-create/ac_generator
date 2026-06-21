@@ -1737,12 +1737,16 @@ label {
 .logo-editor-img_box img{
 	aspect-ratio: 1;
 }
+.torque-graph_box,
 .logo-editor-img-outer_box{
 	background-color: #b3b3b3;
 	padding: 1rem;
 	margin-bottom: 0.5em;
 	box-shadow: -1px -1px 1px 1px rgba(0, 0, 0, 0.64), 1px 1px 1px 1px rgba(255, 255, 255, 1);
     border-radius: 0.5em;
+}
+.torque-graph_box{
+	background-color: #fff;
 }
 .logo-editor-img_box{
 	max-width: 128px;
