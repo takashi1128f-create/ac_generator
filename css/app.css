@@ -1774,6 +1774,7 @@ label {
 .car-data_box > div input{
 	font-size: 1rem;
 }
+.description_box #ui-description,
 .car-spec-inner-data_box,
 .car-data_box > div input{
 	width: 100%;
@@ -1811,4 +1812,31 @@ label {
 }
 .car-spec-inner-data_box > div div:first-of-type::after{
 	content: '：';
+}
+.description_box{
+	width: 100%;
+}
+.torque-graph-outer_box {
+	display: flex;
+	gap: 1em;
+}
+.torque-graph-outer_box > div:nth-child(1) {
+	flex: 3;
+	margin-bottom: 0;
+}
+.torque-graph-outer_box > div:nth-child(2) {
+	flex: 7;
+	flex-direction: column;
+	display: flex;
+}
+.description_box #ui-description{
+	width: 100%;
+	box-sizing: border-box;
+	resize: vertical;
+	background-color: #333;
+	color: #fff;
+	max-height: 100%;
+	font-size: 0.75em;
+	height: 100%;
+	resize: none;
 }

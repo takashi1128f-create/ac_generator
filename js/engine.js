@@ -585,29 +585,36 @@ window.updateSpecsFromPhysics = function() {
         });
     }
 };
+/**
+ * ui_car.json プレビュー用の小さなグラフを描画する
+ */
 window.updateUiCurveGraph = function() {
     const canvas = document.getElementById('ui-torqueCurve');
-    if (!canvas || !window.currentEngineData || !window.currentPowerLut) return;
+    // データが揃っていない場合は描画しない
+    if (!canvas || !window.currentEngineData || !window.currentPowerLut || window.currentPowerLut.length === 0) return;
 
     const engine = window.currentEngineData;
-    const turboCount = window.activeTurboCount || 0;
-    const limiter = parseFloat(engine.ENGINE_DATA?.LIMITER) || 8000;
     
-    const labels = [], torqueData = [], powerData = [];
-    const BHP_CONSTANT = 7120.8;
+    // ★修正1：ターボ数の判定を自動計算と同じロジックにする（ターボ反映漏れを防止）
+    let turboCount = window.activeTurboCount;
+    if (turboCount === null || turboCount === undefined) {
+        turboCount = Object.keys(engine).filter(key => key.startsWith('TURBO_')).length;
+    }
 
-    // 物理計算ロジックを使用して全域のデータを生成
+    const limiter = parseFloat(engine.ENGINE_DATA?.LIMITER) || 8000;
+    const labels = [], torqueData = [], powerData = [];
+
+    // 200RPM刻みでプロットデータを生成
     for (let rpm = 0; rpm <= limiter; rpm += 200) {
         labels.push(rpm);
         let baseTorque = window.getInterpolatedTorque(rpm, window.currentPowerLut);
+        // ブースト込みの数値を計算
         let params = window.calculateEngineParams(rpm, engine, turboCount, baseTorque);
         
         torqueData.push(params.torque);
-        // BHPをPS(仏馬力)に変換して格納
-        powerData.push(params.power * 1.01387);
+        powerData.push(params.power * 1.01387); // BHPをPS(仏馬力)に変換
     }
 
-    // Chart.js を使用して描画
     if (window.uiCurveChartInstance) window.uiCurveChartInstance.destroy();
     
     window.uiCurveChartInstance = new Chart(canvas, {
@@ -615,8 +622,24 @@ window.updateUiCurveGraph = function() {
         data: {
             labels: labels,
             datasets: [
-                { label: 'Torque', data: torqueData, borderColor: '#3498db', yAxisID: 'yTorque', pointRadius: 0, borderWidth: 2 },
-                { label: 'Power', data: powerData, borderColor: '#e74c3c', yAxisID: 'yPower', pointRadius: 0, borderWidth: 2 }
+                { 
+                    label: 'Torque', 
+                    data: torqueData, 
+                    borderColor: '#3498db', 
+                    yAxisID: 'yNm', // トルク専用の軸
+                    pointRadius: 0, 
+                    borderWidth: 2,
+                    tension: 0.1
+                },
+                { 
+                    label: 'Power', 
+                    data: powerData, 
+                    borderColor: '#e74c3c', 
+                    yAxisID: 'yPs', // 馬力専用の軸
+                    pointRadius: 0, 
+                    borderWidth: 2,
+                    tension: 0.1
+                }
             ]
         },
         options: {
@@ -624,11 +647,29 @@ window.updateUiCurveGraph = function() {
             maintainAspectRatio: false,
             animation: false,
             scales: {
-                x: { ticks: { color: '#ccc' }, grid: { color: '#333' } },
-                yTorque: { position: 'left', beginAtZero: true, title: { display: true, text: 'Nm', color: '#3498db' } },
-                yPower: { position: 'right', beginAtZero: true, title: { display: true, text: 'PS', color: '#e74c3c' } }
+                x: { 
+                    display: false // 狭い枠なので横軸（RPM）の数字は隠してスッキリさせる
+                },
+                // ★修正2：左右の軸設定を分け、独立してスケールするように変更
+                yNm: { 
+                    position: 'left', 
+                    beginAtZero: true, 
+                    title: { display: true, text: 'Nm', color: '#0099ff', font: { size: 10 } },
+                    ticks: { color: '#333', font: { size: 9 } },
+                    grid: { color: '#000000' }
+                },
+                yPs: { 
+                    position: 'right', 
+                    beginAtZero: true, 
+                    title: { display: true, text: 'ps', color: '#ff0000', font: { size: 10 } },
+                    ticks: { color: '#333', font: { size: 9 } },
+                    grid: { drawOnChartArea: false } // グリッドの重複を避ける
+                }
             },
-            plugins: { legend: { display: false } }
+            plugins: { 
+                legend: { display: false },
+                tooltip: { enabled: false } // プレビュー用なのでツールチップは無効
+            }
         }
     });
 };
