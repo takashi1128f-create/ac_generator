@@ -272,39 +272,9 @@ window.updateEngineGraph = function() {
 		torNa.push(baseTorque);
 		pwrNa.push((baseTorque * rpm) / BHP_CONSTANT);
 			
-			// ★ここを修正：全てのターボ（TURBO_0〜7）を巡回し、ブーストを合算する
-			let totalBoost = 0;
-			for (let i = 0; i < turboCount; i++) {
-				const turboObj = engine[`TURBO_${i}`];
-				// ターボオブジェクトが存在し、かつMAX_BOOSTが設定されている場合のみ計算する
-				if (!turboObj || !turboObj.MAX_BOOST || parseFloat(turboObj.MAX_BOOST) <= 0) continue;
-
-				let mB = parseFloat(turboObj.MAX_BOOST) || 0;
-				if (mB > 0) {
-						let refRpm = parseFloat(turboObj.REFERENCE_RPM) || 1;
-						let gamma = parseFloat(turboObj.GAMMA) || 1;
-						let wastegate = parseFloat(turboObj.WASTEGATE) || mB;
-						// ★追加: userSetting (Turbo Boost Level) を取得。データに無ければデフォルト1.0
-						let userSetting = parseFloat(turboObj.USER_SETTING) || 1.0; 
-
-						let b = mB * Math.pow(rpm / refRpm, gamma);
-						// ★修正: ウェストゲート制限に userSetting を乗算する
-						let limit = wastegate * userSetting;
-						if (b > limit) { b = limit; }
-						totalBoost += b;
-				}
-			}
-
-			// 合算された totalBoost があれば、一括で計算してグラフ用の配列（torTu/pwrTu）へ入れる
-			if (totalBoost > 0) {
-				let tTor = baseTorque * (1.0 + totalBoost);
-				torTu.push(tTor);
-				pwrTu.push((tTor * rpm) / BHP_CONSTANT);
-			} else {
-				// ブーストがない場合は 0 を入れてグラフが途切れないようにする
-				torTu.push(0);
-				pwrTu.push(0);
-			}
+			const turboParams = window.calculateEngineParams(rpm, engine, turboCount, baseTorque);
+		torTu.push(turboParams.torque);
+		pwrTu.push(turboParams.power);
 		}
 
 	// 4. チャート再描画処理
@@ -498,4 +468,29 @@ window.getInterpolatedTorque = function(targetRpm, lut) {
 		}
 	}
 	return 0;
+};
+window.calculateEngineParams = function(rpm, engine, turboCount, baseTorque) {
+	const BHP_CONSTANT = 7120.8;
+	let totalBoost = 0;
+	for (let i = 0; i < turboCount; i++) {
+		const turboObj = engine[`TURBO_${i}`];
+		if (!turboObj || !turboObj.MAX_BOOST || parseFloat(turboObj.MAX_BOOST) <= 0) continue;
+
+		let mB = parseFloat(turboObj.MAX_BOOST) || 0;
+		if (mB > 0) {
+			let refRpm = parseFloat(turboObj.REFERENCE_RPM) || 1;
+			let gamma = parseFloat(turboObj.GAMMA) || 1;
+			let wastegate = parseFloat(turboObj.WASTEGATE) || mB;
+			let userSetting = parseFloat(turboObj.USER_SETTING) || 1.0;
+
+			let b = mB * Math.pow(rpm / refRpm, gamma);
+			let limit = wastegate * userSetting;
+			if (b > limit) { b = limit; }
+			totalBoost += b;
+		}
+	}
+
+	let torque = (totalBoost > 0) ? baseTorque * (1.0 + totalBoost) : 0;
+	let power = (totalBoost > 0) ? (torque * rpm) / BHP_CONSTANT : 0;
+	return { torque, power };
 };
