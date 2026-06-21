@@ -584,6 +584,9 @@ window.updateSpecsFromPhysics = function() {
             acceleration: acceleration // ここでUIに渡されます
         });
     }
+		if (typeof window.updateUiCurveGraph === 'function') {
+        window.updateUiCurveGraph();
+    }
 };
 /**
  * ui_car.json プレビュー用の小さなグラフを描画する
