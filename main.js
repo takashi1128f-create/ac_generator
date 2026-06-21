@@ -1081,16 +1081,10 @@ document.addEventListener('drop', async (e) => {
 						window.updateSpecsFromPhysics();
 					}
 					console.log("[D&D] すべての読み込みが完了しました！");
+					if (typeof window.updateSpecsDisplay === 'function') {
+							window.updateSpecsDisplay();
+					}
 				});
-				// 入力操作を監視し、スペックをリアルタイムで再計算する
-				// document.addEventListener('input', (e) => {
-				// 	// 何らかの入力（input, select, textarea）が発生したら再計算
-				// 	if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
-				// 		if (typeof window.updateSpecsFromPhysics === 'function') {
-				// 			window.updateSpecsFromPhysics();
-				// 		}
-				// 	}
-				// });
 			}
 		});
 	} else {

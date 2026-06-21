@@ -134,3 +134,58 @@ export const restoreUiCarData = (data) => {
 };
 
 window.restoreUiCarData = restoreUiCarData;
+//スペック
+export const updateSpecsDisplay = () => {
+    console.log("🔍 [DEBUG] 計算開始");
+    
+    // データの存在確認
+    const car = window.currentCarData || {};
+    const engine = window.currentEngineData || {};
+    const lut = window.currentPowerLut || [];
+    
+    console.log("📂 現在のLUTデータ:", lut);
+    console.log("📂 現在のエンジンデータ:", engine);
+
+    const turboAdjustment = engine.ENGINE_DATA ? parseFloat(engine.ENGINE_DATA.DEFAULT_TURBO_ADJUSTMENT) : 1.0;
+    console.log("⚙️ ターボ係数:", turboAdjustment);
+
+    const weight = car.BASIC?.TOTALMASS || 0;
+    let maxTorque = 0;
+    let maxPowerBhp = 0;
+    const BHP_CONSTANT = 7120.8;
+
+    if (lut.length > 0) {
+        lut.forEach((point, index) => {
+            const torqueBase = window.getInterpolatedTorque(point.rpm, lut);
+            const powerBase = (torqueBase * point.rpm) / BHP_CONSTANT;
+            
+            const torque = torqueBase * turboAdjustment;
+            const power = powerBase * turboAdjustment;
+            
+            if (torque > maxTorque) maxTorque = torque;
+            if (power > maxPowerBhp) maxPowerBhp = power;
+            
+            // ループごとの計算結果を出力
+            if (index % 5 === 0) { // ログ過多を防ぐため5行ごとに表示
+                console.log(`RPM:${point.rpm} | 計算後のトルク:${torque.toFixed(1)}Nm | 計算後の馬力:${power.toFixed(1)}BHP`);
+            }
+        });
+    } else {
+        console.warn("⚠️ LUTデータが空です。計算されていません。");
+    }
+
+    const maxPowerWhp = maxPowerBhp * 0.85; // 駆動損失 15% 仮定
+
+    console.log(`📊 [最終計算結果] MAX Torque: ${maxTorque.toFixed(1)} Nm, MAX Power: ${maxPowerWhp.toFixed(1)} whp`);
+
+    // UI更新
+    const setSpec = (id, val, unit) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val > 0) ? `${Math.round(val)} ${unit}` : `-`;
+    };
+
+    setSpec('ui-specs-weight', weight, 'kg');
+    setSpec('ui-specs-whp', maxPowerWhp, 'whp');
+    setSpec('ui-specs-torque', maxTorque, 'Nm');
+};
+window.updateSpecsDisplay = updateSpecsDisplay;
