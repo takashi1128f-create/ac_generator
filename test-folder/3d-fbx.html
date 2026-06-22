@@ -171,6 +171,7 @@
 
 		let originalModel = null;
 		let convertedModel = null;
+		let originalFileName = "";
 		const status = document.getElementById('status');
 		const formatOverlay = document.getElementById('format-overlay');
 		const fileInfo = document.getElementById('fileInfo');
@@ -200,6 +201,7 @@
 			toggleBtn.disabled = true;
 
 			const ext = file.name.split('.').pop().toUpperCase();
+			originalFileName = file.name.replace(/\.[^/.]+$/, "");
 			formatOverlay.innerText = "形式: " + ext;
 			fileInfo.innerText = "形式: " + ext;
 
@@ -266,8 +268,16 @@
 			
 			const exporter = new GLTFExporter();
 			exporter.parse(originalModel, (result) => {
-				console.log("Exporter success, result:", result);
+				console.log("Exporter success");
 				
+				// ダウンロード処理を追加
+				const blob = new Blob([result], { type: 'model/gltf-binary' });
+				const link = document.createElement('a');
+				link.href = URL.createObjectURL(blob);
+				link.download = originalFileName + '.glb';
+				link.click();
+				URL.revokeObjectURL(link.href);
+
 				new GLTFLoader().parse(result, '', (gltf) => {
 					console.log("Loader success");
 					convertedModel = gltf.scene;
@@ -275,7 +285,7 @@
 					originalModel.visible = false;
 					formatOverlay.innerText = "形式: GLB (変換済)";
 					fileInfo.innerText = "形式: GLB (変換済)";
-					status.innerText = "Converted & Loaded";
+					status.innerText = "Converted & Downloaded";
 					toggleBtn.disabled = false;
 				}, (err) => {
 					console.error("Loader Error:", err);
