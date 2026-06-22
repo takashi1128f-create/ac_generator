@@ -796,6 +796,46 @@ ipcMain.handle('open-directory-dialog', async () => {
 	if (mainWindow) mainWindow.focus(); // ★追加：ダイアログが閉じたらピントを戻す
 	return result.canceled ? null : result.filePaths[0];
 });
+ipcMain.handle('get-folder-list', async (event, targetPath) => {
+    const fs = require('fs');
+    const path = require('path');
+    try {
+        if (!fs.existsSync(targetPath)) return { success: false, error: 'パスが見つかりません' };
+        
+        // 指定されたパス内の「フォルダ」だけを抜き出す
+        const folders = fs.readdirSync(targetPath).filter(file => {
+            return fs.statSync(path.join(targetPath, file)).isDirectory();
+        });
+        return { success: true, folders: folders };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+// ★★★ ここから追加（指定された車両フォルダのINIデータを一括で読み取る） ★★★
+ipcMain.handle('read-car-folder-data', async (event, carPath) => {
+    const fs = require('fs');
+    const path = require('path');
+    const dataPath = path.join(carPath, 'data');
+    const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini'];
+    const filesRead = [];
+
+    try {
+        // data フォルダが存在するか確認
+        if (!fs.existsSync(dataPath)) return { success: false, error: 'dataフォルダが見つかりません。ACD展開が必要な場合があります。' };
+
+        const files = fs.readdirSync(dataPath);
+        for (const file of files) {
+            if (ALLOWED_FILES.includes(file.toLowerCase())) {
+                const fullPath = path.join(dataPath, file);
+                const content = fs.readFileSync(fullPath, 'utf8');
+                filesRead.push({ name: file, content: content });
+            }
+        }
+        return { success: true, files: filesRead };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
 // ★引数を (event, baseDir, folderName, files, isOverwrite, sourcePath) であることを確認
 ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files, isOverwrite, sourcePath) => {
 	try {

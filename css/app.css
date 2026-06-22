@@ -1925,3 +1925,11 @@ label {
 .engine-sound-outer_box .car-select-outer_box > div{
 	width: 50%;
 }
+.root-select_box{
+	display: flex;
+	justify-content: space-between;
+	gap: 0.5em;
+}
+.root-select_box input{
+	width: 100%;
+}

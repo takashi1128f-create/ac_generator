@@ -30,6 +30,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	onMenuNew: (callback) => ipcRenderer.on('menu-request-new', callback),
 	onMenuOpen: (callback) => ipcRenderer.on('menu-request-open', callback),
 	openDirectoryDialog: () => ipcRenderer.invoke('open-directory-dialog'),
+	getFolderList: (targetPath) => ipcRenderer.invoke('get-folder-list', targetPath),
+	readCarFolderData: (carPath) => ipcRenderer.invoke('read-car-folder-data', carPath),
 	exportFilesToFolder: (baseDir, folderName, files, isOverwrite, sourcePath) => ipcRenderer.invoke('export-files-to-folder', baseDir, folderName, files, isOverwrite, sourcePath),
 	checkFolderExists: (baseDir, folderName) => ipcRenderer.invoke('check-folder-exists', baseDir, folderName),
 	onMenuRequestExport: (callback) => ipcRenderer.on('menu-request-export', () => callback()),

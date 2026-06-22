@@ -1104,3 +1104,89 @@ document.addEventListener('drop', async (e) => {
 		window.isMultiUploading = false;
 	}
 });
+// ACフォルダ選択ボタン（ご自身でHTMLに追加したボタンのIDに合わせてください）
+const btnSelectAC = document.getElementById('btn-select-ac-path'); 
+const acPathInput = document.getElementById('ac-root-path'); // 選択したパスを表示する欄
+const carSelect = document.getElementById('ac-car-select'); // ◀ ご提示いただいたID
+
+if (btnSelectAC) {
+    btnSelectAC.addEventListener('click', async () => {
+        const paths = await window.electronAPI.openDirectoryDialog();
+        if (paths && paths) {
+            const acRoot = paths;
+            if (acPathInput) acPathInput.value = acRoot;
+
+            // 「content/cars」までのフルパスを作成
+            const carsPath = acRoot + "\\content\\cars";
+            
+            // 裏側に「車両フォルダ一覧」を要求
+            const res = await window.electronAPI.getFolderList(carsPath);
+
+            if (res.success) {
+                // セレクトボックスを一旦空にして、読み込んだ車両名を流し込む
+                carSelect.innerHTML = '<option value="">-- 車両を選択してください --</option>';
+                res.folders.forEach(carDir => {
+                    const opt = document.createElement('option');
+                    opt.value = carDir;
+                    opt.textContent = carDir;
+                    carSelect.appendChild(opt);
+                });
+            } else {
+                alert("エラー: content/cars フォルダが見つかりません。\nアセットコルサのインストールフォルダを正しく選択してください。");
+            }
+        }
+    });
+}
+
+// 車が選ばれた時、自動的に「新規作成する車両の名前」の初期案を埋めるお助け機能
+if (carSelect) {
+    carSelect.addEventListener('change', () => {
+        const newNameInput = document.getElementById('new-car-project-name'); // ◀ ご提示いただいたID
+        if (newNameInput && carSelect.value !== "") {
+            // 例：ae86 を選んだら ae86_new などの名前を自動セット（修正可能です）
+            newNameInput.value = carSelect.value + "_mod";
+        }
+    });
+}
+const btnExecuteCreation = document.getElementById('btn-execute-car-creation');
+
+if (btnExecuteCreation) {
+    btnExecuteCreation.addEventListener('click', async () => {
+        const acRoot = document.getElementById('ac-root-path').value;
+        const selectedCar = document.getElementById('ac-car-select').value;
+        const newProjectName = document.getElementById('new-car-project-name').value.trim();
+
+        // 入力チェック
+        if (!acRoot || !selectedCar || !newProjectName) {
+            alert("ACフォルダ、ベース車両、新規プロジェクト名をすべて入力してください。");
+            return;
+        }
+
+        // 1. 裏側へデータの読み取りを依頼
+        const carFullPath = acRoot + "\\content\\cars\\" + selectedCar;
+        const res = await window.electronAPI.readCarFolderData(carFullPath);
+
+        if (res.success) {
+            // 2. アプリのメモリ(State)に名前をセット [cite: 800, 817, 850]
+            window.currentProject.projectName = newProjectName;
+            
+            // 3. 読み込んだファイルをインポート処理へ流し込む [cite: 809, 826, 859]
+            // import.js の handleMultiFileUpload を利用して全データを現在のエディタに反映
+            const { handleMultiFileUpload } = await import('./js/import.js');
+            await handleMultiFileUpload(res.files);
+
+            // 4. プロジェクトとして保存 [cite: 801, 818, 851]
+            const saveResult = await window.electronAPI.saveProject(window.currentProject);
+            
+            if (saveResult.success) {
+                // 5. 画面を切り替えて編集開始！
+                document.getElementById('startup-hub').style.display = 'none';
+                document.getElementById('wrapper').style.display = 'block';
+                if (window.electronAPI.setWindowTitle) window.electronAPI.setWindowTitle(newProjectName);
+                console.log("ベース車両を元に新規プロジェクトを開始しました:", newProjectName);
+            }
+        } else {
+            alert("エラー: " + res.error);
+        }
+    });
+}
