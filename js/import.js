@@ -29,20 +29,39 @@ import {
 import { updateBadgeImage, initBadgeHandler, updateUiCarData, collectUiCarData } from './logo-name.js';
 async function convertAndSaveAsGLB(sceneObject, originalFilePath) {
     const switchEl = document.getElementById('autoConvertSaveSwitch');
-    if (!switchEl || !switchEl.checked) return; // スイッチがOFFなら何もしない
+    if (!switchEl || !switchEl.checked) return;
 
     const exporter = new GLTFExporter();
-    const options = { binary: true }; // ★必ずバイナリ形式(.glb)を指定
 
-    exporter.parse(sceneObject, async (result) => {
-        // 元のファイルのパスからフォルダとファイル名を特定
+    // 🛠️ 修正：座標やスケールは一切いじらず、そのままの状態でエクスポートする
+    // sceneObject.clone() を使用して、書き出し用のクリーンなコピーを作成
+    const exportTarget = sceneObject.clone();
+    
+    exportTarget.traverse((child) => {
+        // マテリアルの画像データだけを消去（読み込みエラー回避のため）
+        if (child.isMesh && child.material) {
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(mat => {
+                mat.map = null;
+                mat.normalMap = null;
+                mat.specularMap = null;
+                mat.needsUpdate = true;
+            });
+        }
+    });
+
+    const options = { 
+        binary: true,
+        includeCustomExtensions: true // 名前（WHEEL_LF等）を保持する設定
+    };
+
+    exporter.parse(exportTarget, async (result) => {
         const folderPath = originalFilePath.substring(0, originalFilePath.lastIndexOf('\\') || originalFilePath.lastIndexOf('/'));
         const baseName = originalFilePath.split(/[\\/]/).pop().replace('.fbx', '');
         const newFileName = `${baseName}.glb`;
 
         console.log(`[CONVERT] 🔄 GLB変換開始: ${newFileName}`);
         
-        // ステップ1で作った裏側のAPIを呼び出す
         const saveRes = await window.electronAPI.saveModelFile(folderPath, newFileName, result);
 
         if (saveRes.success) {
@@ -50,7 +69,7 @@ async function convertAndSaveAsGLB(sceneObject, originalFilePath) {
             const overlay = document.getElementById('format-overlay');
             if (overlay) {
                 overlay.textContent = "MODEL: GLB (AUTO-SAVED)";
-                overlay.style.borderColor = "#4ade80"; // 成功時は緑色に
+                overlay.style.borderColor = "#4ade80";
             }
         }
     }, (error) => {
@@ -416,11 +435,11 @@ export function load3DModel(file) {
 	return new Promise((resolve, reject) => {
 		const url = URL.createObjectURL(file);
 		const extension = file.name.split('.').pop().toLowerCase();
-		const onObjectLoad = (object) => {
+		const onObjectLoad = async (object) => {
 			URL.revokeObjectURL(url);
-			const box = new THREE.Box3().setFromObject(object);
-			const center = box.getCenter(new THREE.Vector3());
-			object.position.sub(center);
+			// const box = new THREE.Box3().setFromObject(object);
+			// const center = box.getCenter(new THREE.Vector3());
+			// object.position.sub(center);
 			// リセット
 			model_3D.BODY = [];
 			model_3D.STEER = null;

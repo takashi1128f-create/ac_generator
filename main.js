@@ -391,8 +391,10 @@ window.loadProjectToUI = async function(projectState) {
 	if (files['car']) 
 		window.currentCarData = files['car'].currentData;
 		if (window.currentCarData?.BASIC?.TOTALMASS) {
-			window.updateSpecsDisplay({ weight: window.currentCarData.BASIC.TOTALMASS });
-		}
+    if (typeof window.updateSpecsDisplay === 'function') {
+        window.updateSpecsDisplay({ weight: window.currentCarData.BASIC.TOTALMASS });
+    }
+}
 	if (files['aero']) window.currentAeroData = files['aero'].currentData;
 	if (files['engine']) window.currentEngineData = files['engine'].currentData;
 	if (files['setup']) window.currentSetupData = files['setup'].currentData;
