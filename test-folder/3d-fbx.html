@@ -57,14 +57,28 @@
 			border-top: 1px solid #eee;
 			padding-top: 8px;
 		}
+
+		#fileInfo {
+			font-size: 11px;
+			margin: 0;
+			color: #333;
+			font-weight: bold;
+			padding-top: 4px;
+		}
+
+		#convertBtn {
+			margin-top: 10px;
+			padding: 5px;
+			cursor: pointer;
+		}
 	</style>
 </head>
 <body>
 
 	<div id="ui-layer">
 		<div class="control-group">
-			<label for="fileInput">FBXファイル選択</label>
-			<input type="file" id="fileInput" accept=".fbx">
+			<label for="fileInput">モデルファイル選択 (フォルダ可)</label>
+			<input type="file" id="fileInput" accept=".fbx,.glb" webkitdirectory directory multiple>
 		</div>
 
 		<div class="control-group">
@@ -86,6 +100,8 @@
 		</div>
 
 		<p id="status">準備完了</p>
+		<div id="fileInfo">未読込</div>
+		<button id="convertBtn">GLBへ変換・再表示</button>
 	</div>
 
 	<div id="container"></div>
@@ -102,6 +118,8 @@
 	<script type="module">
 		import * as THREE from 'three';
 		import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+		import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 		import { DDSLoader } from 'three/addons/loaders/DDSLoader.js';
 		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -127,7 +145,8 @@
 
 		const manager = new THREE.LoadingManager();
 		manager.addHandler(/\.dds$/i, new DDSLoader());
-		const loader = new FBXLoader(manager);
+		const fbxLoader = new FBXLoader(manager);
+		const gltfLoader = new GLTFLoader(manager);
 
 		// --- マテリアルの定義 ---
 		// 一般パーツ用
@@ -167,22 +186,23 @@
 		// ガラスパーツかどうかを判定する関数
 		function isGlass(name) {
 			const n = name.toLowerCase();
-			return n.includes('glass') ||
-			n.includes('window') ||
-			n.includes('vetro') ||
-			n.includes('windshield') ||
-			n.includes('steklo');
+			return n.includes('glass') || n.includes('window') || n.includes('vetro') || n.includes('windshield');
 		}
 
 		document.getElementById('fileInput').addEventListener('change', (e) => {
-			const file = e.target.files[0];
-			if (!file) return;
+			const files = Array.from(e.target.files);
+			const targetFile = files.find(f => f.name.endsWith('.fbx') || f.name.endsWith('.glb'));
+			if (!targetFile) return;
 
 			status.innerText = "Loading...";
 			if (currentModel) scene.remove(currentModel);
+			document.getElementById('fileInfo').innerText = "形式: " + (targetFile.name.endsWith('.glb') ? "GLB" : "FBX");
 
-			const url = URL.createObjectURL(file);
-			loader.load(url, (object) => {
+			const url = URL.createObjectURL(targetFile);
+			const loader = targetFile.name.endsWith('.glb') ? gltfLoader : fbxLoader;
+
+			loader.load(url, (result) => {
+				const object = result.scene || result;
 				currentModel = object;
 
 				object.traverse((child) => {
@@ -220,6 +240,96 @@
 				status.innerText = "Error!";
 			});
 		});
+
+		// 変換処理
+		const exporter = new GLTFExporter();
+		document.getElementById('convertBtn').addEventListener('click', () => {
+			if (!currentModel) return;
+			status.innerText = "Converting...";
+
+			exporter.parse(currentModel, (result) => {
+				// シーンから削除
+				scene.remove(currentModel);
+				
+				// GLTFとしてロード（再表示）
+				const loader = new GLTFLoader();
+				loader.parse(JSON.stringify(result), '', (gltf) => {
+					currentModel = gltf.scene;
+					scene.add(currentModel);
+					document.getElementById('fileInfo').innerText = "形式: GLB (変換済)";
+					status.innerText = "Converted & Loaded";
+				});
+			}, { binary: true });
+		});
+
+		// ドラッグ＆ドロップ処理
+		document.addEventListener('dragover', (e) => {
+			e.preventDefault();
+		});
+
+		document.addEventListener('drop', (e) => {
+			e.preventDefault();
+			const items = e.dataTransfer.items;
+			if (items.length > 0) {
+				const entry = items[0].webkitGetAsEntry();
+				if (entry.isDirectory) {
+					const reader = entry.createReader();
+					reader.readEntries((entries) => {
+						const targetFile = entries.find(f => f.isFile && (f.name.endsWith('.fbx') || f.name.endsWith('.glb')));
+						if (targetFile) {
+							targetFile.file((file) => {
+								const event = { target: { files: [file] } };
+								const input = document.getElementById('fileInput');
+								input.dispatchEvent(new Event('change')); // 本来は直接 loadFile を呼ぶ設計にするのが理想
+								// 今回は簡潔に input イベントをトリガーする代わりに、ファイルを直接読み込む関数を分離するのが定石ですが、既存のinput処理を再利用するためイベントを発火させます
+								// 実際には下記のようにファイルオブジェクトを直接読み込み処理に渡す設計に変更します
+								handleFileLoad(file);
+							});
+						}
+					});
+				} else if (entry.isFile) {
+					entry.file((file) => handleFileLoad(file));
+				}
+			}
+		});
+
+		function handleFileLoad(file) {
+			const targetFile = file;
+			if (!targetFile.name.endsWith('.fbx') && !targetFile.name.endsWith('.glb')) return;
+
+			status.innerText = "Loading...";
+			if (currentModel) scene.remove(currentModel);
+			document.getElementById('fileInfo').innerText = "形式: " + (targetFile.name.endsWith('.glb') ? "GLB" : "FBX");
+
+			const url = URL.createObjectURL(targetFile);
+			const loader = targetFile.name.endsWith('.glb') ? gltfLoader : fbxLoader;
+
+			loader.load(url, (result) => {
+				const object = result.scene || result;
+				currentModel = object;
+				object.traverse((child) => {
+					if (child.isMesh) {
+						if (isGlass(child.name)) {
+							child.material = glassMaterial;
+						} else {
+							child.material = bodyMaterial;
+						}
+					}
+				});
+				const box = new THREE.Box3().setFromObject(object);
+				const size = box.getSize(new THREE.Vector3());
+				const center = box.getCenter(new THREE.Vector3());
+				object.position.sub(center);
+				const maxDim = Math.max(size.x, size.y, size.z);
+				camera.position.set(maxDim, maxDim, maxDim);
+				camera.lookAt(0, 0, 0);
+				controls.target.set(0, 0, 0);
+				controls.update();
+				scene.add(object);
+				URL.revokeObjectURL(url);
+				status.innerText = "Load Complete";
+			});
+		}
 
 		function animate() {
 			requestAnimationFrame(animate);
