@@ -16,6 +16,19 @@
 			height: 100vh;
 		}
 
+		#format-overlay {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			background: rgba(0, 0, 0, 0.7);
+			color: #fff;
+			padding: 10px 15px;
+			border-radius: 5px;
+			font-size: 14px;
+			pointer-events: none;
+			z-index: 100;
+		}
+
 		#ui-layer {
 			position: absolute;
 			top: 20px;
@@ -66,14 +79,16 @@
 			padding-top: 4px;
 		}
 
-		#convertBtn {
-			margin-top: 10px;
+		#convertBtn, #toggleBtn {
+			margin-top: 5px;
 			padding: 5px;
 			cursor: pointer;
 		}
 	</style>
 </head>
 <body>
+
+	<div id="format-overlay">形式: 未読込</div>
 
 	<div id="ui-layer">
 		<div class="control-group">
@@ -101,7 +116,8 @@
 
 		<p id="status">準備完了</p>
 		<div id="fileInfo">未読込</div>
-		<button id="convertBtn">GLBへ変換・再表示</button>
+		<button id="convertBtn">GLBへ変換</button>
+		<button id="toggleBtn" disabled>表示切替 (FBX ↔ GLB)</button>
 	</div>
 
 	<div id="container"></div>
@@ -148,123 +164,75 @@
 		const fbxLoader = new FBXLoader(manager);
 		const gltfLoader = new GLTFLoader(manager);
 
-		// --- マテリアルの定義 ---
-		// 一般パーツ用
-		const bodyMaterial = new THREE.MeshStandardMaterial({
-			color: 0x888888,
-			side: THREE.DoubleSide
-		});
-
-		// ガラスパーツ用
+		const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x888888, side: THREE.DoubleSide });
 		const glassMaterial = new THREE.MeshStandardMaterial({
-			color: 0x88ccff,
-			transparent: true,
-			opacity: 0.3,
-			side: THREE.DoubleSide,
-			roughness: 0.1,
-			metalness: 0.9
+			color: 0x88ccff, transparent: true, opacity: 0.3, side: THREE.DoubleSide, roughness: 0.1, metalness: 0.9
 		});
 
-		let currentModel = null;
+		let originalModel = null;
+		let convertedModel = null;
 		const status = document.getElementById('status');
+		const formatOverlay = document.getElementById('format-overlay');
+		const fileInfo = document.getElementById('fileInfo');
+		const toggleBtn = document.getElementById('toggleBtn');
 
-		// --- UI連動処理 ---
-		document.getElementById('bgColor').addEventListener('input', (e) => {
-			scene.background.set(e.target.value);
-		});
-
-		document.getElementById('modelColor').addEventListener('input', (e) => {
-			bodyMaterial.color.set(e.target.value);
-		});
-
+		document.getElementById('bgColor').addEventListener('input', (e) => scene.background.set(e.target.value));
+		document.getElementById('modelColor').addEventListener('input', (e) => bodyMaterial.color.set(e.target.value));
 		document.getElementById('glassOpacity').addEventListener('input', (e) => {
 			const val = parseFloat(e.target.value);
 			glassMaterial.opacity = val;
 			document.getElementById('opacityValue').innerText = val;
 		});
 
-		// ガラスパーツかどうかを判定する関数
 		function isGlass(name) {
 			const n = name.toLowerCase();
 			return n.includes('glass') || n.includes('window') || n.includes('vetro') || n.includes('windshield');
 		}
 
-		document.getElementById('fileInput').addEventListener('change', (e) => {
-			const files = Array.from(e.target.files);
-			const targetFile = files.find(f => f.name.endsWith('.fbx') || f.name.endsWith('.glb'));
-			if (!targetFile) return;
-
+		function handleFileLoad(file) {
+			if (!file.name.endsWith('.fbx') && !file.name.endsWith('.glb')) return;
 			status.innerText = "Loading...";
-			if (currentModel) scene.remove(currentModel);
-			document.getElementById('fileInfo').innerText = "形式: " + (targetFile.name.endsWith('.glb') ? "GLB" : "FBX");
+			
+			if (originalModel) scene.remove(originalModel);
+			if (convertedModel) scene.remove(convertedModel);
+			originalModel = null;
+			convertedModel = null;
+			toggleBtn.disabled = true;
 
-			const url = URL.createObjectURL(targetFile);
-			const loader = targetFile.name.endsWith('.glb') ? gltfLoader : fbxLoader;
+			const ext = file.name.split('.').pop().toUpperCase();
+			formatOverlay.innerText = "形式: " + ext;
+			fileInfo.innerText = "形式: " + ext;
+
+			const url = URL.createObjectURL(file);
+			const loader = file.name.endsWith('.glb') ? gltfLoader : fbxLoader;
 
 			loader.load(url, (result) => {
 				const object = result.scene || result;
-				currentModel = object;
-
+				originalModel = object;
 				object.traverse((child) => {
 					if (child.isMesh) {
-						// 名前によってマテリアルを使い分ける
-						if (isGlass(child.name)) {
-							child.material = glassMaterial;
-						} else {
-							child.material = bodyMaterial;
-						}
+						child.material = isGlass(child.name) ? glassMaterial : bodyMaterial;
 					}
 				});
-
-				// 自動フィット
 				const box = new THREE.Box3().setFromObject(object);
 				const size = box.getSize(new THREE.Vector3());
 				const center = box.getCenter(new THREE.Vector3());
 				object.position.sub(center);
-
 				const maxDim = Math.max(size.x, size.y, size.z);
 				camera.position.set(maxDim, maxDim, maxDim);
 				camera.lookAt(0, 0, 0);
 				controls.target.set(0, 0, 0);
 				controls.update();
 
-				scene.add(object);
+				scene.add(originalModel);
 				URL.revokeObjectURL(url);
 				status.innerText = "Load Complete";
-			}, (xhr) => {
-				if (xhr.lengthComputable) {
-					status.innerText = Math.round(xhr.loaded / xhr.total * 100) + "% loaded";
-				}
-			}, (err) => {
-				console.error(err);
-				status.innerText = "Error!";
 			});
-		});
+		}
 
-		// 変換処理
-		const exporter = new GLTFExporter();
-		document.getElementById('convertBtn').addEventListener('click', () => {
-			if (!currentModel) return;
-			status.innerText = "Converting...";
-
-			exporter.parse(currentModel, (result) => {
-				// シーンから削除
-				scene.remove(currentModel);
-				
-				// GLTFとしてロード（再表示）
-				const loader = new GLTFLoader();
-				loader.parse(JSON.stringify(result), '', (gltf) => {
-					currentModel = gltf.scene;
-					scene.add(currentModel);
-					document.getElementById('fileInfo').innerText = "形式: GLB (変換済)";
-					status.innerText = "Converted & Loaded";
-				});
-			}, { binary: true });
-		});
-
-		// ドラッグ＆ドロップ処理
-		document.addEventListener('dragover', (e) => {
-			e.preventDefault();
+		document.getElementById('fileInput').addEventListener('change', (e) => {
+			const targetFile = Array.from(e.target.files).find(f => f.name.endsWith('.fbx') || f.name.endsWith('.glb'));
+			if (targetFile) handleFileLoad(targetFile);
 		});
 
 		document.addEventListener('drop', (e) => {
@@ -272,64 +240,60 @@
 			const items = e.dataTransfer.items;
 			if (items.length > 0) {
 				const entry = items[0].webkitGetAsEntry();
-				if (entry.isDirectory) {
+				if (entry.isFile) entry.file((file) => handleFileLoad(file));
+				else if (entry.isDirectory) {
 					const reader = entry.createReader();
 					reader.readEntries((entries) => {
 						const targetFile = entries.find(f => f.isFile && (f.name.endsWith('.fbx') || f.name.endsWith('.glb')));
-						if (targetFile) {
-							targetFile.file((file) => {
-								const event = { target: { files: [file] } };
-								const input = document.getElementById('fileInput');
-								input.dispatchEvent(new Event('change')); // 本来は直接 loadFile を呼ぶ設計にするのが理想
-								// 今回は簡潔に input イベントをトリガーする代わりに、ファイルを直接読み込む関数を分離するのが定石ですが、既存のinput処理を再利用するためイベントを発火させます
-								// 実際には下記のようにファイルオブジェクトを直接読み込み処理に渡す設計に変更します
-								handleFileLoad(file);
-							});
-						}
+						if (targetFile) targetFile.file((file) => handleFileLoad(file));
 					});
-				} else if (entry.isFile) {
-					entry.file((file) => handleFileLoad(file));
 				}
 			}
 		});
+		document.addEventListener('dragover', (e) => e.preventDefault());
 
-		function handleFileLoad(file) {
-			const targetFile = file;
-			if (!targetFile.name.endsWith('.fbx') && !targetFile.name.endsWith('.glb')) return;
-
-			status.innerText = "Loading...";
-			if (currentModel) scene.remove(currentModel);
-			document.getElementById('fileInfo').innerText = "形式: " + (targetFile.name.endsWith('.glb') ? "GLB" : "FBX");
-
-			const url = URL.createObjectURL(targetFile);
-			const loader = targetFile.name.endsWith('.glb') ? gltfLoader : fbxLoader;
-
-			loader.load(url, (result) => {
-				const object = result.scene || result;
-				currentModel = object;
-				object.traverse((child) => {
-					if (child.isMesh) {
-						if (isGlass(child.name)) {
-							child.material = glassMaterial;
-						} else {
-							child.material = bodyMaterial;
-						}
-					}
+		document.getElementById('convertBtn').addEventListener('click', () => {
+			if (!originalModel) return;
+			if (convertedModel) {
+				originalModel.visible = !originalModel.visible;
+				convertedModel.visible = !convertedModel.visible;
+				formatOverlay.innerText = originalModel.visible ? "形式: 元モデル" : "形式: GLB (変換済)";
+				return;
+			}
+			
+			console.log("Conversion started...");
+			status.innerText = "Converting...";
+			
+			const exporter = new GLTFExporter();
+			exporter.parse(originalModel, (result) => {
+				console.log("Exporter success, result:", result);
+				
+				new GLTFLoader().parse(result, '', (gltf) => {
+					console.log("Loader success");
+					convertedModel = gltf.scene;
+					scene.add(convertedModel);
+					originalModel.visible = false;
+					formatOverlay.innerText = "形式: GLB (変換済)";
+					fileInfo.innerText = "形式: GLB (変換済)";
+					status.innerText = "Converted & Loaded";
+					toggleBtn.disabled = false;
+				}, (err) => {
+					console.error("Loader Error:", err);
+					status.innerText = "Loader Error!";
 				});
-				const box = new THREE.Box3().setFromObject(object);
-				const size = box.getSize(new THREE.Vector3());
-				const center = box.getCenter(new THREE.Vector3());
-				object.position.sub(center);
-				const maxDim = Math.max(size.x, size.y, size.z);
-				camera.position.set(maxDim, maxDim, maxDim);
-				camera.lookAt(0, 0, 0);
-				controls.target.set(0, 0, 0);
-				controls.update();
-				scene.add(object);
-				URL.revokeObjectURL(url);
-				status.innerText = "Load Complete";
-			});
-		}
+
+			}, (err) => {
+				console.error("Exporter Error:", err);
+				status.innerText = "Exporter Error!";
+			}, { binary: true });
+		});
+
+		toggleBtn.addEventListener('click', () => {
+			if (!originalModel || !convertedModel) return;
+			originalModel.visible = !originalModel.visible;
+			convertedModel.visible = !convertedModel.visible;
+			formatOverlay.innerText = originalModel.visible ? "形式: 元モデル" : "形式: GLB (変換済)";
+		});
 
 		function animate() {
 			requestAnimationFrame(animate);
