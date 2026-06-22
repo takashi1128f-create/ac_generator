@@ -1154,11 +1154,11 @@ if (btnExecuteCreation) {
     btnExecuteCreation.addEventListener('click', async () => {
         const acRoot = document.getElementById('ac-root-path').value;
         const selectedCar = document.getElementById('ac-car-select').value;
-        const newProjectName = document.getElementById('new-car-project-name').value.trim();
+        const newCarName = document.getElementById('new-car-project-name').value.trim();
 
         // 入力チェック
-        if (!acRoot || !selectedCar || !newProjectName) {
-            alert("ACフォルダ、ベース車両、新規プロジェクト名をすべて入力してください。");
+        if (!acRoot || !selectedCar || !newCarName) {
+            alert("ACフォルダ、ベース車両、車両名（フォルダ名）をすべて入力してください。");
             return;
         }
 
@@ -1167,24 +1167,33 @@ if (btnExecuteCreation) {
         const res = await window.electronAPI.readCarFolderData(carFullPath);
 
         if (res.success) {
-            // 2. アプリのメモリ(State)に名前をセット [cite: 800, 817, 850]
-            window.currentProject.projectName = newProjectName;
-            
-            // 3. 読み込んだファイルをインポート処理へ流し込む [cite: 809, 826, 859]
-            // import.js の handleMultiFileUpload を利用して全データを現在のエディタに反映
+            // ★核心の修正1：プロジェクト名(projectName)は上書きせず、
+            // 「CARMODのフォルダ名」として window.currentCarDirectoryName にセットします [cite: 14, 394, 463]
+            window.currentCarDirectoryName = newCarName;
+
+            // 書き出し画面の「プロジェクト名」入力欄にも自動で反映させ、
+            // エクスポート時にこの名前が使われるようにします [cite: 233, 258, 283]
+            const exportNameInput = document.getElementById('exportProjectName');
+            if (exportNameInput) exportNameInput.value = newCarName;
+
+            // 2. 読み込んだ物理ファイルをインポート処理へ流し込み、エディターを更新します [cite: 12, 392, 461]
             const { handleMultiFileUpload } = await import('./js/import.js');
             await handleMultiFileUpload(res.files);
 
-            // 4. プロジェクトとして保存 [cite: 801, 818, 851]
-            const saveResult = await window.electronAPI.saveProject(window.currentProject);
+            // ★核心の修正2：saveProject(プロジェクト保存)は実行しません。
+            // これにより、勝手に「AC_Generator_Projects」フォルダに新しい箱が作られるのを防ぎます。
+
+            // 3. 画面を切り替えて編集開始（ハブを隠し、エディターを表示） [cite: 781]
+            const startupHub = document.getElementById('startup-hub');
+            const wrapper = document.getElementById('wrapper');
             
-            if (saveResult.success) {
-                // 5. 画面を切り替えて編集開始！
-                document.getElementById('startup-hub').style.display = 'none';
-                document.getElementById('wrapper').style.display = 'block';
-                if (window.electronAPI.setWindowTitle) window.electronAPI.setWindowTitle(newProjectName);
-                console.log("ベース車両を元に新規プロジェクトを開始しました:", newProjectName);
-            }
+            startupHub.style.opacity = "0";
+            setTimeout(() => {
+                startupHub.style.display = 'none';
+                if (wrapper) wrapper.style.display = 'block';
+                console.log("CARMOD「" + newCarName + "」のベースデータを読み込みました。");
+            }, 300);
+
         } else {
             alert("エラー: " + res.error);
         }
