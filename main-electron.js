@@ -633,7 +633,7 @@ function startAuthServer() {
 ipcMain.handle('unpack-kn5', async (event, kn5Path) => {
 	const fs = require('fs');
 	const path = require('path');
-	const converterExe = path.join(__dirname, 'tools', 'kn5conv.exe');
+	const converterExe = path.join(__dirname, 'tools-folder', 'kn5conv.exe');
 	const inputDir = path.dirname(kn5Path);
 
 	console.log(`[DEBUG] 変換開始: ${kn5Path}`);
