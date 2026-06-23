@@ -633,37 +633,31 @@ function startAuthServer() {
 ipcMain.handle('unpack-kn5', async (event, kn5Path) => {
 	const fs = require('fs');
 	const path = require('path');
-	const converterExe = path.join(__dirname, 'tools-folder', 'kn5conv.exe');
-	const inputDir = path.dirname(kn5Path);
-
-	console.log(`[DEBUG] 変換開始: ${kn5Path}`);
+	const { exec } = require('child_process'); // spawnからexecに変更
+	
+	const localAppData = process.env.LOCALAPPDATA;
+	const converterExe = path.join(localAppData, 'AcTools Content Manager', 'Plugins', 'FbxConverter', 'FbxConverter.exe');
+	const outputFbxPath = kn5Path.replace(/\.kn5$/i, '.fbx');
 
 	return new Promise((resolve) => {
-		const child = spawn(converterExe, [kn5Path]);
+		if (!fs.existsSync(converterExe)) {
+			resolve({ success: false, error: "ツールが見つかりません" });
+			return;
+		}
 
-		child.on('close', (code) => {
-			console.log(`[DEBUG] 終了コード: ${code}`);
+		// 全てのパスを引用符で囲み、スペースがあっても正しく認識させる
+		const command = `"${converterExe}" "${kn5Path}" "${outputFbxPath}"`;
 
-			// フォルダ内をスキャンして .fbx を探す
-			const files = fs.readdirSync(inputDir);
-			const fbxFile = files.find(f => f.toLowerCase().endsWith('.fbx'));
-
-			if (fbxFile) {
-				const foundFbxPath = path.join(inputDir, fbxFile);
-				const stats = fs.statSync(foundFbxPath);
-				
-				console.log(`[DEBUG] 生成ファイル: ${foundFbxPath}`);
-				console.log(`[DEBUG] ファイルサイズ: ${stats.size} bytes`);
-
-				if (stats.size > 0) {
-					resolve({ success: true, fbxPath: foundFbxPath });
-				} else {
-					console.error(`[DEBUG] エラー: ファイルサイズが0です。変換が正しく行われていません。`);
-					resolve({ success: false, error: "生成されたFBXファイルが空です。" });
-				}
+		exec(command, (error, stdout, stderr) => {
+			if (error) {
+				console.error(`[DEBUG] 変換失敗。コード: ${error.code}`);
+				console.error(`[DEBUG] 詳細エラー: ${stderr}`);
+				resolve({ success: false, error: `エラーコード: ${error.code}, 詳細: ${stderr}` });
+			} else if (fs.existsSync(outputFbxPath)) {
+				console.log(`[DEBUG] 変換成功: ${outputFbxPath}`);
+				resolve({ success: true, fbxPath: outputFbxPath });
 			} else {
-				console.error(`[DEBUG] エラー: FBXファイルが見つかりません。`);
-				resolve({ success: false, error: "変換プロセスは終了しましたが、FBXファイルが見つかりません。" });
+				resolve({ success: false, error: "変換プロセスが終了しましたがファイルが生成されませんでした。" });
 			}
 		});
 	});
