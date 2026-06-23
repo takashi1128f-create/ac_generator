@@ -351,13 +351,12 @@ window.handleModelFile = function(file) {
 	}
 	// ★修正：モデルを「1回だけ」読み込んで、それを各シーンにクローンして配る
 	loader.load(url, (object) => {
-		// 1. まず「大元のモデル（原本）」を取得・調整する
-		const originalModel = object.scene ? object.scene : object;
-		if (fileName.endsWith('.fbx')) {
-			originalModel.scale.setScalar(0.01);
-		}
-		// 原本に対して1回だけマテリアル（色など）の調整を行う
-		applyModelPatches(originalModel);
+    const originalModel = object.scene ? object.scene : object;
+    
+    // 🚨 修正：スケール調整（0.01倍）を完全に削除しました。
+    // これにより FBX と GLB が同じサイズ（1.0倍）で処理されます。
+
+    applyModelPatches(originalModel);
 		// 2. カメラ1〜6（メイン画面）へクローンを配る
 		for (let i = 0; i < NUM_CAMERAS; i++) {
 			if (currentModels[i]) scenes[i].remove(currentModels[i]);
@@ -389,10 +388,11 @@ function applyModelPatches(model) {
 			const meshName = child.name.toLowerCase();
 			if (meshName.includes('glass') || meshName.includes('window') || meshName.includes('vetro') || meshName.includes('windshield') || meshName.includes('steklo')) {
 				mat.transparent = true;
-				mat.opacity = 0.4; 
-				mat.roughness = 0.2;
-				mat.metalness = 0.5;
+				mat.opacity = 0.2; 
+				mat.roughness = 0.05;
+				mat.metalness = 0.1;
 				mat.alphaTest = 0.5;
+				mat.side = THREE.DoubleSide; 
 				mat.depthWrite = false;
 				} else {
 					mat.side = THREE.DoubleSide;

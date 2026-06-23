@@ -393,6 +393,7 @@ app.whenReady().then(async () => {
 	autoUpdater.on('error', (err) => {
 		console.log('アップデート確認エラー:\n' + err);
 	});
+	
 
 	// 外部ブラウザでリンクを開く窓口（エラー回避用）
 	ipcMain.handle('open-external', (event, url) => shell.openExternal(url));
@@ -631,6 +632,7 @@ function startAuthServer() {
 	});
 	authServer.listen(34567);
 }
+
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') app.quit();
 });
