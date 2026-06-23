@@ -44,4 +44,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	syncBackupStart: (folderPath, files) => ipcRenderer.invoke('sync-backup-start', folderPath, files),
 	syncRestoreEnd: (folderPath) => ipcRenderer.invoke('sync-restore-end', folderPath),
 	setProjectLoaded: (status) => ipcRenderer.send('set-project-loaded', status),
+	unpackKn5: (filePath) => ipcRenderer.invoke('unpack-kn5', filePath),
 });

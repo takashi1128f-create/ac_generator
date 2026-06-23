@@ -696,9 +696,31 @@ export async function handleMultiFileUpload(files) {
 	for (const file of fileArray) {
 		const name = file.name.toLowerCase();
 		try {
-			// ★追加：3Dモデル以外のファイルは、許可リストにあるかチェックする
-			if (!name.endsWith('.fbx') && !name.endsWith('.glb') && !name.endsWith('.gltf')) {
-				if (!ALLOWED_FILES.includes(name)) {
+			// ==========================================
+            // 🚀 【ここから追加】 .kn5 ファイルの自動展開リレー
+            // ==========================================
+            if (name.endsWith('.kn5') && window.electronAPI?.unpackKn5) {
+                console.log("📦 [.kn5] 展開を開始します:", name);
+                
+                // 1. Electron側の同梱ツール(FbxConverter.exe)で展開を実行
+                const res = await window.electronAPI.unpackKn5(file.path);
+                
+                if (res.success && res.fbxPath) {
+                    console.log("✨ [.kn5] 展開成功。FBXとして読み込みます:", res.fbxPath);
+                    
+                    // 2. 展開されたFBXのパスを「安全なロードルート」へ渡す [cite: 468, 488]
+                    if (typeof window.loadModelByPath === 'function') {
+                        await window.loadModelByPath(res.fbxPath);
+                    }
+                    continue; // 展開が済んだので、このループ（.kn5自体の処理）はここで終了
+                } else {
+                    console.error("❌ [.kn5] 展開失敗:", res.error);
+                    continue; // 失敗した場合は次のファイルへ
+                }
+            }
+						// ★追加：3Dモデル以外のファイルは、許可リストにあるかチェックする
+						if (!name.endsWith('.fbx') && !name.endsWith('.glb') && !name.endsWith('.gltf')) {
+							if (!ALLOWED_FILES.includes(name)) {
 					// 許可リストにないファイル（lights.iniなど）はここで華麗にスルー！
 					// console.log(`[IMPORT] 対象外ファイルをスキップしました: ${name}`);
 					continue;

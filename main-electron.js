@@ -6,10 +6,8 @@ autoUpdater.allowPrerelease = true;
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-const {
-	exec
-} = require('child_process');
 const https = require('https');
+const { exec, spawn } = require('child_process');
 const IS_DEV_MODE = !app.isPackaged;
 if (IS_DEV_MODE) {
 	try {
@@ -632,7 +630,44 @@ function startAuthServer() {
 	});
 	authServer.listen(34567);
 }
+ipcMain.handle('unpack-kn5', async (event, kn5Path) => {
+	const fs = require('fs');
+	const path = require('path');
+	const converterExe = path.join(__dirname, 'tools', 'kn5conv.exe');
+	const inputDir = path.dirname(kn5Path);
 
+	console.log(`[DEBUG] 変換開始: ${kn5Path}`);
+
+	return new Promise((resolve) => {
+		const child = spawn(converterExe, [kn5Path]);
+
+		child.on('close', (code) => {
+			console.log(`[DEBUG] 終了コード: ${code}`);
+
+			// フォルダ内をスキャンして .fbx を探す
+			const files = fs.readdirSync(inputDir);
+			const fbxFile = files.find(f => f.toLowerCase().endsWith('.fbx'));
+
+			if (fbxFile) {
+				const foundFbxPath = path.join(inputDir, fbxFile);
+				const stats = fs.statSync(foundFbxPath);
+				
+				console.log(`[DEBUG] 生成ファイル: ${foundFbxPath}`);
+				console.log(`[DEBUG] ファイルサイズ: ${stats.size} bytes`);
+
+				if (stats.size > 0) {
+					resolve({ success: true, fbxPath: foundFbxPath });
+				} else {
+					console.error(`[DEBUG] エラー: ファイルサイズが0です。変換が正しく行われていません。`);
+					resolve({ success: false, error: "生成されたFBXファイルが空です。" });
+				}
+			} else {
+				console.error(`[DEBUG] エラー: FBXファイルが見つかりません。`);
+				resolve({ success: false, error: "変換プロセスは終了しましたが、FBXファイルが見つかりません。" });
+			}
+		});
+	});
+});
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') app.quit();
 });
@@ -1125,15 +1160,24 @@ ipcMain.handle('sync-restore-end', async (event, folderPath) => {
 });
 // フォルダを丸ごとコピーする処理
 ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
-    const fs = require('fs');
-    try {
-        if (!fs.existsSync(sourcePath)) return { success: false, error: '元の車両が見つかりません' };
-        if (fs.existsSync(targetPath)) return { success: false, error: '指定した名前の車両は既に存在します' };
-
-        // フォルダを再帰的に丸ごとコピー（Node.js 16.7.0以降が必要）
-        fs.cpSync(sourcePath, targetPath, { recursive: true });
-        return { success: true };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	try {
+		if (!fs.existsSync(targetPath)) {
+			fs.mkdirSync(targetPath, { recursive: true });
+		}
+		const files = fs.readdirSync(sourcePath);
+		for (const file of files) {
+			const srcFile = path.join(sourcePath, file);
+			const destFile = path.join(targetPath, file);
+			if (fs.lstatSync(srcFile).isDirectory()) {
+				// 必要であれば再帰処理を追加
+			} else {
+				fs.copyFileSync(srcFile, destFile);
+			}
+		}
+		return { success: true };
+	} catch (err) {
+		console.error("Clone error:", err);
+		return { success: false, error: err.message };
+	}
 });
