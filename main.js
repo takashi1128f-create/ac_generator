@@ -1139,78 +1139,88 @@ if (btnSelectAC) {
 }
 
 // 車が選ばれた時、自動的に「新規作成する車両の名前」の初期案を埋めるお助け機能
-if (carSelect) {
-    carSelect.addEventListener('change', () => {
-        const newNameInput = document.getElementById('new-car-project-name'); // ◀ ご提示いただいたID
-        if (newNameInput && carSelect.value !== "") {
-            // 例：ae86 を選んだら ae86_new などの名前を自動セット（修正可能です）
-            newNameInput.value = carSelect.value + "_mod";
-        }
-    });
+// 車が選ばれた時、自動的に「新規作成する車両の名前」の初期案を埋めるお助け機能
+if (carSelect) { 
+    carSelect.addEventListener('change', () => { 
+        const newNameInput = document.getElementById('new-car-project-name'); 
+        if (newNameInput && carSelect.value !== "") { 
+            newNameInput.value = carSelect.value + "_mod"; 
+        } 
+    }); 
 }
+
+// -----------------------------------------------------
+// ★ 既存車両の読み込み ＆ 複製して新規作成ロジック
+// -----------------------------------------------------
+
+// 1. 【共通ヘルパー関数】 車両データをエディターに読み込んで画面を切り替える
+async function loadCarToEditor(carFullPath, carDirName) {
+    const res = await window.electronAPI.readCarFolderData(carFullPath);
+    if (res.success) {
+        // 車両フォルダ名をセット（書き出し時のデフォルトになります）
+        window.currentCarDirectoryName = carDirName;
+        
+        // 物理ファイルをエディターに反映
+        const { handleMultiFileUpload } = await import('./js/import.js');
+        await handleMultiFileUpload(res.files);
+
+        // エディター画面を表示（ハブを隠す）
+        const startupHub = document.getElementById('startup-hub');
+        const wrapper = document.getElementById('wrapper');
+        if (startupHub) startupHub.style.display = 'none';
+        if (wrapper) wrapper.style.display = 'block';
+    } else {
+        alert("読み込みエラー: " + res.error);
+    }
+}
+
+// 2. 「複製して新規作成」ボタンの処理
 const btnExecuteCreation = document.getElementById('btn-execute-car-creation');
-const btnEditSelected = document.getElementById('btn-edit-selected-car'); // ★追加
-// 案：複製して新規作成
 if (btnExecuteCreation) {
     btnExecuteCreation.addEventListener('click', async () => {
         const acRoot = document.getElementById('ac-root-path').value;
         const selectedCar = document.getElementById('ac-car-select').value;
         const newCarName = document.getElementById('new-car-project-name').value.trim();
-
-        if (!acRoot || !selectedCar || !newCarName) return alert("必要事項をすべて入力してください。");
+        
+        if (!acRoot || !selectedCar || !newCarName) {
+            alert("必要事項をすべて入力してください。");
+            return;
+        }
 
         const sourcePath = acRoot + "\\content\\cars\\" + selectedCar;
         const targetPath = acRoot + "\\content\\cars\\" + newCarName;
 
-        // 1. 物理的なフォルダコピーを実行
+        // 物理的なフォルダコピー（クローン）を実行
         const cloneRes = await window.electronAPI.cloneCarFolder(sourcePath, targetPath);
-        
+
         if (cloneRes.success) {
-			// 2. コピー先のフォルダからデータを読み込んでエディターを起動
-			window.currentCarDirectoryName = newCarName;
-			
-			// 書き出し画面のプロジェクト名入力欄に自動反映
-			const exportNameInput = document.getElementById('exportProjectName');
-			if (exportNameInput) exportNameInput.value = newCarName;
-
-			// コピー先フォルダ内の data フォルダのパスを作成
-			const targetDataPath = targetPath + (targetPath.includes('/') ? '/data' : '\\data');
-
-			// 既存の getFolderList を使って data フォルダ内のファイル群を取得
-			const res = await window.electronAPI.getFolderList(targetDataPath);
-			if (res.success) {
-				const { handleMultiFileUpload } = await import('./js/import.js');
-				await handleMultiFileUpload(res.files);
-
-				// 画面を切り替える（ハブを隠し、エディターを表示）
-				const startupHub = document.getElementById('startup-hub');
-				const wrapper = document.getElementById('wrapper');
-				if (startupHub) startupHub.style.display = 'none';
-				if (wrapper) wrapper.style.display = 'block';
-
-				console.log("車両の複製とインポートに成功しました:", newCarName);
-			} else {
-				alert("複製データの読み込みエラー: " + res.error);
-			}
-		} else {
-			alert("複製エラー: " + cloneRes.error);
-		}
+            // コピー完了後、作成した関数を呼び出す
+            await loadCarToEditor(targetPath, newCarName);
+            console.log("車両の複製に成功しました:", newCarName);
+        } else {
+            alert("複製エラー: " + cloneRes.error);
+        }
     });
 }
 
-// 案：この車両を編集（直接読込）
+// 3. 「この車両を編集」ボタンの処理（直接読込）
+const btnEditSelected = document.getElementById('btn-edit-selected-car');
 if (btnEditSelected) {
     btnEditSelected.addEventListener('click', async () => {
         const acRoot = document.getElementById('ac-root-path').value;
         const selectedCar = document.getElementById('ac-car-select').value;
-        if (!acRoot || !selectedCar) return alert("車両を選択してください。");
-
+        
+        if (!acRoot || !selectedCar) {
+            alert("車両を選択してください。");
+            return;
+        }
+        
         const carFullPath = acRoot + "\\content\\cars\\" + selectedCar;
-        // そのまま読み込み
+        // そのまま読み込み関数を呼び出す
         await loadCarToEditor(carFullPath, selectedCar);
         console.log("既存車両を直接読み込みました:", selectedCar);
     });
-}
+}; // ← アプリ全体の起動処理（DOMContentLoaded）を閉じるための超重要なカッコです
 // if (btnExecuteCreation) {
 //     btnExecuteCreation.addEventListener('click', async () => {
 //         const acRoot = document.getElementById('ac-root-path').value;
