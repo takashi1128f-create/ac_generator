@@ -1,0 +1,6 @@
+D:\ダウンロード\あせコルMOD\オンラインジェネレーター\webで動作するソフト\ac_generator\tools-folder\Kn5Converter\Kn5Converter\obj\Debug\net8.0\Kn5Converter.GeneratedMSBuildEditorConfig.editorconfig
+D:\ダウンロード\あせコルMOD\オンラインジェネレーター\webで動作するソフト\ac_generator\tools-folder\Kn5Converter\Kn5Converter\obj\Debug\net8.0\Kn5Converter.AssemblyInfoInputs.cache
+D:\ダウンロード\あせコルMOD\オンラインジェネレーター\webで動作するソフト\ac_generator\tools-folder\Kn5Converter\Kn5Converter\obj\Debug\net8.0\Kn5Converter.AssemblyInfo.cs
+D:\ダウンロード\あせコルMOD\オンラインジェネレーター\webで動作するソフト\ac_generator\tools-folder\Kn5Converter\Kn5Converter\obj\Debug\net8.0\Kn5Converter.csproj.CoreCompileInputs.cache
+D:\ダウンロード\あせコルMOD\オンラインジェネレーター\webで動作するソフト\ac_generator\tools-folder\Kn5Converter\Kn5Converter\obj\Debug\net8.0\Kn5Converter.sourcelink.json
+D:\ダウンロード\あせコルMOD\オンラインジェネレーター\webで動作するソフト\ac_generator\tools-folder\Kn5Converter\Kn5Converter\obj\Debug\net8.0\Kn5Converter.csproj.AssemblyReference.cache

@@ -631,36 +631,60 @@ function startAuthServer() {
 	authServer.listen(34567);
 }
 ipcMain.handle('unpack-kn5', async (event, kn5Path) => {
-	const fs = require('fs');
-	const path = require('path');
-	const { exec } = require('child_process'); // spawnからexecに変更
-	
-	const localAppData = process.env.LOCALAPPDATA;
-	const converterExe = path.join(localAppData, 'AcTools Content Manager', 'Plugins', 'FbxConverter', 'FbxConverter.exe');
-	const outputFbxPath = kn5Path.replace(/\.kn5$/i, '.fbx');
+    const fs = require('fs');
+    const path = require('path');
+    const { spawn } = require('child_process');
 
-	return new Promise((resolve) => {
-		if (!fs.existsSync(converterExe)) {
-			resolve({ success: false, error: "ツールが見つかりません" });
-			return;
-		}
+    const converterDir = path.dirname(path.join(process.env.LOCALAPPDATA, 'AcTools Content Manager', 'Plugins', 'FbxConverter', 'FbxConverter.exe'));
+    const converterExe = path.join(converterDir, 'FbxConverter.exe');
+    const outputFbxPath = kn5Path.replace(/\.kn5$/i, '.fbx');
 
-		// 全てのパスを引用符で囲み、スペースがあっても正しく認識させる
-		const command = `"${converterExe}" "${kn5Path}" "${outputFbxPath}"`;
+    // 診断用ログの収集
+    const diagnostics = {
+        converterExists: fs.existsSync(converterExe),
+        cwd: converterDir,
+        inputExists: fs.existsSync(kn5Path),
+        processEnv: process.env.PATH ? "PATH exists" : "PATH missing"
+    };
 
-		exec(command, (error, stdout, stderr) => {
-			if (error) {
-				console.error(`[DEBUG] 変換失敗。コード: ${error.code}`);
-				console.error(`[DEBUG] 詳細エラー: ${stderr}`);
-				resolve({ success: false, error: `エラーコード: ${error.code}, 詳細: ${stderr}` });
-			} else if (fs.existsSync(outputFbxPath)) {
-				console.log(`[DEBUG] 変換成功: ${outputFbxPath}`);
-				resolve({ success: true, fbxPath: outputFbxPath });
-			} else {
-				resolve({ success: false, error: "変換プロセスが終了しましたがファイルが生成されませんでした。" });
-			}
-		});
-	});
+    console.log("【診断開始】:", diagnostics);
+
+    return new Promise((resolve) => {
+        // ツールの引数構造を明示的に分解して渡す
+        const args = [kn5Path, outputFbxPath];
+        
+        const child = spawn(converterExe, args, {
+            cwd: converterDir,
+            shell: false, // shellを介さず直接実行し、引数汚染を防ぐ
+            stdio: ['pipe', 'pipe', 'pipe'] // 詳細な入出力を取得
+        });
+
+        let stdout = "";
+        let stderr = "";
+
+        child.stdout.on('data', (data) => stdout += data.toString());
+        child.stderr.on('data', (data) => stderr += data.toString());
+
+        child.on('error', (err) => {
+            resolve({ success: false, error: `プロセス起動失敗: ${err.message}` });
+        });
+
+        child.on('close', (code) => {
+            const result = {
+                code,
+                stdout,
+                stderr,
+                diagnostics
+            };
+            console.log("【診断完了】:", result);
+            
+            if (code === 0) {
+                resolve({ success: true, fbxPath: outputFbxPath });
+            } else {
+                resolve({ success: false, error: `ツール終了コード ${code}. 診断詳細をコンソール参照` });
+            }
+        });
+    });
 });
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') app.quit();
