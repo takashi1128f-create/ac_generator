@@ -632,7 +632,34 @@ function startAuthServer() {
 	});
 	authServer.listen(34567);
 }
+ipcMain.handle('unpack-kn5', async (event, kn5Path) => {
+    // 100%の事実：アプリ同梱の kunossdk.exe の場所を特定します
+    const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+    const outputFbxPath = kn5Path.replace(/\.kn5$/i, '.fbx');
 
+    return new Promise((resolve) => {
+        // ツールの存在確認（プロジェクト内の tools-folder を見ます）
+        if (!fs.existsSync(sdkExe)) {
+            resolve({ success: false, error: "展開ツール(kunossdk.exe)が見つかりません。" });
+            return;
+        }
+
+        // kunossdk.exe を実行して .kn5 を直接 .fbx に展開します [cite: 1009]
+        // コマンドはシンプルに "kunossdk.exe ファイル名" です
+        const command = `"${sdkExe}" "${kn5Path}"`;
+
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                resolve({ success: false, error: stderr || error.message });
+            } else if (fs.existsSync(outputFbxPath)) {
+                // 成功したら生成された FBX のパスを返します
+                resolve({ success: true, fbxPath: outputFbxPath });
+            } else {
+                resolve({ success: false, error: "展開に失敗したか、ファイルが生成されませんでした。" });
+            }
+        });
+    });
+});
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') app.quit();
 });

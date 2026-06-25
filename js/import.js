@@ -696,6 +696,22 @@ export async function handleMultiFileUpload(files) {
 	for (const file of fileArray) {
 		const name = file.name.toLowerCase();
 		try {
+			// ★追加：.kn5 を検知したら FBX への展開を依頼する
+			if (name.endsWith('.kn5')) {
+					console.log("📦 [.kn5] 展開を開始します:", file.path);
+					const res = await window.electronAPI.unpackKn5(file.path);
+					if (res.success) {
+							console.log("✅ [.kn5] 展開成功、FBXを読み込みます:", res.fbxPath);
+							// 展開されたFBXファイルを「あたかもドロップされたファイル」として偽装して読み込ませる
+							const fbxBuffer = await window.electronAPI.readModelFile(res.fbxPath);
+							const fbxFile = new File([fbxBuffer], name.replace('.kn5', '.fbx'), { type: 'application/octet-stream' });
+							await load3DModel(fbxFile);
+							continue; // 元の .kn5 自体の読み込みはスキップ
+					} else {
+							console.error("❌ [.kn5] 展開失敗:", res.error);
+							continue;
+					}
+			}
 			// ★追加：3Dモデル以外のファイルは、許可リストにあるかチェックする
 			if (!name.endsWith('.fbx') && !name.endsWith('.glb') && !name.endsWith('.gltf')) {
 				if (!ALLOWED_FILES.includes(name)) {
