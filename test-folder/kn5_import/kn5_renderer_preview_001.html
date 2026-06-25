@@ -136,7 +136,7 @@
 	<script src="./KN5Loader.old.js"></script>
 	<script src="./Detector.js"></script>
 	<script src="./stats.min.js"></script>
-
+<script src="./FBXExporter.js"></script>
 	<script>
 		$(function(){
 
@@ -368,6 +368,19 @@
           alert(targetFolder + " を適用しました");
         });
         ui.append(btn);
+
+        var exportBtn = $('<button>FBXエクスポート</button>');
+        exportBtn.on('click', function() {
+          if (!model) return;
+          var exporter = new THREE.FBXExporter();
+          var fbxData = exporter.parse(model);
+          var blob = new Blob([fbxData], {type: 'application/octet-stream'});
+          var link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'model.fbx';
+          link.click();
+        });
+        ui.append(exportBtn);
       }
 		});
 	</script>
