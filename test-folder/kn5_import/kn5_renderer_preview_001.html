@@ -115,6 +115,17 @@
 			color: white;
 			margin-bottom: 10px;
 		}
+		#ui-container {
+      margin-top: 10px;
+      color: white;
+      font-size: 12px;
+    }
+    #ui-container select {
+      width: 100%;
+      margin-bottom: 5px;
+      background: #333;
+      color: white;
+    }
 	</style>
 	
 	<script src="./DataStream.js"></script>
@@ -130,6 +141,13 @@
 		$(function(){
 
 			if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+			function disposeNode(node) {
+			if (node.geometry) node.geometry.dispose();
+			if (node.material) {
+				if (Array.isArray(node.material)) node.material.forEach(m => m.dispose());
+				else node.material.dispose();
+			}
+		}
 
 			var container, stats;
 			var envMapCube = null;
@@ -185,12 +203,36 @@
 					alert("パースエラーが発生しました。暗号化Modの可能性があります。");
 				};
 
-				// ファイル選択時の処理
-				$("#kn5-file").on("change", function(event) {
-					var file = event.target.files[0];
-					if (!file) return;
+        // ファイル選択時の処理
+        $("#kn5-file").on("change", function(event) {
+          var files = event.target.files;
+          var file = null;
+          window.skinFolders = {}; // フォルダ管理用の箱
 
-					if (currentModel) {
+          for (var i = 0; i < files.length; i++) {
+            var f = files[i];
+            var fileName = f.name.toLowerCase();
+            if (fileName.endsWith(".kn5") && fileName !== "collider.kn5") {
+              file = f;
+            } else if (f.webkitRelativePath.includes("/skins/") && fileName.endsWith(".dds")) {
+              // skins/サブフォルダ名/ファイル名 を抽出
+              var pathParts = f.webkitRelativePath.split('/');
+              var skinsIndex = pathParts.indexOf('skins');
+              var folderName = pathParts[skinsIndex + 1];
+              
+              if (!window.skinFolders[folderName]) window.skinFolders[folderName] = {};
+              window.skinFolders[folderName][fileName] = f;
+            }
+          }
+          if (!file) {
+            alert("フォルダ内にKN5ファイルが見つかりません。");
+            return;
+          }
+
+          if (currentModel) {
+						currentModel.traverse(n => {
+							if (n instanceof THREE.Mesh) disposeNode(n);
+						});
 						scene.remove(currentModel);
 					}
 
@@ -212,22 +254,23 @@
 							}
 
 							var object = ret[0];
-							object.scale.set(10, 10, 10);
+              object.scale.set(10, 10, 10);
 
-							object.traverse(function (node) {
-								if (node instanceof THREE.Mesh) {
-									if(node.name.search(/blur|damage|cockpit_lr|steer_lr/i) >= 0) {
-										node.visible = false;
-									}
-									if(node.name.search(/window|glass/i) >= 0 || node.material.name.search(/window|glass/i) >= 0) {
-										node.material.transparent = true;
-										node.material.opacity = 0.4;
-									}
-								}
-							});
+              object.traverse(function (node) {
+                if (node instanceof THREE.Mesh) {
+                  console.log("Mesh Name:", node.name, "Material Name:", Array.isArray(node.material) ? node.material.map(m => m.name).join(", ") : node.material.name);
+                  if(node.name.search(/blur|damage|cockpit_lr|steer_lr/i) >= 0) {
+                    node.visible = false;
+                  }
+                  if(node.name.search(/window|glass/i) >= 0 || node.material.name.search(/window|glass/i) >= 0) {
+                    node.material.transparent = true;
+                    node.material.opacity = 0.4;
+                  }
+                }
+              });
 
-							scene.add(object);
-							currentModel = object;
+              scene.add(object);
+              currentModel = object;
 
 							controls.target.set(0, 0, 0);
 							controls.update();
@@ -235,6 +278,7 @@
 							pb.delay(500).fadeOut(500);
 							msg.append("\n【読み込み完了！】");
               render();
+							setupUI(object);
 
 						} catch (err) {
 							console.error(err);
@@ -271,6 +315,60 @@
 			function render() {
 				renderer.render( scene, camera );
 			}
+			function setupUI(model) {
+        var ui = $("#ui-container");
+        ui.empty();
+
+        ui.append("<div>スキンの選択:</div>");
+        var folderSelect = $('<select id="folder-select"></select>');
+        Object.keys(window.skinFolders).forEach(name => {
+          folderSelect.append(`<option value="${name}">${name}</option>`);
+        });
+        ui.append(folderSelect);
+
+        var btn = $('<button>一括適用</button>');
+        btn.on('click', function() {
+          var targetFolder = $("#folder-select").val();
+          var files = window.skinFolders[targetFolder];
+
+          if (!files) return;
+
+          // モデル内の全メッシュを走査
+          model.traverse(function(node) {
+            if (node.isMesh && node.material) {
+              var mats = Array.isArray(node.material) ? node.material : [node.material];
+              mats.forEach(function(mat) {
+                // マテリアル名の一部（例: EXT_CarPaint -> car_paint.dds）で一致するか判定
+                var matName = mat.name.toLowerCase().replace("ext_", "").replace("int_", "");
+                
+                Object.keys(files).forEach(function(fileName) {
+                  // デバッグ用：何と何を比較しているか表示
+                  console.log("Checking Match:", matName, "vs", fileName.replace(".dds", ""));
+                  
+                  // 名前の一致判定（より緩やかに判定します）
+                  if (matName.includes(fileName.replace(".dds", "").toLowerCase()) || fileName.replace(".dds", "").toLowerCase().includes(matName)) {
+                    console.log(">>> MATCH! Applying", fileName, "to", mat.name);
+                    console.log("読み込み試行:", fileName, "->", mat.name);
+                    var loader = new THREE.DDSLoader();
+                    loader.load(URL.createObjectURL(files[fileName]), function(texture) {
+                    	texture.wrapS = THREE.ClampToEdgeWrapping;
+                    	texture.wrapT = THREE.ClampToEdgeWrapping;
+                    	texture.minFilter = THREE.LinearFilter;
+                    	texture.magFilter = THREE.LinearFilter;
+                    	texture.generateMipmaps = false;
+                      
+                      mat.map = texture;
+                      mat.needsUpdate = true;
+                    });
+                  }
+                });
+              });
+            }
+          });
+          alert(targetFolder + " を適用しました");
+        });
+        ui.append(btn);
+      }
 		});
 	</script>
 </head>
@@ -278,9 +376,10 @@
 <div id="info">自作 KN5 ローカルビューア (Three.js r73ベース)</div>
 <div id="msg">
 	<div id="file-selector">
-		<label for="kn5-file">▼ KN5ファイルを選択</label><br>
-		<input type="file" id="kn5-file" accept=".kn5">
+		<label for="kn5-file">▼ KN5フォルダを選択</label><br>
+		<input type="file" id="kn5-file" webkitdirectory directory>
 	</div>
+	<div id="ui-container"></div>
 	<textarea id="status-message" disabled="disabled"></textarea>
 </div>
 <div id="loading-state">
