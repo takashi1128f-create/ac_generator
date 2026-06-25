@@ -1148,36 +1148,52 @@ if (carSelect) {
         }
     });
 }
-// ★追加：フォルダのパスを受け取って、中身を解析し、エディター画面に切り替える命令
+// ★ 修正版：D&Dと全く同じ仕組みで、データの反映までを「自然に」待つ命令
 async function loadCarToEditor(carFullPath, carDirName) {
-    // 1. 裏側(Electron)にフォルダ内のINIやKN5のリストアップを依頼
+    // 1. D&Dと同じ「一括処理中フラグ」を立てて、途中のUI更新を一時停止させる
+    window.isMultiUploading = true;
+
+    // 2. 裏側(Electron)にフォルダ内のINIやKN5のリストアップを依頼
     const res = await window.electronAPI.readCarFolderData(carFullPath);
     
     if (res.success) {
-        // 物理的なフォルダ名を記憶（保存・書き出し時の基準になります）
         window.currentCarDirectoryName = carDirName;
-        
-        // 書き出し画面の「プロジェクト名」入力欄にも自動で反映
         const exportNameInput = document.getElementById('exportProjectName');
         if (exportNameInput) exportNameInput.value = carDirName;
 
-        // 2. 取得したファイルリストを import.js の一括処理（.kn5展開含む）へ流す
-        const { handleMultiFileUpload } = await import('./js/import.js');
-        await handleMultiFileUpload(res.files);
+        // 3. 全ファイル（.kn5を含む）を import.js の一括処理へ渡す
+        // ここで await することで、SDKによるFBXの展開が終わるまで「しっかり待ちます」
+        const importModule = await import('./js/import.js');
+        await importModule.handleMultiFileUpload(res.files);
 
-        // 3. 画面を切り替えて編集開始（ハブを隠し、エディターを表示）
-        const startupHub = document.getElementById('startup-hub');
+        // --- ★ここからが「D&Dと同じ読み込み」の核心 ---
+        // 4. 全ての準備が整ったので、一括処理フラグを解除する
+        window.isMultiUploading = false;
+
+        // 5. 貯蔵庫(ini_DATA)にある全データを、一斉に各エディターの画面へ反映させる
+        // （D&Dの完了時と全く同じ「自動巡回」ルートです）
+        Object.keys(window.ini_DATA).forEach(fileName => {
+            importModule.applyIniData(fileName, window.ini_DATA[fileName]);
+        });
+
+        // 6. 最後に物理スペック（馬力など）を計算して完成
+        if (typeof window.updateSpecsFromPhysics === 'function') window.updateSpecsFromPhysics();
+
+        // 画面を切り替えてエディターを表示
+        const hub = document.getElementById('startup-hub');
         const wrapper = document.getElementById('wrapper');
-        if (startupHub) startupHub.style.opacity = "0";
+        if (hub) hub.style.opacity = "0";
         setTimeout(() => {
-            if (startupHub) startupHub.style.display = 'none';
+            if (hub) hub.style.display = 'none';
             if (wrapper) wrapper.style.display = 'block';
-            console.log("✅ 車両データの読み込みと画面切り替えが完了しました。");
+            console.log("✅ D&D互換ルートでの読み込みが完了しました。");
         }, 300);
     } else {
+        window.isMultiUploading = false;
         alert("読み込みエラー: " + res.error);
     }
 }
+
 const btnExecuteCreation = document.getElementById('btn-execute-car-creation');
 const btnEditSelected = document.getElementById('btn-edit-selected-car'); // ★追加
 // 案：複製して新規作成
