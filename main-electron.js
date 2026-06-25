@@ -848,23 +848,48 @@ ipcMain.handle('read-car-folder-data', async (event, carPath) => {
     const fs = require('fs');
     const path = require('path');
     const dataPath = path.join(carPath, 'data');
-    const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini'];
+    const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
     const filesRead = [];
 
     try {
-        // data フォルダが存在するか確認
-        if (!fs.existsSync(dataPath)) return { success: false, error: 'dataフォルダが見つかりません。ACD展開が必要な場合があります。' };
-
-        const files = fs.readdirSync(dataPath);
-        for (const file of files) {
-            if (ALLOWED_FILES.includes(file.toLowerCase())) {
-                const fullPath = path.join(dataPath, file);
-                const content = fs.readFileSync(fullPath, 'utf8');
-                filesRead.push({ name: file, content: content });
+        // 1. 車両の「ルートフォルダ」から .kn5 を拾う（見落とし・ゴミ拾い防止）
+        if (fs.existsSync(carPath)) {
+            const rootFiles = fs.readdirSync(carPath);
+            for (const file of rootFiles) {
+                const lowerName = file.toLowerCase();
+                // collider.kn5 以外の .kn5 を見つけたら「モデル」として登録
+                if (lowerName.endsWith('.kn5') && lowerName !== 'collider.kn5') {
+                    filesRead.push({
+                        name: file,
+                        path: path.join(carPath, file),
+                        isModel: true // 重要：これを付けることでフロント側で自動展開処理へ誘導します
+                    });
+                }
             }
         }
+
+        // 2. 「data」フォルダ内の設定ファイルを読み取る
+        if (fs.existsSync(dataPath)) {
+            const files = fs.readdirSync(dataPath);
+            for (const file of files) {
+                const lowerFile = file.toLowerCase();
+                if (ALLOWED_FILES.includes(lowerFile)) {
+                    const fullPath = path.join(dataPath, file);
+                    if (fs.statSync(fullPath).isFile()) {
+                        const content = fs.readFileSync(fullPath, 'utf8');
+                        filesRead.push({ 
+                            name: file, 
+                            content: content, 
+                            path: fullPath 
+                        });
+                    }
+                }
+            }
+        }
+        
         return { success: true, files: filesRead };
     } catch (err) {
+        console.error("【裏側】車両データ読込エラー:", err);
         return { success: false, error: err.message };
     }
 });
