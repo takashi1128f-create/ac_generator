@@ -137,7 +137,7 @@ input, textarea {
 	gap: 0.5em;
 }
 .control-panel .visibility-controls {
-	gap: 0.1em 3em;
+	gap: 0.1em 1em;
 }
 .visibility-controls .control-row{
 	justify-content: space-between;
@@ -1721,7 +1721,9 @@ label {
 	padding: 0.5em;
 }
 .logo-name-inner_box article:not(:last-of-type){
+	height: 100%;
 	margin-bottom: 0.5em;
+	max-height: 390px;
 }
 .logo-name_box,
 .logo-name-outer_box{
@@ -1848,6 +1850,7 @@ label {
 	height: 100%;
 	padding: 0.5em;
 	min-height: 149px;
+	max-height: 150px;
 }
 .torque-graph-outer_box > div:nth-child(2) {
 	flex: 7;
@@ -1877,6 +1880,7 @@ label {
 .car-select-outer_box > div:nth-child(1) {
 	flex: 5;
 	margin-bottom: 0;
+	height: 100%;
 }
 .car-select-outer_box > div:nth-child(2) {
 	flex: 5;
@@ -1960,9 +1964,21 @@ em
 	color: #fff;
 	justify-content: space-around;
 	width: 100%;
+	background-color: #ffffff63;
+	line-height: 1;
+	padding: 0.2em 0;
 }
 .color-preview-list_box span{
 	color: #fff;
 	text-shadow: 5px 4px 3px rgba(0, 0, 0, 0.87), -2px -2px 3px rgba(217, 217, 217, 1), 3px -2px 3px rgba(217, 217, 217, 1), -2px 3px 3px rgba(0, 0, 0, 0.52);
 	font-size: 1.3em;
+}
+.color-list_box,
+#color-preview-arrow{
+	display: none;
+}
+.spec-size_box,
+.engine-sound-outer_box{
+	max-height: 196px;
+	height: 100%;
 }

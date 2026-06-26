@@ -149,7 +149,14 @@ window.initSkinGallery = function(skins) {
     console.log("🖼 [Gallery] 初期化開始。受信データ:", skins);
     window.allCarSkins = skins || [];
     window.currentSkinIdx = 0;
-
+		// ★追加：要素の取得と表示・非表示の判定
+    const listContainer = document.querySelector('.color-list_box'); // リストの外枠
+    const arrowContainer = document.getElementById('color-preview-arrow'); // 矢印の枠
+    
+    // スキンが2種類以上ある時だけ表示する（1つ以下の場合は隠す）
+    const isVisible = window.allCarSkins.length >= 2;
+    if (listContainer) listContainer.style.display = isVisible ? 'block' : 'none';
+    if (arrowContainer) arrowContainer.style.display = isVisible ? 'flex' : 'none';
     const listUl = document.querySelector('.color-list_box ul');
     const mainPreview = document.getElementById('car-color-preview');
     if (!listUl || !mainPreview) return;

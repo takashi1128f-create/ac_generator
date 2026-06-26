@@ -1038,19 +1038,19 @@ document.addEventListener('drop', async (e) => {
 						allEntries.push(...entries);
 						readRecursive();
 					} else {
-						console.log(`[DEBUG] 現在探索中: ${item.name}`);
+						// console.log(`[DEBUG] 現在探索中: ${item.name}`);
 						if (item.name === 'ui') {
 						console.log(`[DEBUG] UIフォルダ内のエントリ数: ${allEntries.length}`);
 						allEntries.forEach(entry => {
-							console.log(`[DEBUG] 探索中のファイル名: ${entry.name}`);
+							// console.log(`[DEBUG] 探索中のファイル名: ${entry.name}`);
 							if (entry.name.toLowerCase() === 'badge.png') {
-								console.log(`[DEBUG] badge.png を発見しました！`);
+								// console.log(`[DEBUG] badge.png を発見しました！`);
 								entry.file(file => {
 									const badgeImg = document.getElementById('ui-badge');
-									console.log(`[DEBUG] ui-badge 要素の存在確認: ${!!badgeImg}`);
+									// console.log(`[DEBUG] ui-badge 要素の存在確認: ${!!badgeImg}`);
 									if (badgeImg) {
 										const formattedPath = file.path.replace(/\\/g, '/');
-										console.log(`[DEBUG] セットするパス: ${formattedPath}`);
+										// console.log(`[DEBUG] セットするパス: ${formattedPath}`);
 										// badgeImg.src = 'file:///' + formattedPath;
 										badgeImg.src = URL.createObjectURL(file);
 									}

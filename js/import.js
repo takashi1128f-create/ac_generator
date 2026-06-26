@@ -674,8 +674,8 @@ export function applyIniData(fileName, parsedData) {
 const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
 export async function handleMultiFileUpload(files) {
 	const fileArray = Array.from(files); // 使い回せるように一度配列に変換しておく
-	console.log("[IMPORT DEBUG] 渡ってきた全ファイル:", fileArray.map(f => f.name));
-	console.log("[IMPORT DEBUG] 許可リスト:", ALLOWED_FILES);
+	// console.log("[IMPORT DEBUG] 渡ってきた全ファイル:", fileArray.map(f => f.name));
+	// console.log("[IMPORT DEBUG] 許可リスト:", ALLOWED_FILES);
 	// ★追加：ドロップされたファイルの中に設定ファイル（.ini）が1つでもあるかチェック
 	// --- ★追加：D&Dされたファイルからスキン画像を抽出する ---
     const skinsFound = [];
