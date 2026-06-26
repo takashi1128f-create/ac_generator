@@ -898,10 +898,6 @@ ipcMain.handle('read-car-folder-data', async (event, carPath) => {
             });
             console.log("✅ [裏側] ui_car.json を発見しました。");
         }
-				// 読み込みが完了したので、ロゴ画像（badge.png）を画面に反映させる
-        if (window.currentDataFolderPath && typeof window.updateBadgeImage === 'function') {
-            window.updateBadgeImage(window.currentDataFolderPath);
-        }
         
         return { success: true, files: filesRead };
     } catch (err) {

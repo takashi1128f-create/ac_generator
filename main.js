@@ -1165,7 +1165,9 @@ async function loadCarToEditor(carFullPath, carDirName) {
         // ここで await することで、SDKによるFBXの展開が終わるまで「しっかり待ちます」
         const importModule = await import('./js/import.js');
         await importModule.handleMultiFileUpload(res.files);
-
+				if (window.currentDataFolderPath && typeof window.updateBadgeImage === 'function') {
+            window.updateBadgeImage(window.currentDataFolderPath);
+        }
         // --- ★ここからが「D&Dと同じ読み込み」の核心 ---
         // 4. 全ての準備が整ったので、一括処理フラグを解除する
         window.isMultiUploading = false;
