@@ -341,18 +341,18 @@ app.whenReady().then(async () => {
 		}
 	});
 	protocol.handle('local-file', (request) => {
-    // 1. URLからパス部分を抽出
-    const url = new URL(request.url);
-    
-    // 2. pathname は先頭に "/" がつくため、それを除去して取得
-    // 例: "/D:/フォント・ソフト/..." -> "D:/フォント・ソフト/..."
-    const filePath = decodeURIComponent(url.pathname.slice(1));
-    
-    // 3. ログで最終的なパスを確認（デバッグ用）
-    console.log("🔍 [Protocol] 確定パス:", filePath);
-    
-    // 4. file:// プロトコルとして返却
-    return net.fetch('file://' + filePath);
+		// 1. URLからパス部分を抽出
+		const url = new URL(request.url);
+		
+		// 2. pathname は先頭に "/" がつくため、それを除去して取得
+		// 例: "/D:/フォント・ソフト/..." -> "D:/フォント・ソフト/..."
+		const filePath = decodeURIComponent(url.pathname.slice(1));
+		
+		// 3. ログで最終的なパスを確認（デバッグ用）
+		console.log("🔍 [Protocol] 確定パス:", filePath);
+		
+		// 4. file:// プロトコルとして返却
+		return net.fetch('file://' + filePath);
 });
 
 	// ★ ルートB：自動アップデート機能（electron-updater）
@@ -633,35 +633,35 @@ function startAuthServer() {
 	authServer.listen(34567);
 }
 ipcMain.handle('unpack-kn5', async (event, kn5Path) => {
-    // アプリ同梱ツールのパス
-    const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-    
-    // 100%の事実に基づく修正：ツールは「fbx」というフォルダを作ってその中に保存します [cite: 759]
-    const kn5Dir = path.dirname(kn5Path); // .kn5 があるフォルダ（車両フォルダ）を取得
-    const kn5Name = path.basename(kn5Path, '.kn5'); // ファイル名（例：nissan_silvia_s13）を取得
-    const outputFbxPath = path.join(kn5Dir, 'fbx', `${kn5Name}.fbx`); // 「fbx」フォルダ内のパスを組み立て
+		// アプリ同梱ツールのパス
+		const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+		
+		// 100%の事実に基づく修正：ツールは「fbx」というフォルダを作ってその中に保存します [cite: 759]
+		const kn5Dir = path.dirname(kn5Path); // .kn5 があるフォルダ（車両フォルダ）を取得
+		const kn5Name = path.basename(kn5Path, '.kn5'); // ファイル名（例：nissan_silvia_s13）を取得
+		const outputFbxPath = path.join(kn5Dir, 'fbx', `${kn5Name}.fbx`); // 「fbx」フォルダ内のパスを組み立て
 
-    return new Promise((resolve) => {
-        if (!fs.existsSync(sdkExe)) {
-            resolve({ success: false, error: "展開ツール(kunossdk.exe)が見つかりません。" });
-            return;
-        }
+		return new Promise((resolve) => {
+				if (!fs.existsSync(sdkExe)) {
+						resolve({ success: false, error: "展開ツール(kunossdk.exe)が見つかりません。" });
+						return;
+				}
 
-        // コマンド実行（.kn5 を渡すと、自動的にその場所に fbx フォルダを作って展開されます）
-        const command = `"${sdkExe}" "${kn5Path}"`;
+				// コマンド実行（.kn5 を渡すと、自動的にその場所に fbx フォルダを作って展開されます）
+				const command = `"${sdkExe}" "${kn5Path}"`;
 
-        exec(command, (error, stdout, stderr) => {
-            // 事実：ツール実行後に「fbx」フォルダの中にファイルが存在するか確認します [cite: 759]
-            if (fs.existsSync(outputFbxPath)) {
-                console.log("✅ [.kn5] 物理ファイルを確認:", outputFbxPath);
-                resolve({ success: true, fbxPath: outputFbxPath });
-            } else if (error) {
-                resolve({ success: false, error: stderr || error.message });
-            } else {
-                resolve({ success: false, error: "展開プロセスは終了しましたが、ファイルが見つかりません。" });
-            }
-        });
-    });
+				exec(command, (error, stdout, stderr) => {
+						// 事実：ツール実行後に「fbx」フォルダの中にファイルが存在するか確認します [cite: 759]
+						if (fs.existsSync(outputFbxPath)) {
+								console.log("✅ [.kn5] 物理ファイルを確認:", outputFbxPath);
+								resolve({ success: true, fbxPath: outputFbxPath });
+						} else if (error) {
+								resolve({ success: false, error: stderr || error.message });
+						} else {
+								resolve({ success: false, error: "展開プロセスは終了しましたが、ファイルが見つかりません。" });
+						}
+				});
+		});
 });
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') app.quit();
@@ -829,99 +829,102 @@ ipcMain.handle('open-directory-dialog', async () => {
 	return result.canceled ? null : result.filePaths[0];
 });
 ipcMain.handle('get-folder-list', async (event, targetPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    try {
-        if (!fs.existsSync(targetPath)) return { success: false, error: 'パスが見つかりません' };
-        
-        // 指定されたパス内の「フォルダ」だけを抜き出す
-        const folders = fs.readdirSync(targetPath).filter(file => {
-            return fs.statSync(path.join(targetPath, file)).isDirectory();
-        });
-        return { success: true, folders: folders };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+		const fs = require('fs');
+		const path = require('path');
+		try {
+				if (!fs.existsSync(targetPath)) return { success: false, error: 'パスが見つかりません' };
+				
+				// 指定されたパス内の「フォルダ」だけを抜き出す
+				const folders = fs.readdirSync(targetPath).filter(file => {
+						return fs.statSync(path.join(targetPath, file)).isDirectory();
+				});
+				return { success: true, folders: folders };
+		} catch (err) {
+				return { success: false, error: err.message };
+		}
 });
 // ★★★ ここから追加（指定された車両フォルダのINIデータを一括で読み取る） ★★★
 ipcMain.handle('read-car-folder-data', async (event, carPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    const dataPath = path.join(carPath, 'data');
-    const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
-    const filesRead = [];
+		const fs = require('fs');
+		const path = require('path');
+		const dataPath = path.join(carPath, 'data');
+		const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
+		const filesRead = [];
 
-    try {
-        // 1. 車両の「ルートフォルダ」から .kn5 を拾う（見落とし・ゴミ拾い防止）
-        if (fs.existsSync(carPath)) {
-            const rootFiles = fs.readdirSync(carPath);
-            for (const file of rootFiles) {
-                const lowerName = file.toLowerCase();
-                // collider.kn5 以外の .kn5 を見つけたら「モデル」として登録
-                if (lowerName.endsWith('.kn5') && lowerName !== 'collider.kn5') {
-                    filesRead.push({
-                        name: file,
-                        path: path.join(carPath, file),
-                        isModel: true // 重要：これを付けることでフロント側で自動展開処理へ誘導します
-                    });
-                }
-            }
-        }
+		try {
+				// 1. 車両の「ルートフォルダ」から .kn5 を拾う（見落とし・ゴミ拾い防止）
+				if (fs.existsSync(carPath)) {
+						const rootFiles = fs.readdirSync(carPath);
+						for (const file of rootFiles) {
+								const lowerName = file.toLowerCase();
+								// collider.kn5 以外の .kn5 を見つけたら「モデル」として登録
+								if (lowerName.endsWith('.kn5') && lowerName !== 'collider.kn5') {
+										filesRead.push({
+												name: file,
+												path: path.join(carPath, file),
+												isModel: true // 重要：これを付けることでフロント側で自動展開処理へ誘導します
+										});
+								}
+						}
+				}
 
-        // 2. 「data」フォルダ内の設定ファイルを読み取る
-        if (fs.existsSync(dataPath)) {
-            const files = fs.readdirSync(dataPath);
-            for (const file of files) {
-                const lowerFile = file.toLowerCase();
-                if (ALLOWED_FILES.includes(lowerFile)) {
-                    const fullPath = path.join(dataPath, file);
-                    if (fs.statSync(fullPath).isFile()) {
-                        const content = fs.readFileSync(fullPath, 'utf8');
-                        filesRead.push({ 
-                            name: file, 
-                            content: content, 
-                            path: fullPath 
-                        });
-                    }
-                }
-            }
-        }
+				// 2. 「data」フォルダ内の設定ファイルを読み取る
+				if (fs.existsSync(dataPath)) {
+						const files = fs.readdirSync(dataPath);
+						for (const file of files) {
+								const lowerFile = file.toLowerCase();
+								if (ALLOWED_FILES.includes(lowerFile)) {
+										const fullPath = path.join(dataPath, file);
+										if (fs.statSync(fullPath).isFile()) {
+												const content = fs.readFileSync(fullPath, 'utf8');
+												filesRead.push({ 
+														name: file, 
+														content: content, 
+														path: fullPath 
+												});
+										}
+								}
+						}
+				}
 				// 3. 車両の「ui」フォルダから ui_car.json を拾う (★追加)
-        const uiPath = path.join(carPath, 'ui');
-        const uiJsonPath = path.join(uiPath, 'ui_car.json');
-        if (fs.existsSync(uiJsonPath)) {
-            const content = fs.readFileSync(uiJsonPath, 'utf8');
-            filesRead.push({ 
-                name: 'ui_car.json', 
-                content: content, 
-                path: uiJsonPath 
-            });
-            console.log("✅ [裏側] ui_car.json を発見しました。");
-        }
+				const uiPath = path.join(carPath, 'ui');
+				const uiJsonPath = path.join(uiPath, 'ui_car.json');
+				if (fs.existsSync(uiJsonPath)) {
+						const content = fs.readFileSync(uiJsonPath, 'utf8');
+						filesRead.push({ 
+								name: 'ui_car.json', 
+								content: content, 
+								path: uiJsonPath 
+						});
+						console.log("✅ [裏側] ui_car.json を発見しました。");
+				}
 				// 4. skins フォルダの探索 (★追加)
-        const skinsPath = path.join(carPath, 'skins');
-        const skinsFound = [];
-        if (fs.existsSync(skinsPath)) {
-            const skinDirs = fs.readdirSync(skinsPath);
-            for (const skinDir of skinDirs) {
-                const fullSkinPath = path.join(skinsPath, skinDir);
-                if (fs.statSync(fullSkinPath).isDirectory()) {
-                    const previewPath = path.join(fullSkinPath, 'preview.jpg');
-                    if (fs.existsSync(previewPath)) {
-                        skinsFound.push({
-                            name: skinDir,
-                            path: previewPath.replace(/\\/g, '/') // パスを正規化
-                        });
-                    }
-                }
-            }
-        }
-        // 戻り値にスキンのリストを追加
-        return { success: true, files: filesRead, skins: skinsFound };
-    } catch (err) {
-        console.error("【裏側】車両データ読込エラー:", err);
-        return { success: false, error: err.message };
-    }
+				const skinsPath = path.join(carPath, 'skins');
+				const skinsFound = [];
+				if (fs.existsSync(skinsPath)) {
+						const skinDirs = fs.readdirSync(skinsPath);
+						// ※このログは「コマンドプロンプト」に出力されます
+						console.log(`🔍 [裏側] skinsフォルダ内に ${skinDirs.length} 個の項目を確認`);
+						for (const skinDir of skinDirs) {
+								const fullSkinPath = path.join(skinsPath, skinDir);
+								if (fs.statSync(fullSkinPath).isDirectory()) {
+										const previewPath = path.join(fullSkinPath, 'preview.jpg');
+										if (fs.existsSync(previewPath)) {
+												skinsFound.push({
+														name: skinDir,
+														path: previewPath.replace(/\\/g, '/') 
+												});
+										}
+								}
+						}
+						console.log(`✅ [裏側] 有効な preview.jpg を ${skinsFound.length} 枚発見しました。`);
+				}
+				// 戻り値に skins のリストを追加（これで表側の res.skins にデータが届きます）
+				return { success: true, files: filesRead, skins: skinsFound };
+				} catch (err) {
+						console.error("【裏側】車両データ読込エラー:", err);
+				return { success: false, error: err.message };
+			}	
 });
 // ★引数を (event, baseDir, folderName, files, isOverwrite, sourcePath) であることを確認
 ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files, isOverwrite, sourcePath) => {
@@ -1001,15 +1004,15 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 			}
 		}
 		// ★ここに追加：ループが終わった直後、リターンする前
-    if (sourcePath && fs.existsSync(sourcePath)) {
-      const uiDirPath = path.join(targetDir, 'ui'); // targetDir は上で定義されています
-      if (!fs.existsSync(uiDirPath)) {
-        fs.mkdirSync(uiDirPath, { recursive: true });
-      }
-      const destPath = path.join(uiDirPath, 'badge.png');
-      fs.copyFileSync(sourcePath, destPath);
-      console.log("✅ バッジ画像をコピーしました:", destPath);
-    }
+		if (sourcePath && fs.existsSync(sourcePath)) {
+			const uiDirPath = path.join(targetDir, 'ui'); // targetDir は上で定義されています
+			if (!fs.existsSync(uiDirPath)) {
+				fs.mkdirSync(uiDirPath, { recursive: true });
+			}
+			const destPath = path.join(uiDirPath, 'badge.png');
+			fs.copyFileSync(sourcePath, destPath);
+			console.log("✅ バッジ画像をコピーしました:", destPath);
+		}
 		return {
 			success: true,
 			path: targetDir
@@ -1210,15 +1213,15 @@ ipcMain.handle('sync-restore-end', async (event, folderPath) => {
 });
 // フォルダを丸ごとコピーする処理
 ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
-    const fs = require('fs');
-    try {
-        if (!fs.existsSync(sourcePath)) return { success: false, error: '元の車両が見つかりません' };
-        if (fs.existsSync(targetPath)) return { success: false, error: '指定した名前の車両は既に存在します' };
+		const fs = require('fs');
+		try {
+				if (!fs.existsSync(sourcePath)) return { success: false, error: '元の車両が見つかりません' };
+				if (fs.existsSync(targetPath)) return { success: false, error: '指定した名前の車両は既に存在します' };
 
-        // フォルダを再帰的に丸ごとコピー（Node.js 16.7.0以降が必要）
-        fs.cpSync(sourcePath, targetPath, { recursive: true });
-        return { success: true };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+				// フォルダを再帰的に丸ごとコピー（Node.js 16.7.0以降が必要）
+				fs.cpSync(sourcePath, targetPath, { recursive: true });
+				return { success: true };
+		} catch (err) {
+				return { success: false, error: err.message };
+		}
 });
