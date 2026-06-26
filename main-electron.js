@@ -886,6 +886,18 @@ ipcMain.handle('read-car-folder-data', async (event, carPath) => {
                 }
             }
         }
+				// 3. 車両の「ui」フォルダから ui_car.json を拾う (★追加)
+        const uiPath = path.join(carPath, 'ui');
+        const uiJsonPath = path.join(uiPath, 'ui_car.json');
+        if (fs.existsSync(uiJsonPath)) {
+            const content = fs.readFileSync(uiJsonPath, 'utf8');
+            filesRead.push({ 
+                name: 'ui_car.json', 
+                content: content, 
+                path: uiJsonPath 
+            });
+            console.log("✅ [裏側] ui_car.json を発見しました。");
+        }
         
         return { success: true, files: filesRead };
     } catch (err) {
