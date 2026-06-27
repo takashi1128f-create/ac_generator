@@ -512,6 +512,9 @@ window.loadProjectToUI = async function(projectState) {
 	if (window.currentProject && window.currentProject.environment) {
 		window.updateBadgeImage(window.currentProject.environment.data_folder);
 	}
+	if (typeof window.updateProjectSidebar === 'function') {
+		window.updateProjectSidebar();
+	}
 	// =======================================================
 	// 3. 各画面のUI更新 (タブの中身を再描画)
 	// =======================================================
@@ -797,11 +800,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		});
 	}
 });
-// --- メニューバーとの連動 ---
-if (window.electronAPI && window.electronAPI.onMenuSave) {
-	// ★ カスタムプロンプト関数
-	function showCustomPrompt(message, defaultValue) {
-		return new Promise((resolve) => {
+window.showCustomPrompt = function(message, defaultValue) {
+    return new Promise((resolve) => {
 			const overlay = document.createElement('div');
 			overlay.classList.add('custom-prompt-overlay');
 			const dialogBox = document.createElement('div');
@@ -910,7 +910,6 @@ if (window.electronAPI && window.electronAPI.onMenuSave) {
 			}
 		});
 	}
-}
 /**
  * window.gearRtoList (または現在のデータ) から ratios.rto 用のテキストを生成する
  */

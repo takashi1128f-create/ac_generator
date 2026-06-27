@@ -1239,6 +1239,7 @@ label {
 	background-color: #1e1e1e;
 	color: #fff;
 	outline: none;
+	font-size: 1rem;
 }
 .custom-prompt-input:focus {
 	border-color: #4CAF50; /* フォーカス時に緑の枠線 */
@@ -1998,6 +1999,7 @@ em
 	display: flex;
 	justify-content: flex-start;
 	align-items: center;
+	gap: 0.5em;
 }
 .p-edit-icon_box{
 	margin-left: auto;
@@ -2036,4 +2038,12 @@ em
 	list-style: none;
 	padding: 0;
 	margin: 0;
+}
+.p-edit-name-unsaved{
+	aspect-ratio: 1;
+	width: 1em;
+}
+.active-project-item span{
+	font-size: 1rem;
+	color: #000;
 }

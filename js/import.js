@@ -1155,13 +1155,16 @@ document.addEventListener('input', (e) => {
 	// 1. まず通常の ID マップでフラグを立てる
 	const key = idMap[content.id];
 	if (key && window.modifiedStatus) {
-		window.modifiedStatus[key] = true;
-		// もしギアエディタ内で変更があり、かつ現在「FINAL」タブが開かれている場合
-		if (key === 'drivetrain' && window.activeDrivetrainTab === 'FINAL') {
-			window.modifiedStatus.final = true;
-		}
-		// console.log(`📝 [LOG] 編集を検知しました: ${key} (ID: ${content.id})`);
-	}
+    window.modifiedStatus[key] = true;
+    if (key === 'drivetrain' && window.activeDrivetrainTab === 'FINAL') {
+        window.modifiedStatus.final = true;
+    }
+    
+    // ★ここを追加：変更を検知した瞬間にサイドバーの表示（*マーク）を更新する
+    if (typeof window.updateProjectSidebar === 'function') {
+        window.updateProjectSidebar();
+    }
+}
 	// 2. 特殊なケース（power.lut のテキストエリア）を個別にチェック
 	// これを if(key) の外に出すことで、確実に検知させます
 	if (target.id === 'power-lut-textarea') {
