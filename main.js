@@ -1106,7 +1106,7 @@ document.addEventListener('drop', async (e) => {
 });
 // ACフォルダ選択ボタン（ご自身でHTMLに追加したボタンのIDに合わせてください）
 // --- 1. 車両リストを更新する共通関数 (新設) ---
-async function refreshCarList(acRoot) {
+window.refreshCarList = async function(acRoot) {
     const carSelect = document.getElementById('ac-car-select');
     const acPathInput = document.getElementById('ac-root-path');
     if (!carSelect || !acRoot) return;

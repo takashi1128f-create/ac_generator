@@ -698,25 +698,55 @@ export async function handleMultiFileUpload(files) {
 	// ==========================================
 	if (hasIniFiles) {
 		let detectedCarName = "名称未設定";
-		for (let i = 0; i < fileArray.length; i++) {
-			const f = fileArray[i];
-			// Electron(D&D)からは path、ブラウザ標準なら webkitRelativePath が入る
-			const filePath = f.path || f.webkitRelativePath || "";
-			if (filePath) {
-				const parts = filePath.split(/[\\/]/); // パスをフォルダごとに分割
-				if (parts.length >= 2) {
-					const parentDir = parts[parts.length - 2];
-					// もし親フォルダが "data" なら、さらにその上が車名フォルダ
-					if (parentDir.toLowerCase() === 'data' && parts.length >= 3) {
-						detectedCarName = parts[parts.length - 3];
-					} else {
-						detectedCarName = parentDir;
-					}
-					break; // 車名が見つかったらループ終了
+		let acRootPath = null;
+
+		for (const f of fileArray) {
+			const rawPath = f.path || "";
+			const filePath = rawPath.replace(/\\/g, '/'); // 区切り文字を統一
+			const acMarker = "/content/cars/";
+			const idx = filePath.toLowerCase().indexOf(acMarker);
+			
+			if (idx !== -1) {
+				// 事実：正規ルートの場合、/content/cars/ より前がACルート、直後が車名です
+				acRootPath = filePath.substring(0, idx);
+				const afterMarker = filePath.substring(idx + acMarker.length);
+				detectedCarName = afterMarker.split('/'); // 配列の0番目（フォルダ名）を取得
+				break; 
+			} else {
+				// 事実：外部（デスクトップ等）からのドロップの場合
+				const parts = filePath.split('/');
+				// dataフォルダまたはINIファイルを見つけ、その「1つ上」を車名とする
+				const dataIdx = parts.findIndex(p => p.toLowerCase() === 'data' || p.toLowerCase().endsWith('.ini'));
+				if (dataIdx > 0) {
+					detectedCarName = parts[dataIdx - 1]; 
+					break;
 				}
 			}
 		}
+
+		// --- 物理的なUI要素への反映（これが抜けていました） ---
+		const acPathInput = document.getElementById('ac-root-path');
+		const carSelect = document.getElementById('ac-car-select');
+		const newCarProjectName = document.getElementById('new-car-project-name');
+
+		if (acRootPath) {
+			// ACルートが見つかった場合、入力欄にセット
+			if (acPathInput) acPathInput.value = acRootPath.replace(/\//g, '\\');
+			// さきほど global化した refreshCarList を呼び出して車両リストを同期
+			if (typeof window.refreshCarList === 'function') {
+				await window.refreshCarList(acRootPath);
+				// 同期後、ドロップされた車名を選択状態にする
+				if (carSelect) carSelect.value = detectedCarName;
+			}
+		}
+
+		// ★ 既存の変数 window.currentCarDirectoryName を更新
 		window.currentCarDirectoryName = detectedCarName;
+		
+		// ★ 協議事項：_mod を付けず、初めてのD&Dならそのままの名前をセット
+		if (newCarProjectName) {
+			newCarProjectName.value = detectedCarName; 
+		}
 		console.log("[MULTI-IMPORT] 特定した車名:", window.currentCarDirectoryName);
 	} else {
 		console.log("[MULTI-IMPORT] 3Dモデル単体等のため、既存の正しい車名を維持します:", window.currentCarDirectoryName);
