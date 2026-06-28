@@ -1241,9 +1241,9 @@ async function loadCarToEditor(carFullPath, carDirName) {
 
         // 5. 貯蔵庫(ini_DATA)にある全データを、一斉に各エディターの画面へ反映させる
         // （D&Dの完了時と全く同じ「自動巡回」ルートです）
-        // Object.keys(window.ini_DATA).forEach(fileName => {
-        //     importModule.applyIniData(fileName, window.ini_DATA[fileName]);
-        // });
+        Object.keys(window.ini_DATA).forEach(fileName => {
+            importModule.applyIniData(fileName, window.ini_DATA[fileName]);
+        });
 
          // 6. 最後に物理スペック（馬力など）を計算して完成
         if (typeof window.updateSpecsFromPhysics === 'function') window.updateSpecsFromPhysics();
