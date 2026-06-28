@@ -4,11 +4,14 @@
  * プロジェクトのデータフォルダからbadge.pngを表示する
  */
 export const updateBadgeImage = (dataFolder) => {
-		const badgeImg = document.getElementById('ui-badge');
-		if (!badgeImg || !dataFolder) return;
-		const cleanFolder = dataFolder.replace(/\\data$/, '').replace(/\/data$/, '');
-		const badgePath = `${cleanFolder}/ui/badge.png`.replace(/\\/g, '/');
-		badgeImg.src = `file:///${badgePath}`;
+    const badgeImg = document.getElementById('ui-badge');
+    if (!badgeImg || !dataFolder) return;
+
+    // --- 修正：末尾が /data でも /ui でも、どちらでも綺麗に削り取る ---
+    const cleanFolder = dataFolder.replace(/[\\/](data|ui)$/i, '');
+    
+    const badgePath = `${cleanFolder}/ui/badge.png`.replace(/\\/g, '/');
+    badgeImg.src = `file:///${badgePath}`;
 };
 window.updateBadgeImage = updateBadgeImage;
 
