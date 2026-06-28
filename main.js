@@ -1241,9 +1241,9 @@ async function loadCarToEditor(carFullPath, carDirName) {
 
         // 5. 貯蔵庫(ini_DATA)にある全データを、一斉に各エディターの画面へ反映させる
         // （D&Dの完了時と全く同じ「自動巡回」ルートです）
-        Object.keys(window.ini_DATA).forEach(fileName => {
-            importModule.applyIniData(fileName, window.ini_DATA[fileName]);
-        });
+        // Object.keys(window.ini_DATA).forEach(fileName => {
+        //     importModule.applyIniData(fileName, window.ini_DATA[fileName]);
+        // });
 
          // 6. 最後に物理スペック（馬力など）を計算して完成
         if (typeof window.updateSpecsFromPhysics === 'function') window.updateSpecsFromPhysics();
@@ -1303,50 +1303,30 @@ if (btnExecuteCreation) {
         });
     }
 
-    // --- 案：この車両を編集（直接読込・整合性修正版） ---
-    if (btnEditSelected) {
-        btnEditSelected.addEventListener('click', async () => {
-            const acRoot = document.getElementById('ac-root-path').value;
-            const selectedCar = document.getElementById('ac-car-select').value;
-            if (!acRoot || !selectedCar) return alert("車両を選択してください。");
-
-            const newNameInput = document.getElementById('new-car-project-name');
-            if (newNameInput) newNameInput.value = selectedCar;
-
-            // 【100%の事実に基づく整合性修正】
-            const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
-            const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
-
-            // まずアセットコルサ構造を試し、無ければそのままのパスを使用（デスクトップ用）
-            let carFullPath = carsBase + "\\" + selectedCar;
-            const checkOrigin = await window.electronAPI.checkFolderExists("", carFullPath);
-            if (!checkOrigin) {
-                carFullPath = acRoot + "\\" + selectedCar;
-            }
-
-            console.log("📂 [Debug] 直接読込先:", carFullPath);
-            await loadCarToEditor(carFullPath, selectedCar);
-        });
-    }
-
-// 案：この車両を編集（直接読込）
+// --- 案：この車両を編集（直接読込・整合性修正版） ---
 if (btnEditSelected) {
-    btnEditSelected.addEventListener('click', async () => {
-        const acRoot = document.getElementById('ac-root-path').value;
-        const selectedCar = document.getElementById('ac-car-select').value;
-        if (!acRoot || !selectedCar) return alert("車両を選択してください。");
+	btnEditSelected.addEventListener('click', async () => {
+			const acRoot = document.getElementById('ac-root-path').value;
+			const selectedCar = document.getElementById('ac-car-select').value;
+			if (!acRoot || !selectedCar) return alert("車両を選択してください。");
 
-        // ★追加：編集時は、新規作成用の入力欄に選んだ車両の名前をそのまま表示させる
-        const newNameInput = document.getElementById('new-car-project-name');
-        if (newNameInput) {
-            newNameInput.value = selectedCar;
-        }
+			const newNameInput = document.getElementById('new-car-project-name');
+			if (newNameInput) newNameInput.value = selectedCar;
 
-        const carFullPath = acRoot + "\\content\\cars\\" + selectedCar;
-        // そのまま読み込み
-        await loadCarToEditor(carFullPath, selectedCar);
-        console.log("既存車両を直接読み込みました:", selectedCar);
-    });
+			// 【100%の事実に基づく整合性修正】
+			const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
+			const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
+
+			// まずアセットコルサ構造を試し、無ければそのままのパスを使用（デスクトップ用）
+			let carFullPath = carsBase + "\\" + selectedCar;
+			const checkOrigin = await window.electronAPI.checkFolderExists("", carFullPath);
+			if (!checkOrigin) {
+					carFullPath = acRoot + "\\" + selectedCar;
+			}
+
+			console.log("📂 [Debug] 直接読込先:", carFullPath);
+			await loadCarToEditor(carFullPath, selectedCar);
+	});
 }
 // --- 3. アプリ起動時に記憶していたパスを復元する ---
 document.addEventListener('DOMContentLoaded', () => {
