@@ -1195,7 +1195,6 @@ if (carSelect) {
 }
 // ★ 修正版：D&Dと全く同じ仕組みで、データの反映までを「自然に」待つ命令
 async function loadCarToEditor(carFullPath, carDirName) {
-	console.log("【確認】loadCarToEditor が呼び出されました:", carFullPath);
 	// 1. D&Dと同じ「一括処理中フラグ」を立てて、途中のUI更新を一時停止させる
 	window.isMultiUploading = true;
 	// 2. 裏側(Electron)にフォルダ内のINIやKN5のリストアップを依頼
@@ -1208,14 +1207,6 @@ async function loadCarToEditor(carFullPath, carDirName) {
 		// ここで await することで、SDKによるFBXの展開が終わるまで「しっかり待ちます」
 		const importModule = await import('./js/import.js');
 		await importModule.handleMultiFileUpload(res.files);
-		// ★追加：dataフォルダがなければ data.acd を展開
-		const dataFolderPath = carFullPath + "\\data";
-		const hasData = await window.electronAPI.checkFolderExists("", dataFolderPath);
-		if (!hasData) {
-			console.log("📁 dataフォルダがないため、data.acd を展開します...");
-			const extRes = await window.electronAPI.extractAcd(carFullPath);
-			if (!extRes.success) console.error("展開失敗:", extRes.error);
-		}
 		// ★追加：スキンギャラリーの初期化
 		if (res.skins && typeof window.initSkinGallery === 'function') {
 			window.initSkinGallery(res.skins);

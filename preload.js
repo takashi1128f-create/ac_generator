@@ -14,7 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	// 裏側からのスプラッシュ終了の合図を受け取る窓口
 	onMainWindowShown: (callback) => ipcRenderer.on('main-window-shown', () => callback()),
 	readModelFile: (filePath) => ipcRenderer.invoke('read-model-file', filePath),
-	extractAcd: (carPath) => ipcRenderer.invoke('extract-acd', carPath),
 	// ★重複を整理：終了用と保存終了用の窓口をここにまとめました
 	forceQuit: () => ipcRenderer.send('force-quit'),
 	onTriggerSaveAndClose: (callback) => ipcRenderer.on('trigger-save-and-close', () => callback()),
