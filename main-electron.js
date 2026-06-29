@@ -884,6 +884,50 @@ ipcMain.handle('read-car-folder-data', async (event, carPath) => {
 	const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
 	const filesRead = [];
 	try {
+		// === 📦 [ACD調査ログ付き] ここから挿入 ===
+        const acdPath = path.join(carPath, 'data.acd');
+        const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+
+        console.log("🔍 [ACD-STEP1] 読込開始:", carPath);
+
+        if (fs.existsSync(acdPath)) {
+            console.log("📦 [ACD-STEP2] data.acd を発見しました！");
+            
+            if (fs.existsSync(dataPath)) {
+                // 【ケースA】フォルダが既にある場合
+                console.log("⚠️ [ACD-STEP3] dataフォルダが既にあるため、展開はせずリネームのみ行います。");
+                fs.renameSync(acdPath, acdPath + '_backup');
+                console.log("✅ [ACD-STEP4] data.acd -> data.acd_backup にリネーム完了。");
+            } else {
+                // 【ケースB】フォルダがない場合
+                console.log("🚀 [ACD-STEP3] dataフォルダが無いため、SDKによる展開を開始します...");
+                
+                if (fs.existsSync(sdkExe)) {
+                    console.log("🛠️ [ACD-STEP4] 実行コマンド: ", `"${sdkExe}" "${acdPath}"`);
+                    await new Promise((resolve) => {
+                        exec(`"${sdkExe}" "${acdPath}"`, (error, stdout, stderr) => {
+                            if (error) console.error("❌ [ACD-SDK-ERROR]:", error);
+                            if (stdout) console.log("⚙️ [ACD-SDK-STDOUT]:", stdout);
+                            if (stderr) console.warn("⚠️ [ACD-SDK-STDERR]:", stderr);
+                            resolve();
+                        });
+                    });
+
+                    // 展開できたか最終確認
+                    if (fs.existsSync(dataPath)) {
+                        console.log("✨ [ACD-STEP5] 展開成功！dataフォルダが生成されました。");
+                        fs.renameSync(acdPath, acdPath + '_backup');
+                        console.log("✅ [ACD-STEP6] data.acd をバックアップ名に変更しました。");
+                    } else {
+                        console.error("❌ [ACD-ERROR] SDKは終了しましたが、dataフォルダが作られていません！");
+                    }
+                } else {
+                    console.error("❌ [ACD-ERROR] SDKツールが指定の場所に見つかりません:", sdkExe);
+                }
+            }
+        } else {
+            console.log("ℹ️ [ACD-STEP2] data.acd は見つかりませんでした。通常のフォルダ読込へ進みます。");
+        }
 		// 1. 車両の「ルートフォルダ」から .kn5 を拾う（見落とし・ゴミ拾い防止）
 		if (fs.existsSync(carPath)) {
 			const rootFiles = fs.readdirSync(carPath);
