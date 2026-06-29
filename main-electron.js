@@ -1249,10 +1249,41 @@ ipcMain.handle('sync-backup-start', async (event, folderPath, files) => {
 		};
 	}
 });
-ipcMain.handle('sync-restore-end', async (event, folderPath) => {
-	return {
-		success: cleanupSyncBackup(folderPath, true)
-	};
+
+// data.acdを展開するハンドラー
+ipcMain.handle('extract-acd', async (event, carFullPath) => {
+	const fs = require('fs');
+	const path = require('path');
+	const { exec } = require('child_process');
+
+	try {
+		const acdPath = path.join(carFullPath, 'data.acd');
+		const outputPath = path.join(carFullPath, 'data');
+		// 正しい物理配置パスを指定
+		const bmsPath = path.join(__dirname, 'tools-folder', 'files', 'getdata.bms');
+		const bmsExe = path.join(__dirname, 'tools-folder', 'files', 'quickbms.exe');
+
+		if (!fs.existsSync(acdPath)) {
+			return { success: false, error: 'data.acd が見つかりません。' };
+		}
+
+		// コマンド実行：quickbms.exe <スクリプト> <対象ファイル> <出力先フォルダ>
+		const command = `"${bmsExe}" "${bmsPath}" "${acdPath}" "${outputPath}"`;
+		
+		return new Promise((resolve) => {
+			exec(command, { cwd: path.dirname(bmsExe) }, (error, stdout, stderr) => {
+				if (error) {
+					console.error(`[QuickBMS Error]: ${error.message}`);
+					resolve({ success: false, error: error.message });
+				} else {
+					console.log(`[QuickBMS Success]: data.acd を展開しました。`);
+					resolve({ success: true });
+				}
+			});
+		});
+	} catch (e) {
+		return { success: false, error: e.message };
+	}
 });
 // フォルダを丸ごとコピーする処理
 ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
