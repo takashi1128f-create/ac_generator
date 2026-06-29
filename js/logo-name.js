@@ -315,14 +315,16 @@ document.getElementById('car-name-edit').addEventListener('click', async () => {
     const newName = document.getElementById('new-car-project-name').value.trim();
     if (!newName) return alert("車両名を入力してください");
 
-    const oldName = window.currentCarDirectoryName;
-    const oldPath = window.currentDataFolderPath ? window.parent(window.currentDataFolderPath) : null; // dataの一つ上
+    // 【修正箇所】window.parent(path) ではなく、文字列操作で data フォルダを削る
+    const oldDataPath = window.currentDataFolderPath; // 例: "C:\...\car_folder\data"
+    const oldPath = oldDataPath ? oldDataPath.replace(/[\\/]data$/i, '') : null; 
 
     // 1. 物理フォルダをリネーム（必要な場合のみ）
     if (oldPath && confirm(`フォルダ名を「${newName}」に変更しますか？`)) {
+        // window.electronAPI.renameCarFolder が main-electron.js / preload.js に実装されている必要があります
         const res = await window.electronAPI.renameCarFolder(oldPath, newName);
         if (res.success) {
-            // 保存パスを新しいフォルダ基準に書き換える
+            // 保存パスを新しいフォルダ基準のdataフォルダに書き換える
             window.currentDataFolderPath = res.newPath + "\\data";
         } else {
             return alert("フォルダのリネームに失敗しました: " + res.error);
@@ -332,15 +334,15 @@ document.getElementById('car-name-edit').addEventListener('click', async () => {
     // 2. 内部変数を新しい名前にセット
     window.currentCarDirectoryName = newName;
     
-    // 3. プロジェクト名や書き出し用の設定も同期
+    // 3. プロジェクト名も同期（保存用）
     if (window.currentProject) {
         window.currentProject.projectName = newName;
     }
     
-    // 4. UIのタイトルバーなどを更新
+    // 4. タイトルバーの表示を更新
     if (window.electronAPI.setWindowTitle) {
         window.electronAPI.setWindowTitle(newName);
     }
 
-    alert(`車両名を「${newName}」に変更しました。以降の保存・書き出しはこの名前が使用されます。`);
+    alert(`車両名を「${newName}」に変更しました。`);
 });
