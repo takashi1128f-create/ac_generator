@@ -9,7 +9,6 @@ window.currentProject = {
 };
 // プロジェクトを開いた時に実行
 window.electronAPI.setProjectLoaded(true);
-
 // プロジェクトを閉じた時（または終了時）に実行
 // window.electronAPI.setProjectLoaded(false);
 // window.currentProjectPath = ""; // 現在開いているプロジェクトのパス
@@ -44,16 +43,14 @@ window.APP_CONFIG = {
 // ★ここに追加：入力操作を監視し、スペックをリアルタイムで再計算する
 // ==========================================\n
 document.addEventListener('input', (e) => {
-    const isInsideEditor = e.target.closest('#wrapper');
-
-    // ★修正：条件の先頭に「isInsideEditor &&」を追加する
-    if (isInsideEditor && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
-        if (typeof window.updateSpecsFromPhysics === 'function') {
-            window.updateSpecsFromPhysics();
-        }
-    }
+	const isInsideEditor = e.target.closest('#wrapper');
+	// ★修正：条件の先頭に「isInsideEditor &&」を追加する
+	if (isInsideEditor && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+		if (typeof window.updateSpecsFromPhysics === 'function') {
+			window.updateSpecsFromPhysics();
+		}
+	}
 });
-
 // 以下、既存のコードが続く...
 // 起動時のチラつき防止（目印がある場合は最初から透明にしておく）
 if (window.location.search.includes('action=newProject')) {
@@ -226,20 +223,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 	// ★修正：裏側からバージョン番号を受け取ってHTMLを更新し、変更があればお知らせを出す
 	if (window.electronAPI && window.electronAPI.onAppVersion) {
 		window.electronAPI.onAppVersion((version) => {
-			window.appVersion = version; 
+			window.appVersion = version;
 			const versionDisplay = document.getElementById('app-version-display');
 			if (versionDisplay) {
 				versionDisplay.textContent = `Version ${version}`;
 			}
-
 			// --- ここから追加：バージョン変更検知ロジック ---
 			const lastSeenVersion = localStorage.getItem('app_last_seen_version');
-			
 			// 初回起動時、またはバージョン番号が前回と違う場合
 			if (lastSeenVersion && lastSeenVersion !== version) {
 				const infoModal = document.getElementById('info-modal');
 				const updateTabBtn = document.getElementById('tab-btn-update');
-				
 				if (infoModal && updateTabBtn) {
 					// 1. モーダルを表示
 					infoModal.classList.remove('hidden');
@@ -247,7 +241,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 					updateTabBtn.click();
 				}
 			}
-			
 			// 現在のバージョンを「確認済み」として記憶
 			localStorage.setItem('app_last_seen_version', version);
 			// --- ここまで追加 ---
@@ -310,10 +303,10 @@ document.addEventListener('DOMContentLoaded', () => {
 				const result = await window.electronAPI.saveProject(window.currentProject);
 				if (result.success) {
 					console.log("新規プロジェクト作成完了:", result.path);
-					 window.currentProjectPath = result.path; // 保存先のパスをアプリに覚えさせる
-						if (typeof window.updateProjectSidebar === 'function') {
-								window.updateProjectSidebar();       // サイドバーの表示を生成する
-						}
+					window.currentProjectPath = result.path; // 保存先のパスをアプリに覚えさせる
+					if (typeof window.updateProjectSidebar === 'function') {
+						window.updateProjectSidebar(); // サイドバーの表示を生成する
+					}
 					// ハブをフワッと消してエディターへ
 					startupHub.style.transition = "opacity 0.3s ease";
 					startupHub.style.opacity = "0";
@@ -369,44 +362,44 @@ window.loadProjectToUI = async function(projectState) {
 	if (!projectState) return;
 	window.isRestoring = true;
 	const env = projectState.environment || {};
-
-    // 1. 車両名の入力欄を復元
-    const nameInput = document.getElementById('new-car-project-name');
-    if (nameInput && env.output_car_name) {
-        nameInput.value = env.output_car_name;
-    }
-
-    // 2. ベース車両のプルダウン選択を復元
-    if (env.base_car_name) {
-        window.currentCarDirectoryName = env.base_car_name;
-        const carSelect = document.getElementById('ac-car-select');
-        if (carSelect) {
-            // 選択肢になければ追加（外部から読み込んだ車両などの対応）
-            let exists = false;
-            for (let i = 0; i < carSelect.options.length; i++) {
-                if (carSelect.options[i].value === env.base_car_name) { exists = true; break; }
-            }
-            if (!exists) {
-                const opt = document.createElement('option');
-                opt.value = env.base_car_name;
-                opt.textContent = env.base_car_name;
-                carSelect.appendChild(opt);
-            }
-            carSelect.value = env.base_car_name;
-        }
-    }
-
-    // 3. スキンプレビュー（ギャラリー）を復元
-    if (env.all_car_skins && env.all_car_skins.length > 0) {
-        // logo-name.js にある既存の初期化関数を使用
-        if (typeof window.initSkinGallery === 'function') {
-            window.initSkinGallery(env.all_car_skins);
-            // 最後に見ていたスキンを表示
-            if (env.current_skin_idx !== undefined) {
-                window.selectSkin(env.current_skin_idx);
-            }
-        }
-    }
+	// 1. 車両名の入力欄を復元
+	const nameInput = document.getElementById('new-car-project-name');
+	if (nameInput && env.output_car_name) {
+		nameInput.value = env.output_car_name;
+	}
+	// 2. ベース車両のプルダウン選択を復元
+	if (env.base_car_name) {
+		window.currentCarDirectoryName = env.base_car_name;
+		const carSelect = document.getElementById('ac-car-select');
+		if (carSelect) {
+			// 選択肢になければ追加（外部から読み込んだ車両などの対応）
+			let exists = false;
+			for (let i = 0; i < carSelect.options.length; i++) {
+				if (carSelect.options[i].value === env.base_car_name) {
+					exists = true;
+					break;
+				}
+			}
+			if (!exists) {
+				const opt = document.createElement('option');
+				opt.value = env.base_car_name;
+				opt.textContent = env.base_car_name;
+				carSelect.appendChild(opt);
+			}
+			carSelect.value = env.base_car_name;
+		}
+	}
+	// 3. スキンプレビュー（ギャラリー）を復元
+	if (env.all_car_skins && env.all_car_skins.length > 0) {
+		// logo-name.js にある既存の初期化関数を使用
+		if (typeof window.initSkinGallery === 'function') {
+			window.initSkinGallery(env.all_car_skins);
+			// 最後に見ていたスキンを表示
+			if (env.current_skin_idx !== undefined) {
+				window.selectSkin(env.current_skin_idx);
+			}
+		}
+	}
 	if (projectState.projectName && window.electronAPI && window.electronAPI.setWindowTitle) {
 		window.electronAPI.setWindowTitle(projectState.projectName);
 	}
@@ -431,21 +424,21 @@ window.loadProjectToUI = async function(projectState) {
 	// =======================================================
 	if (files['suspensions']) window.currentSuspensionData = files['suspensions'].currentData;
 	if (files['tyres']) window.currentTyreData = files['tyres'].currentData;
-	if (files['car']) 
-		window.currentCarData = files['car'].currentData;
-		if (window.currentCarData?.BASIC?.TOTALMASS) {
-			window.updateSpecsDisplay({ weight: window.currentCarData.BASIC.TOTALMASS });
-		}
+	if (files['car']) window.currentCarData = files['car'].currentData;
+	if (window.currentCarData?.BASIC?.TOTALMASS) {
+		window.updateSpecsDisplay({
+			weight: window.currentCarData.BASIC.TOTALMASS
+		});
+	}
 	if (files['aero']) window.currentAeroData = files['aero'].currentData;
 	if (files['engine']) window.currentEngineData = files['engine'].currentData;
 	if (files['setup']) window.currentSetupData = files['setup'].currentData;
 	if (files['drivetrain']) window.currentDrivetrainData = files['drivetrain'].currentData;
 	// 追加機能分のデータ
-	if (files['power_lut_raw']) 
-		window.currentPowerLutRaw = files['power_lut_raw'].currentData;
-		if (typeof window.parsePowerLut === 'function') {
-			window.parsePowerLut(window.currentPowerLutRaw);
-		}
+	if (files['power_lut_raw']) window.currentPowerLutRaw = files['power_lut_raw'].currentData;
+	if (typeof window.parsePowerLut === 'function') {
+		window.parsePowerLut(window.currentPowerLutRaw);
+	}
 	if (files['final_rto_list']) window.finalRtoList = files['final_rto_list'].currentData;
 	if (files['modified_status']) window.modifiedStatus = files['modified_status'].currentData;
 	// ★修正：拡張物理スイッチのON/OFF状態を完全に復元する
@@ -548,8 +541,8 @@ window.loadProjectToUI = async function(projectState) {
 	if (typeof window.updateSuspensionVisuals === 'function') window.updateSuspensionVisuals(window.currentSuspensionData);
 	if (typeof window.requestRender === 'function') window.requestRender();
 	if (window.currentProject.files.ui_car && window.restoreUiCarData) {
-				window.restoreUiCarData(window.currentProject.files.ui_car.currentData);
-			}
+		window.restoreUiCarData(window.currentProject.files.ui_car.currentData);
+	}
 	console.log("✅ [同期完了] すべてのデータが復元されました。");
 	window.isRestoring = false;
 	if (window.currentProject && window.currentProject.environment) {
@@ -564,7 +557,6 @@ window.loadProjectToUI = async function(projectState) {
 	if (typeof window.updateSuspensionEditorUI === 'function') window.updateSuspensionEditorUI(window.currentSuspensionData);
 	// ... (既存のコード) ...
 	if (typeof window.initColliderEditor === 'function') window.initColliderEditor(window.currentCarData);
-
 	// 物理データに基づくスペック更新
 	if (typeof window.updateSpecsFromPhysics === 'function') {
 		window.updateSpecsFromPhysics();
@@ -706,13 +698,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (!window.currentProject.environment) window.currentProject.environment = {};
 			window.currentProject.environment.isExtendedPhysicsEnabled = (window.isExtendedPhysicsEnabled === true);
 			// 1. ベース車両名と、画面に入力されていた車両名を保存
-        window.currentProject.environment.base_car_name = window.currentCarDirectoryName || "";
-        const nameInputEl = document.getElementById('new-car-project-name');
-        window.currentProject.environment.output_car_name = nameInputEl ? nameInputEl.value : "";
-
-        // 2. スキンリストと、現在選んでいるスキンの番号を保存
-        window.currentProject.environment.all_car_skins = window.allCarSkins || [];
-        window.currentProject.environment.current_skin_idx = window.currentSkinIdx || 0;
+			window.currentProject.environment.base_car_name = window.currentCarDirectoryName || "";
+			const nameInputEl = document.getElementById('new-car-project-name');
+			window.currentProject.environment.output_car_name = nameInputEl ? nameInputEl.value : "";
+			// 2. スキンリストと、現在選んでいるスキンの番号を保存
+			window.currentProject.environment.all_car_skins = window.allCarSkins || [];
+			window.currentProject.environment.current_skin_idx = window.currentSkinIdx || 0;
 			// ★追加：上書き保存用の「データフォルダのパス」も一緒にセーブデータに記憶させる！
 			window.currentProject.environment.data_folder = window.currentDataFolderPath || "";
 			console.log("✅ [SAVE] 拡張物理の状態を回収しました:", window.currentProject.environment.isExtendedPhysicsEnabled);
@@ -723,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					console.log("💾 [SAVE] ファイル書き込み成功");
 					window.currentProjectPath = result.path; // パスを記憶
 					if (window.modifiedStatus) {
-            Object.keys(window.modifiedStatus).forEach(k => window.modifiedStatus[k] = false);
+						Object.keys(window.modifiedStatus).forEach(k => window.modifiedStatus[k] = false);
 					}
 					window.updateProjectSidebar(); // サイドバーを再描画して「*」を消す
 					btnSaveProject.textContent = "✅ 保存完了";
@@ -856,115 +847,115 @@ document.addEventListener('DOMContentLoaded', () => {
 	}
 });
 window.showCustomPrompt = function(message, defaultValue) {
-    return new Promise((resolve) => {
-			const overlay = document.createElement('div');
-			overlay.classList.add('custom-prompt-overlay');
-			const dialogBox = document.createElement('div');
-			dialogBox.classList.add('custom-prompt-dialog');
-			const msgLabel = document.createElement('label');
-			msgLabel.textContent = message;
-			msgLabel.classList.add('custom-prompt-message');
-			const inputField = document.createElement('input');
-			inputField.type = 'text';
-			inputField.value = defaultValue;
-			inputField.classList.add('custom-prompt-input');
-			const btnContainer = document.createElement('div');
-			btnContainer.classList.add('custom-prompt-actions');
-			const cancelBtn = document.createElement('button');
-			cancelBtn.textContent = 'キャンセル';
-			const okBtn = document.createElement('button');
-			okBtn.textContent = '保存';
-			okBtn.classList.add('custom-prompt-btn', 'custom-prompt-ok');
-			btnContainer.appendChild(cancelBtn);
-			btnContainer.appendChild(okBtn);
-			dialogBox.appendChild(msgLabel);
-			dialogBox.appendChild(inputField);
-			dialogBox.appendChild(btnContainer);
-			overlay.appendChild(dialogBox);
-			document.body.appendChild(overlay);
-			inputField.focus();
-			inputField.select();
-			const closeDialog = (result) => {
-				document.body.removeChild(overlay);
-				resolve(result);
-			};
-			cancelBtn.addEventListener('click', () => closeDialog(null));
-			okBtn.addEventListener('click', () => closeDialog(inputField.value));
-			inputField.addEventListener('keydown', (e) => {
-				if (e.key === 'Enter') closeDialog(inputField.value);
-				if (e.key === 'Escape') closeDialog(null);
-			});
+	return new Promise((resolve) => {
+		const overlay = document.createElement('div');
+		overlay.classList.add('custom-prompt-overlay');
+		const dialogBox = document.createElement('div');
+		dialogBox.classList.add('custom-prompt-dialog');
+		const msgLabel = document.createElement('label');
+		msgLabel.textContent = message;
+		msgLabel.classList.add('custom-prompt-message');
+		const inputField = document.createElement('input');
+		inputField.type = 'text';
+		inputField.value = defaultValue;
+		inputField.classList.add('custom-prompt-input');
+		const btnContainer = document.createElement('div');
+		btnContainer.classList.add('custom-prompt-actions');
+		const cancelBtn = document.createElement('button');
+		cancelBtn.textContent = 'キャンセル';
+		const okBtn = document.createElement('button');
+		okBtn.textContent = '保存';
+		okBtn.classList.add('custom-prompt-btn', 'custom-prompt-ok');
+		btnContainer.appendChild(cancelBtn);
+		btnContainer.appendChild(okBtn);
+		dialogBox.appendChild(msgLabel);
+		dialogBox.appendChild(inputField);
+		dialogBox.appendChild(btnContainer);
+		overlay.appendChild(dialogBox);
+		document.body.appendChild(overlay);
+		inputField.focus();
+		inputField.select();
+		const closeDialog = (result) => {
+			document.body.removeChild(overlay);
+			resolve(result);
+		};
+		cancelBtn.addEventListener('click', () => closeDialog(null));
+		okBtn.addEventListener('click', () => closeDialog(inputField.value));
+		inputField.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') closeDialog(inputField.value);
+			if (e.key === 'Escape') closeDialog(null);
 		});
-	}
-	// 各メニューの動作登録
-	window.electronAPI.onMenuSave(() => {
-		const btn = document.getElementById('btn-save-project');
-		if (btn) btn.click();
 	});
-	// ★追加：「保存して終了」を受け取った時の動作
-	if (window.electronAPI.onTriggerSaveAndClose) {
-		window.electronAPI.onTriggerSaveAndClose(() => {
-			const btn = document.getElementById('btn-save-project');
-			if (btn) {
-				btn.click(); // 1. 既存の保存ボタンをプログラムから押す
-				// 2. 保存完了を待ってからアプリを強制終了する
-				// データの回収と書き込み時間を考慮し、1.5秒待機します
-				setTimeout(() => {
-					if (window.electronAPI.forceQuit) {
-						window.electronAPI.forceQuit();
-					}
-				}, 1500);
-			} else {
-				// エディター画面以外（保存ボタンがない画面）ならそのまま終了
-				if (window.electronAPI.forceQuit) window.electronAPI.forceQuit();
-			}
-		});
-	}
-	window.electronAPI.onMenuSaveAs(async () => {
-		const currentName = window.currentProject.projectName || "名称未設定";
-		const newName = await showCustomPrompt("新しいプロジェクト名を入力してください:", currentName + "_copy");
-		if (newName && newName.trim() !== "") {
-			window.currentProject.projectName = newName.trim();
-			const btn = document.getElementById('btn-save-project');
-			if (btn) btn.click();
+}
+// 各メニューの動作登録
+window.electronAPI.onMenuSave(() => {
+	const btn = document.getElementById('btn-save-project');
+	if (btn) btn.click();
+});
+// ★追加：「保存して終了」を受け取った時の動作
+if (window.electronAPI.onTriggerSaveAndClose) {
+	window.electronAPI.onTriggerSaveAndClose(() => {
+		const btn = document.getElementById('btn-save-project');
+		if (btn) {
+			btn.click(); // 1. 既存の保存ボタンをプログラムから押す
+			// 2. 保存完了を待ってからアプリを強制終了する
+			// データの回収と書き込み時間を考慮し、1.5秒待機します
+			setTimeout(() => {
+				if (window.electronAPI.forceQuit) {
+					window.electronAPI.forceQuit();
+				}
+			}, 1500);
+		} else {
+			// エディター画面以外（保存ボタンがない画面）ならそのまま終了
+			if (window.electronAPI.forceQuit) window.electronAPI.forceQuit();
 		}
 	});
-	window.electronAPI.onMenuRestore(() => {
-		const btn = document.getElementById('btn-restore-project');
+}
+window.electronAPI.onMenuSaveAs(async () => {
+	const currentName = window.currentProject.projectName || "名称未設定";
+	const newName = await showCustomPrompt("新しいプロジェクト名を入力してください:", currentName + "_copy");
+	if (newName && newName.trim() !== "") {
+		window.currentProject.projectName = newName.trim();
+		const btn = document.getElementById('btn-save-project');
 		if (btn) btn.click();
-	});
-	window.electronAPI.onMenuNew(() => {
-		// Electron環境でも絶対に壊れないリロード方法
-		window.location.search = "?action=newProject";
-	});
-	window.electronAPI.onMenuOpen(() => {
-		const btn = document.getElementById('hub-open-project');
-		if (btn) btn.click();
-	});
-	// =========================================================
-	// ★追加：メニューバーから「dataフォルダを一括読込」が選ばれた時の処理
-	// 既存のドラッグ＆ドロップ用ホワイトリスト処理をそのまま100%安全に使い回します
-	// =========================================================
-	if (window.electronAPI.onMenuImportFolderData) {
-		window.electronAPI.onMenuImportFolderData((filesToSend) => {
-			if (filesToSend && filesToSend.length > 0) {
-				console.log(`[MENU-IMPORT] 裏側から ${filesToSend.length} 個のファイルデータを受信しました。読み込みを開始します。`);
-				window.isMultiUploading = true;
-				import('./js/import.js').then(module => {
-					if (module.handleMultiFileUpload) {
-						// 既存のマルチアップロード処理へそのまま流し込む！
-						module.handleMultiFileUpload(filesToSend).then(() => {
-							window.isMultiUploading = false;
-							console.log("[MENU-IMPORT] メニューからのフォルダ一括読込がすべて完了しました！");
-						});
-					}
-				}).catch(err => {
-					console.error("[MENU-IMPORT] 処理中にエラーが発生しました:", err);
-					window.isMultiUploading = false;
-				});
-			}
-		});
 	}
+});
+window.electronAPI.onMenuRestore(() => {
+	const btn = document.getElementById('btn-restore-project');
+	if (btn) btn.click();
+});
+window.electronAPI.onMenuNew(() => {
+	// Electron環境でも絶対に壊れないリロード方法
+	window.location.search = "?action=newProject";
+});
+window.electronAPI.onMenuOpen(() => {
+	const btn = document.getElementById('hub-open-project');
+	if (btn) btn.click();
+});
+// =========================================================
+// ★追加：メニューバーから「dataフォルダを一括読込」が選ばれた時の処理
+// 既存のドラッグ＆ドロップ用ホワイトリスト処理をそのまま100%安全に使い回します
+// =========================================================
+if (window.electronAPI.onMenuImportFolderData) {
+	window.electronAPI.onMenuImportFolderData((filesToSend) => {
+		if (filesToSend && filesToSend.length > 0) {
+			console.log(`[MENU-IMPORT] 裏側から ${filesToSend.length} 個のファイルデータを受信しました。読み込みを開始します。`);
+			window.isMultiUploading = true;
+			import('./js/import.js').then(module => {
+				if (module.handleMultiFileUpload) {
+					// 既存のマルチアップロード処理へそのまま流し込む！
+					module.handleMultiFileUpload(filesToSend).then(() => {
+						window.isMultiUploading = false;
+						console.log("[MENU-IMPORT] メニューからのフォルダ一括読込がすべて完了しました！");
+					});
+				}
+			}).catch(err => {
+				console.error("[MENU-IMPORT] 処理中にエラーが発生しました:", err);
+				window.isMultiUploading = false;
+			});
+		}
+	});
+}
 /**
  * window.gearRtoList (または現在のデータ) から ratios.rto 用のテキストを生成する
  */
@@ -1085,43 +1076,43 @@ document.addEventListener('drop', async (e) => {
 				item.file(file => resolve([file]));
 			} else if (item.isDirectory) {
 				const dirReader = item.createReader();
-			const allEntries = [];
-			const readRecursive = () => {
-				dirReader.readEntries(async (entries) => {
-					if (entries.length > 0) {
-						allEntries.push(...entries);
-						readRecursive();
-					} else {
-						// console.log(`[DEBUG] 現在探索中: ${item.name}`);
-						if (item.name === 'ui') {
-						console.log(`[DEBUG] UIフォルダ内のエントリ数: ${allEntries.length}`);
-						allEntries.forEach(entry => {
-							// console.log(`[DEBUG] 探索中のファイル名: ${entry.name}`);
-							if (entry.name.toLowerCase() === 'badge.png') {
-								// console.log(`[DEBUG] badge.png を発見しました！`);
-								entry.file(file => {
-									const badgeImg = document.getElementById('ui-badge');
-									// console.log(`[DEBUG] ui-badge 要素の存在確認: ${!!badgeImg}`);
-									if (badgeImg) {
-										const formattedPath = file.path.replace(/\\/g, '/');
-										// console.log(`[DEBUG] セットするパス: ${formattedPath}`);
-										// badgeImg.src = 'file:///' + formattedPath;
-										badgeImg.src = URL.createObjectURL(file);
+				const allEntries = [];
+				const readRecursive = () => {
+					dirReader.readEntries(async (entries) => {
+						if (entries.length > 0) {
+							allEntries.push(...entries);
+							readRecursive();
+						} else {
+							// console.log(`[DEBUG] 現在探索中: ${item.name}`);
+							if (item.name === 'ui') {
+								console.log(`[DEBUG] UIフォルダ内のエントリ数: ${allEntries.length}`);
+								allEntries.forEach(entry => {
+									// console.log(`[DEBUG] 探索中のファイル名: ${entry.name}`);
+									if (entry.name.toLowerCase() === 'badge.png') {
+										// console.log(`[DEBUG] badge.png を発見しました！`);
+										entry.file(file => {
+											const badgeImg = document.getElementById('ui-badge');
+											// console.log(`[DEBUG] ui-badge 要素の存在確認: ${!!badgeImg}`);
+											if (badgeImg) {
+												const formattedPath = file.path.replace(/\\/g, '/');
+												// console.log(`[DEBUG] セットするパス: ${formattedPath}`);
+												// badgeImg.src = 'file:///' + formattedPath;
+												badgeImg.src = URL.createObjectURL(file);
+											}
+										});
 									}
 								});
 							}
-						});
-					}
-						let entryFiles = [];
-						for (let entry of allEntries) {
-							const files = await traverseFileTree(entry);
-							entryFiles = entryFiles.concat(files);
+							let entryFiles = [];
+							for (let entry of allEntries) {
+								const files = await traverseFileTree(entry);
+								entryFiles = entryFiles.concat(files);
+							}
+							resolve(entryFiles);
 						}
-						resolve(entryFiles);
-					}
-				});
-			};
-			readRecursive();
+					});
+				};
+				readRecursive();
 			} else {
 				resolve([]);
 			}
@@ -1149,7 +1140,7 @@ document.addEventListener('drop', async (e) => {
 					}
 					console.log("[D&D] すべての読み込みが完了しました！");
 					if (typeof window.updateSpecsDisplay === 'function') {
-							window.updateSpecsDisplay();
+						window.updateSpecsDisplay();
 					}
 				});
 			}
@@ -1161,180 +1152,154 @@ document.addEventListener('drop', async (e) => {
 // ACフォルダ選択ボタン（ご自身でHTMLに追加したボタンのIDに合わせてください）
 // --- 1. 車両リストを更新する共通関数 (新設) ---
 window.refreshCarList = async function(acRoot) {
-    const carSelect = document.getElementById('ac-car-select');
-    const acPathInput = document.getElementById('ac-root-path');
-    if (!carSelect || !acRoot) return;
-
-    if (acPathInput) acPathInput.value = acRoot;
-
-    // ★修正：すでに content\cars が含まれているパスならそのまま、そうでなければ付与して探りに行く
-    const carsPath = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars')) 
-        ? acRoot 
-        : acRoot + "\\content\\cars";
-        
-    const res = await window.electronAPI.getFolderList(carsPath);
-
-    if (res.success) {
-        carSelect.innerHTML = '<option value="">-- 車両を選択してください --</option>';
-        res.folders.forEach(carDir => {
-            const opt = document.createElement('option');
-            opt.value = carDir;
-            opt.textContent = carDir;
-            carSelect.appendChild(opt);
-        });
-        console.log("✅ [System] 車両リストを自動更新しました。");
-    }
+	const carSelect = document.getElementById('ac-car-select');
+	const acPathInput = document.getElementById('ac-root-path');
+	if (!carSelect || !acRoot) return;
+	if (acPathInput) acPathInput.value = acRoot;
+	// ★修正：すでに content\cars が含まれているパスならそのまま、そうでなければ付与して探りに行く
+	const carsPath = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars')) ? acRoot : acRoot + "\\content\\cars";
+	const res = await window.electronAPI.getFolderList(carsPath);
+	if (res.success) {
+		carSelect.innerHTML = '<option value="">-- 車両を選択してください --</option>';
+		res.folders.forEach(carDir => {
+			const opt = document.createElement('option');
+			opt.value = carDir;
+			opt.textContent = carDir;
+			carSelect.appendChild(opt);
+		});
+		console.log("✅ [System] 車両リストを自動更新しました。");
+	}
 }
-
 // --- 2. ACフォルダ選択ボタン & 選択時の挙動 (更新) ---
 const btnSelectAC = document.getElementById('btn-select-ac-path');
 const carSelect = document.getElementById('ac-car-select');
-
 if (btnSelectAC) {
-    btnSelectAC.addEventListener('click', async () => {
-        const path = await window.electronAPI.openDirectoryDialog();
-        if (path) {
-            // 💾 100%の事実：AppStorage [cite: 616] を使ってPCに記憶させます
-            if (typeof AppStorage !== 'undefined') {
-                AppStorage.save('ac_root_path', path);
-            }
-            refreshCarList(path);
-        }
-    });
+	btnSelectAC.addEventListener('click', async () => {
+		const path = await window.electronAPI.openDirectoryDialog();
+		if (path) {
+			// 💾 100%の事実：AppStorage [cite: 616] を使ってPCに記憶させます
+			if (typeof AppStorage !== 'undefined') {
+				AppStorage.save('ac_root_path', path);
+			}
+			refreshCarList(path);
+		}
+	});
 }
-
 if (carSelect) {
-    carSelect.addEventListener('change', () => {
-        const newNameInput = document.getElementById('new-car-project-name');
-        if (newNameInput && carSelect.value !== "") {
-            newNameInput.value = carSelect.value + "_mod";
-        }
-    });
+	carSelect.addEventListener('change', () => {
+		const newNameInput = document.getElementById('new-car-project-name');
+		if (newNameInput && carSelect.value !== "") {
+			newNameInput.value = carSelect.value + "_mod";
+		}
+	});
 }
 // ★ 修正版：D&Dと全く同じ仕組みで、データの反映までを「自然に」待つ命令
 async function loadCarToEditor(carFullPath, carDirName) {
-    // 1. D&Dと同じ「一括処理中フラグ」を立てて、途中のUI更新を一時停止させる
-    window.isMultiUploading = true;
-
-    // 2. 裏側(Electron)にフォルダ内のINIやKN5のリストアップを依頼
-    const res = await window.electronAPI.readCarFolderData(carFullPath);
-    
-    if (res.success) {
-        window.currentCarDirectoryName = carDirName;
-        const exportNameInput = document.getElementById('exportProjectName');
-        if (exportNameInput) exportNameInput.value = carDirName;
-
-        // 3. 全ファイル（.kn5を含む）を import.js の一括処理へ渡す
-        // ここで await することで、SDKによるFBXの展開が終わるまで「しっかり待ちます」
-        const importModule = await import('./js/import.js');
-        await importModule.handleMultiFileUpload(res.files);
-				// ★追加：スキンギャラリーの初期化
-        if (res.skins && typeof window.initSkinGallery === 'function') {
-            window.initSkinGallery(res.skins);
-        }
-				if (window.currentDataFolderPath && typeof window.updateBadgeImage === 'function') {
-            window.updateBadgeImage(window.currentDataFolderPath);
-        }
-        // --- ★ここからが「D&Dと同じ読み込み」の核心 ---
-        // 4. 全ての準備が整ったので、一括処理フラグを解除する
-        window.isMultiUploading = false;
-
-        // 5. 貯蔵庫(ini_DATA)にある全データを、一斉に各エディターの画面へ反映させる
-        // （D&Dの完了時と全く同じ「自動巡回」ルートです）
-        Object.keys(window.ini_DATA).forEach(fileName => {
-            importModule.applyIniData(fileName, window.ini_DATA[fileName]);
-        });
-
-         // 6. 最後に物理スペック（馬力など）を計算して完成
-        if (typeof window.updateSpecsFromPhysics === 'function') window.updateSpecsFromPhysics();
-
-        // --- ★追加：すべての処理（FBX展開・INI解析）が完了したことを確認 ---
-        if (window.isMultiUploading === false) {
-            // 画面を切り替えてエディターを表示
-            const hub = document.getElementById('startup-hub');
-            const wrapper = document.getElementById('wrapper');
-            if (hub) hub.style.opacity = "0";
-            setTimeout(() => {
-                if (hub) hub.style.display = 'none';
-                if (wrapper) wrapper.style.display = 'block';
-                console.log("✅ 全ファイルの正常確認が完了。エディターを表示します。");
-            }, 300);
-        }
-    } else {
-        window.isMultiUploading = false;
-        alert("読み込みエラー: " + res.error);
-    }
+	// 1. D&Dと同じ「一括処理中フラグ」を立てて、途中のUI更新を一時停止させる
+	window.isMultiUploading = true;
+	// 2. 裏側(Electron)にフォルダ内のINIやKN5のリストアップを依頼
+	const res = await window.electronAPI.readCarFolderData(carFullPath);
+	if (res.success) {
+		window.currentCarDirectoryName = carDirName;
+		const exportNameInput = document.getElementById('exportProjectName');
+		if (exportNameInput) exportNameInput.value = carDirName;
+		// 3. 全ファイル（.kn5を含む）を import.js の一括処理へ渡す
+		// ここで await することで、SDKによるFBXの展開が終わるまで「しっかり待ちます」
+		const importModule = await import('./js/import.js');
+		await importModule.handleMultiFileUpload(res.files);
+		// ★追加：スキンギャラリーの初期化
+		if (res.skins && typeof window.initSkinGallery === 'function') {
+			window.initSkinGallery(res.skins);
+		}
+		if (window.currentDataFolderPath && typeof window.updateBadgeImage === 'function') {
+			window.updateBadgeImage(window.currentDataFolderPath);
+		}
+		// --- ★ここからが「D&Dと同じ読み込み」の核心 ---
+		// 4. 全ての準備が整ったので、一括処理フラグを解除する
+		window.isMultiUploading = false;
+		// 5. 貯蔵庫(ini_DATA)にある全データを、一斉に各エディターの画面へ反映させる
+		// （D&Dの完了時と全く同じ「自動巡回」ルートです）
+		Object.keys(window.ini_DATA).forEach(fileName => {
+			importModule.applyIniData(fileName, window.ini_DATA[fileName]);
+		});
+		// 6. 最後に物理スペック（馬力など）を計算して完成
+		if (typeof window.updateSpecsFromPhysics === 'function') window.updateSpecsFromPhysics();
+		// --- ★追加：すべての処理（FBX展開・INI解析）が完了したことを確認 ---
+		if (window.isMultiUploading === false) {
+			// 画面を切り替えてエディターを表示
+			const hub = document.getElementById('startup-hub');
+			const wrapper = document.getElementById('wrapper');
+			if (hub) hub.style.opacity = "0";
+			setTimeout(() => {
+				if (hub) hub.style.display = 'none';
+				if (wrapper) wrapper.style.display = 'block';
+				console.log("✅ 全ファイルの正常確認が完了。エディターを表示します。");
+			}, 300);
+		}
+	} else {
+		window.isMultiUploading = false;
+		alert("読み込みエラー: " + res.error);
+	}
 }
-
 const btnExecuteCreation = document.getElementById('btn-execute-car-creation');
 const btnEditSelected = document.getElementById('btn-edit-selected-car'); // ★追加
 // 案：複製して新規作成
 if (btnExecuteCreation) {
-        btnExecuteCreation.addEventListener('click', async () => {
-            const acRoot = document.getElementById('ac-root-path').value;
-            const selectedCar = document.getElementById('ac-car-select').value;
-            const newCarName = document.getElementById('new-car-project-name').value.trim();
-
-            if (!acRoot || !selectedCar || !newCarName) return alert("必要事項をすべて入力してください。");
-
-            // 【100%の事実に基づく整合性修正】
-            // refreshCarListと同じく、content\\cars を含むかどうかを自動判別します
-            const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
-            const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
-
-            // 1次試行：アセットコルサ構造でパスを作成
-            let sourcePath = carsBase + "\\" + selectedCar;
-            let targetPath = carsBase + "\\" + newCarName;
-
-            // もしアセットコルサ構造でフォルダが存在しない場合は、選択されたパスを「そのまま」使用（デスクトップ用）
-            const checkOrigin = await window.electronAPI.checkFolderExists("", sourcePath);
-            if (!checkOrigin) {
-                sourcePath = acRoot + "\\" + selectedCar;
-                targetPath = acRoot + "\\" + newCarName;
-            }
-
-            console.log("📂 [Debug] 複製元:", sourcePath);
-            const cloneRes = await window.electronAPI.cloneCarFolder(sourcePath, targetPath);
-            if (cloneRes.success) {
-                await loadCarToEditor(targetPath, newCarName);
-            } else {
-                alert("複製エラー: " + cloneRes.error);
-            }
-        });
-    }
-
+	btnExecuteCreation.addEventListener('click', async () => {
+		const acRoot = document.getElementById('ac-root-path').value;
+		const selectedCar = document.getElementById('ac-car-select').value;
+		const newCarName = document.getElementById('new-car-project-name').value.trim();
+		if (!acRoot || !selectedCar || !newCarName) return alert("必要事項をすべて入力してください。");
+		// 【100%の事実に基づく整合性修正】
+		// refreshCarListと同じく、content\\cars を含むかどうかを自動判別します
+		const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
+		const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
+		// 1次試行：アセットコルサ構造でパスを作成
+		let sourcePath = carsBase + "\\" + selectedCar;
+		let targetPath = carsBase + "\\" + newCarName;
+		// もしアセットコルサ構造でフォルダが存在しない場合は、選択されたパスを「そのまま」使用（デスクトップ用）
+		const checkOrigin = await window.electronAPI.checkFolderExists("", sourcePath);
+		if (!checkOrigin) {
+			sourcePath = acRoot + "\\" + selectedCar;
+			targetPath = acRoot + "\\" + newCarName;
+		}
+		console.log("📂 [Debug] 複製元:", sourcePath);
+		const cloneRes = await window.electronAPI.cloneCarFolder(sourcePath, targetPath);
+		if (cloneRes.success) {
+			await loadCarToEditor(targetPath, newCarName);
+		} else {
+			alert("複製エラー: " + cloneRes.error);
+		}
+	});
+}
 // --- 案：この車両を編集（直接読込・整合性修正版） ---
 if (btnEditSelected) {
 	btnEditSelected.addEventListener('click', async () => {
-			const acRoot = document.getElementById('ac-root-path').value;
-			const selectedCar = document.getElementById('ac-car-select').value;
-			if (!acRoot || !selectedCar) return alert("車両を選択してください。");
-
-			const newNameInput = document.getElementById('new-car-project-name');
-			if (newNameInput) newNameInput.value = selectedCar;
-
-			// 【100%の事実に基づく整合性修正】
-			const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
-			const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
-
-			// まずアセットコルサ構造を試し、無ければそのままのパスを使用（デスクトップ用）
-			let carFullPath = carsBase + "\\" + selectedCar;
-			const checkOrigin = await window.electronAPI.checkFolderExists("", carFullPath);
-			if (!checkOrigin) {
-					carFullPath = acRoot + "\\" + selectedCar;
-			}
-
-			console.log("📂 [Debug] 直接読込先:", carFullPath);
-			await loadCarToEditor(carFullPath, selectedCar);
+		const acRoot = document.getElementById('ac-root-path').value;
+		const selectedCar = document.getElementById('ac-car-select').value;
+		if (!acRoot || !selectedCar) return alert("車両を選択してください。");
+		const newNameInput = document.getElementById('new-car-project-name');
+		if (newNameInput) newNameInput.value = selectedCar;
+		// 【100%の事実に基づく整合性修正】
+		const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
+		const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
+		// まずアセットコルサ構造を試し、無ければそのままのパスを使用（デスクトップ用）
+		let carFullPath = carsBase + "\\" + selectedCar;
+		const checkOrigin = await window.electronAPI.checkFolderExists("", carFullPath);
+		if (!checkOrigin) {
+			carFullPath = acRoot + "\\" + selectedCar;
+		}
+		console.log("📂 [Debug] 直接読込先:", carFullPath);
+		await loadCarToEditor(carFullPath, selectedCar);
 	});
 }
 // --- 3. アプリ起動時に記憶していたパスを復元する ---
 document.addEventListener('DOMContentLoaded', () => {
-    if (typeof AppStorage !== 'undefined') {
-        const savedPath = AppStorage.load('ac_root_path');
-        if (savedPath) {
-            console.log("📂 記憶されていたACパスを復元します:", savedPath);
-            refreshCarList(savedPath);
-        }
-    }
+	if (typeof AppStorage !== 'undefined') {
+		const savedPath = AppStorage.load('ac_root_path');
+		if (savedPath) {
+			console.log("📂 記憶されていたACパスを復元します:", savedPath);
+			refreshCarList(savedPath);
+		}
+	}
 });

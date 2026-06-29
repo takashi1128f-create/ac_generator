@@ -63,18 +63,18 @@ function renderUpdateList() {
 	if (!container) return;
 
 	container.innerHTML = updateData.map(u => `
-    <ul>
-      <li>
-        <h3>${u.version}${u.date ? `<small>${u.date}</small>` : ''}</h3>
-        <p>${u.desc}</p>
-        ${u.items ? (
-          typeof u.items[0] === 'object' ? 
-            u.items.map(sub => `<h4>${sub.title}</h4><ul class="update-data_box">${sub.list.map(i => `<li>${i}</li>`).join('')}</ul>`).join('') :
-            `<h4>更新項目</h4><ul class="update-data_box">${u.items.map(i => `<li>${i}</li>`).join('')}</ul>`
-        ) : ''}
-      </li>
-    </ul>
-  `).join('');
+		<ul>
+			<li>
+				<h3>${u.version}${u.date ? `<small>${u.date}</small>` : ''}</h3>
+				<p>${u.desc}</p>
+				${u.items ? (
+					typeof u.items[0] === 'object' ? 
+						u.items.map(sub => `<h4>${sub.title}</h4><ul class="update-data_box">${sub.list.map(i => `<li>${i}</li>`).join('')}</ul>`).join('') :
+						`<h4>更新項目</h4><ul class="update-data_box">${u.items.map(i => `<li>${i}</li>`).join('')}</ul>`
+				) : ''}
+			</li>
+		</ul>
+	`).join('');
 }
 
 document.addEventListener('DOMContentLoaded', renderUpdateList);
