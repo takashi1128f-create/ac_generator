@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	syncRestoreEnd: (folderPath) => ipcRenderer.invoke('sync-restore-end', folderPath),
 	setProjectLoaded: (status) => ipcRenderer.send('set-project-loaded', status),
 	readCarFolderData: (carPath) => ipcRenderer.invoke('read-car-folder-data', carPath),
-        unpackKn5: (filePath) => ipcRenderer.invoke('unpack-kn5', filePath),
 	unpackKn5: (filePath) => ipcRenderer.invoke('unpack-kn5', filePath),
+	unpackKn5: (filePath) => ipcRenderer.invoke('unpack-kn5', filePath),
+	renameCarFolder: (oldPath, newName) => ipcRenderer.invoke('rename-car-folder', oldPath, newName),
 });

@@ -1248,3 +1248,17 @@ ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
 				return { success: false, error: err.message };
 		}
 });
+// フォルダ名変更
+ipcMain.handle('rename-car-folder', async (event, oldPath, newName) => {
+    const fs = require('fs');
+    const path = require('path');
+    try {
+        const parentDir = path.dirname(oldPath);
+        const newPath = path.join(parentDir, newName);
+        if (fs.existsSync(newPath)) throw new Error('変更後の名前は既に存在します');
+        fs.renameSync(oldPath, newPath);
+        return { success: true, newPath: newPath };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
