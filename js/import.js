@@ -502,203 +502,308 @@ export function load3DModel(file) {
 }
 // --- 6. メインハンドラ（ファイルのルーティングとデータ同期） ---
 // 共通：解析されたデータをシステムに適用し、切り替えを通知する
+// export function applyIniData(fileName, parsedData) {
+// 	// console.log(`[import.js] applyIniData 開始: ${fileName}`, parsedData);
+// 	// データの正規化：配列をカンマ区切りの文字列に変換する
+// 	const normalizedData = JSON.parse(JSON.stringify(parsedData));
+// 	for (let section in normalizedData) {
+// 		for (let key in normalizedData[section]) {
+// 			let val = normalizedData[section][key];
+// 			if (Array.isArray(val)) {
+// 				normalizedData[section][key] = val.join(', ');
+// 			} else if (typeof val === 'number') {
+// 				normalizedData[section][key] = val.toString();
+// 			}
+// 		}
+// 	}
+// 	let detectedExtended = false;
+// 	// car.ini のバージョンチェック
+// 	if (fileName.includes('car.ini') && normalizedData.HEADER?.VERSION === 'extended-2') {
+// 		detectedExtended = true;
+// 	}
+// 	// suspensions.ini の拡張セクションチェック
+// 	if (fileName.includes('suspensions.ini') && (normalizedData._EXTENSION || normalizedData._EXTENSION_FLEX)) {
+// 		detectedExtended = true;
+// 	}
+// 	// ★追加：aero.ini の拡張セクションチェック
+// 	if (fileName.includes('aero.ini')) {
+// 		let hasAeroExt = false;
+// 		if (normalizedData.FIN_0) {
+// 			hasAeroExt = true;
+// 		} else {
+// 			// 全セクションのキーをチェックし、ZONE_ から始まるものがあれば拡張物理と判定
+// 			for (const sec in normalizedData) {
+// 				for (const key in normalizedData[sec]) {
+// 					if (key.startsWith('ZONE_')) {
+// 						hasAeroExt = true;
+// 						break;
+// 					}
+// 				}
+// 				if (hasAeroExt) break;
+// 			}
+// 		}
+// 		if (hasAeroExt) {
+// 			detectedExtended = true;
+// 		}
+// 	}
+// 	if (detectedExtended) {
+// 		window.isExtendedPhysicsEnabled = true;
+// 		const masterSwitch = document.getElementById('extendedPhysicsSwitch'); // ★HTML側で作ったIDと一致させてください
+// 		if (masterSwitch) masterSwitch.checked = true;
+// 	}
+// 	if (!window.ini_DATA) window.ini_DATA = {};
+// 	window.ini_DATA[fileName] = normalizedData;
+// 	if (fileName.includes('suspensions.ini')) {
+// 		// console.log("[import.js] suspensions.ini を適用中...");
+// 		window.currentSuspensionData = normalizedData;
+// 		sortSus(normalizedData);
+// 		if (typeof window.syncSus === 'function') {
+// 			window.syncSus();
+// 		} else {
+// 			console.warn("[import.js] syncSus が見つかりません");
+// 		}
+// 	} else if (fileName.includes('aero.ini')) {
+// 		console.log("[aero.js] 📂 アップロードされたデータ:", normalizedData);
+// 		// 1. 土台として、ini-data.js にある「絶対に FIN_0 が入っている新品」を解析して用意します
+// 		const factoryDefault = window.parseINI(default_aero_ini);
+// 		console.log("[aero.js] 🛠️ 土台となるデフォルト:", factoryDefault);
+// 		// ★追加：合流させる前に、アップロードされた元のデータに本物の FIN_0 が存在していたかチェック
+// 		const hasRealFin0 = normalizedData.hasOwnProperty('FIN_0');
+// 		// 2. その土台の上に、アップロードされたデータを上書き合流させます
+// 		window.currentAeroData = {
+// 			...factoryDefault,
+// 			...normalizedData
+// 		};
+// 		console.log("[aero.js] ✅ 合流後の最終データ:", window.currentAeroData);
+// 		// ==========================================
+// 		// ★ここを追加：本物が無ければ初期状態を強制的に _ENABLED = false (OFF) にする
+// 		// ==========================================
+// 		if (window.currentAeroData && window.currentAeroData.FIN_0) {
+// 			if (hasRealFin0) {
+// 				window.currentAeroData.FIN_0._ENABLED = true; // 実在すれば有効
+// 			} else {
+// 				window.currentAeroData.FIN_0._ENABLED = false; // 実在しなければ無効化（半透明）
+// 			}
+// 		}
+// 		// ==========================================
+// 		if (typeof window.initAeroEditor === 'function') {
+// 			window.initAeroEditor(window.currentAeroData);
+// 		}
+// 		if (typeof window.updateAeroVisuals === 'function') {
+// 			window.updateAeroVisuals();
+// 		}
+// 		if (typeof window.requestRender === 'function') {
+// 			window.requestRender();
+// 		}
+// 	} else if (fileName.includes('tyres.ini')) {
+// 		window.currentTyreData = normalizedData;
+// 		if (typeof window.updateTyreEditorUI === 'function') {
+// 			window.updateTyreEditorUI(window.currentTyreData);
+// 		}
+// 	}
+// 	// ★追加：car.ini の処理（上書きせず既存データと合体させる）
+// 	else if (fileName.includes('car.ini')) {
+// 		// ★修正：メモリをクリアにする際、コライダーデータ（[COLLIDER_0]など）だけは保護して引き継ぐ
+// 		const preservedColliders = {};
+// 		if (window.currentCarData) {
+// 			for (const key in window.currentCarData) {
+// 				if (key.startsWith('COLLIDER_')) {
+// 					preservedColliders[key] = window.currentCarData[key];
+// 				}
+// 			}
+// 		}
+// 		window.currentCarData = {
+// 			...preservedColliders,
+// 			...normalizedData
+// 		};
+// 		if (typeof window.updateCarEditorUI === 'function') {
+// 			window.updateCarEditorUI(window.currentCarData);
+// 		}
+// 	}
+// 	// ★追加：colliders.ini の処理（既存データと合体させ、即座に描画する）
+// 	else if (fileName.includes('colliders.ini')) {
+// 		// ★修正：既存の古いコライダーデータを消去してから、新しいコライダーデータを入れる
+// 		if (window.currentCarData) {
+// 			for (const key in window.currentCarData) {
+// 				if (key.startsWith('COLLIDER_')) {
+// 					delete window.currentCarData[key];
+// 				}
+// 			}
+// 		} else {
+// 			window.currentCarData = {};
+// 		}
+// 		window.currentCarData = {
+// 			...window.currentCarData,
+// 			...normalizedData
+// 		};
+// 		if (typeof window.initColliderEditor === 'function') {
+// 			window.initColliderEditor(normalizedData);
+// 		}
+// 		if (typeof window.updateColliderVisuals === 'function') {
+// 			window.updateColliderVisuals();
+// 		}
+// 	}
+// 	// engine.ini の処理
+// 	else if (fileName.includes('engine.ini')) {
+// 		window.currentEngineData = normalizedData;
+// 		if (typeof window.initEngineEditor === 'function') {
+// 			window.initEngineEditor(window.currentEngineData);
+// 		}
+// 		if (typeof window.updateEngineGraph === 'function') {
+// 			window.updateEngineGraph();
+// 		}
+// 	}
+// 	// drivetrain.ini の処理
+// 	else if (fileName.includes('drivetrain.ini')) {
+// 		// ★追加：drivetrainがアップロードされたことを記憶するフラグ
+// 		window.isDrivetrainIniUploaded = true;
+// 		window.currentDrivetrainData = normalizedData;
+// 		if (typeof window.loadSetupIniForGears === 'function') {
+// 			window.loadSetupIniForGears(window.currentSetupData);
+// 		}
+// 		if (typeof window.initDrivetrainEditor === 'function') {
+// 			window.initDrivetrainEditor(window.currentDrivetrainData, fileName); // ファイル名を渡す
+// 		}
+// 		if (typeof window.updateGearChart === 'function') {
+// 			window.updateGearChart();
+// 		}
+// 	}
+// 	// setup.ini の処理
+// 	else if (fileName.includes('setup.ini')) {
+// 		// ★追加：setupがアップロードされたことを記憶するフラグ
+// 		window.isSetupIniUploaded = true;
+// 		// ★修正：アップロードされたデータをデフォルトデータで補完してからセットする
+// 		const completedData = window.mergeWithDefaultSetup(normalizedData);
+// 		window.currentSetupData = completedData;
+// 		// ★追加：ドラッグ＆ドロップでの読み込み時にもエディターを更新
+// 		if (typeof window.initSetupEditor === 'function') {
+// 			window.initSetupEditor(window.currentSetupData);
+// 			// --- ここから追加：表示の強制リフレッシュ ---
+// 			// 今開いている「GEAR」などのタブボタンを探して、プログラムからクリックさせます
+// 			const activeTabBtn = document.querySelector('#setup-editor .setup-tab-btn.active');
+// 			if (activeTabBtn) {
+// 				activeTabBtn.click();
+// 			}
+// 			// --- ここまで追加 ---
+// 		}
+// 		if (typeof window.loadSetupIniForGears === 'function') {
+// 			window.loadSetupIniForGears(window.currentSetupData);
+// 		}
+// 	}
+// 	// ★追加：mirrors.ini の処理
+// 	else if (fileName.includes('mirrors.ini')) {
+// 		window.currentMirrorsData = normalizedData;
+// 		console.log("[IMPORT] mirrors.ini を読み込みました", window.currentMirrorsData);
+// 		// 3Dモデルからミラーパーツを探す関数を呼ぶ
+// 		if (typeof window.updateMirrorsVisuals === 'function') {
+// 			window.updateMirrorsVisuals();
+// 		}
+// 	}
+// }
 export function applyIniData(fileName, parsedData) {
-	// console.log(`[import.js] applyIniData 開始: ${fileName}`, parsedData);
-	// データの正規化：配列をカンマ区切りの文字列に変換する
-	const normalizedData = JSON.parse(JSON.stringify(parsedData));
-	for (let section in normalizedData) {
-		for (let key in normalizedData[section]) {
-			let val = normalizedData[section][key];
-			if (Array.isArray(val)) {
-				normalizedData[section][key] = val.join(', ');
-			} else if (typeof val === 'number') {
-				normalizedData[section][key] = val.toString();
-			}
-		}
-	}
-	let detectedExtended = false;
-	// car.ini のバージョンチェック
-	if (fileName.includes('car.ini') && normalizedData.HEADER?.VERSION === 'extended-2') {
-		detectedExtended = true;
-	}
-	// suspensions.ini の拡張セクションチェック
-	if (fileName.includes('suspensions.ini') && (normalizedData._EXTENSION || normalizedData._EXTENSION_FLEX)) {
-		detectedExtended = true;
-	}
-	// ★追加：aero.ini の拡張セクションチェック
-	if (fileName.includes('aero.ini')) {
-		let hasAeroExt = false;
-		if (normalizedData.FIN_0) {
-			hasAeroExt = true;
-		} else {
-			// 全セクションのキーをチェックし、ZONE_ から始まるものがあれば拡張物理と判定
-			for (const sec in normalizedData) {
-				for (const key in normalizedData[sec]) {
-					if (key.startsWith('ZONE_')) {
-						hasAeroExt = true;
-						break;
-					}
-				}
-				if (hasAeroExt) break;
-			}
-		}
-		if (hasAeroExt) {
-			detectedExtended = true;
-		}
-	}
-	if (detectedExtended) {
-		window.isExtendedPhysicsEnabled = true;
-		const masterSwitch = document.getElementById('extendedPhysicsSwitch'); // ★HTML側で作ったIDと一致させてください
-		if (masterSwitch) masterSwitch.checked = true;
-	}
-	if (!window.ini_DATA) window.ini_DATA = {};
-	window.ini_DATA[fileName] = normalizedData;
-	if (fileName.includes('suspensions.ini')) {
-		// console.log("[import.js] suspensions.ini を適用中...");
-		window.currentSuspensionData = normalizedData;
-		sortSus(normalizedData);
-		if (typeof window.syncSus === 'function') {
-			window.syncSus();
-		} else {
-			console.warn("[import.js] syncSus が見つかりません");
-		}
-	} else if (fileName.includes('aero.ini')) {
-		console.log("[aero.js] 📂 アップロードされたデータ:", normalizedData);
-		// 1. 土台として、ini-data.js にある「絶対に FIN_0 が入っている新品」を解析して用意します
-		const factoryDefault = window.parseINI(default_aero_ini);
-		console.log("[aero.js] 🛠️ 土台となるデフォルト:", factoryDefault);
-		// ★追加：合流させる前に、アップロードされた元のデータに本物の FIN_0 が存在していたかチェック
-		const hasRealFin0 = normalizedData.hasOwnProperty('FIN_0');
-		// 2. その土台の上に、アップロードされたデータを上書き合流させます
-		window.currentAeroData = {
-			...factoryDefault,
-			...normalizedData
-		};
-		console.log("[aero.js] ✅ 合流後の最終データ:", window.currentAeroData);
-		// ==========================================
-		// ★ここを追加：本物が無ければ初期状態を強制的に _ENABLED = false (OFF) にする
-		// ==========================================
-		if (window.currentAeroData && window.currentAeroData.FIN_0) {
-			if (hasRealFin0) {
-				window.currentAeroData.FIN_0._ENABLED = true; // 実在すれば有効
-			} else {
-				window.currentAeroData.FIN_0._ENABLED = false; // 実在しなければ無効化（半透明）
-			}
-		}
-		// ==========================================
-		if (typeof window.initAeroEditor === 'function') {
-			window.initAeroEditor(window.currentAeroData);
-		}
-		if (typeof window.updateAeroVisuals === 'function') {
-			window.updateAeroVisuals();
-		}
-		if (typeof window.requestRender === 'function') {
-			window.requestRender();
-		}
-	} else if (fileName.includes('tyres.ini')) {
-		window.currentTyreData = normalizedData;
-		if (typeof window.updateTyreEditorUI === 'function') {
-			window.updateTyreEditorUI(window.currentTyreData);
-		}
-	}
-	// ★追加：car.ini の処理（上書きせず既存データと合体させる）
-	else if (fileName.includes('car.ini')) {
-		// ★修正：メモリをクリアにする際、コライダーデータ（[COLLIDER_0]など）だけは保護して引き継ぐ
-		const preservedColliders = {};
-		if (window.currentCarData) {
-			for (const key in window.currentCarData) {
-				if (key.startsWith('COLLIDER_')) {
-					preservedColliders[key] = window.currentCarData[key];
-				}
-			}
-		}
-		window.currentCarData = {
-			...preservedColliders,
-			...normalizedData
-		};
-		if (typeof window.updateCarEditorUI === 'function') {
-			window.updateCarEditorUI(window.currentCarData);
-		}
-	}
-	// ★追加：colliders.ini の処理（既存データと合体させ、即座に描画する）
-	else if (fileName.includes('colliders.ini')) {
-		// ★修正：既存の古いコライダーデータを消去してから、新しいコライダーデータを入れる
-		if (window.currentCarData) {
-			for (const key in window.currentCarData) {
-				if (key.startsWith('COLLIDER_')) {
-					delete window.currentCarData[key];
-				}
-			}
-		} else {
-			window.currentCarData = {};
-		}
-		window.currentCarData = {
-			...window.currentCarData,
-			...normalizedData
-		};
-		if (typeof window.initColliderEditor === 'function') {
-			window.initColliderEditor(normalizedData);
-		}
-		if (typeof window.updateColliderVisuals === 'function') {
-			window.updateColliderVisuals();
-		}
-	}
-	// engine.ini の処理
-	else if (fileName.includes('engine.ini')) {
-		window.currentEngineData = normalizedData;
-		if (typeof window.initEngineEditor === 'function') {
-			window.initEngineEditor(window.currentEngineData);
-		}
-		if (typeof window.updateEngineGraph === 'function') {
-			window.updateEngineGraph();
-		}
-	}
-	// drivetrain.ini の処理
-	else if (fileName.includes('drivetrain.ini')) {
-		// ★追加：drivetrainがアップロードされたことを記憶するフラグ
-		window.isDrivetrainIniUploaded = true;
-		window.currentDrivetrainData = normalizedData;
-		if (typeof window.loadSetupIniForGears === 'function') {
-			window.loadSetupIniForGears(window.currentSetupData);
-		}
-		if (typeof window.initDrivetrainEditor === 'function') {
-			window.initDrivetrainEditor(window.currentDrivetrainData, fileName); // ファイル名を渡す
-		}
-		if (typeof window.updateGearChart === 'function') {
-			window.updateGearChart();
-		}
-	}
-	// setup.ini の処理
-	else if (fileName.includes('setup.ini')) {
-		// ★追加：setupがアップロードされたことを記憶するフラグ
-		window.isSetupIniUploaded = true;
-		// ★修正：アップロードされたデータをデフォルトデータで補完してからセットする
-		const completedData = window.mergeWithDefaultSetup(normalizedData);
-		window.currentSetupData = completedData;
-		// ★追加：ドラッグ＆ドロップでの読み込み時にもエディターを更新
-		if (typeof window.initSetupEditor === 'function') {
-			window.initSetupEditor(window.currentSetupData);
-			// --- ここから追加：表示の強制リフレッシュ ---
-			// 今開いている「GEAR」などのタブボタンを探して、プログラムからクリックさせます
-			const activeTabBtn = document.querySelector('#setup-editor .setup-tab-btn.active');
-			if (activeTabBtn) {
-				activeTabBtn.click();
-			}
-			// --- ここまで追加 ---
-		}
-		if (typeof window.loadSetupIniForGears === 'function') {
-			window.loadSetupIniForGears(window.currentSetupData);
-		}
-	}
-	// ★追加：mirrors.ini の処理
-	else if (fileName.includes('mirrors.ini')) {
-		window.currentMirrorsData = normalizedData;
-		console.log("[IMPORT] mirrors.ini を読み込みました", window.currentMirrorsData);
-		// 3Dモデルからミラーパーツを探す関数を呼ぶ
-		if (typeof window.updateMirrorsVisuals === 'function') {
-			window.updateMirrorsVisuals();
-		}
-	}
+    // 1. データの正規化：数値を文字列に変換し、配列をカンマ区切りにする
+    const normalizedData = JSON.parse(JSON.stringify(parsedData));
+    for (let section in normalizedData) {
+        for (let key in normalizedData[section]) {
+            let val = normalizedData[section][key];
+            if (Array.isArray(val)) {
+                normalizedData[section][key] = val.join(', ');
+            } else if (typeof val === 'number') {
+                normalizedData[section][key] = val.toString();
+            }
+        }
+    }
+
+    // 2. 拡張物理スイッチ（extended-2等）の自動判定
+    let detectedExtended = false;
+    if (fileName.includes('car.ini') && normalizedData.HEADER?.VERSION === 'extended-2') {
+        detectedExtended = true;
+    }
+    if (fileName.includes('suspensions.ini') && (normalizedData._EXTENSION || normalizedData._EXTENSION_FLEX)) {
+        detectedExtended = true;
+    }
+    if (detectedExtended) {
+        window.isExtendedPhysicsEnabled = true;
+        const masterSwitch = document.getElementById('extendedPhysicsSwitch');
+        if (masterSwitch) masterSwitch.checked = true;
+    }
+
+    // 3. 全体データの保存（ini_DATA への格納）
+    if (!window.ini_DATA) window.ini_DATA = {};
+    window.ini_DATA[fileName] = normalizedData;
+
+    // 4. 各ファイル名に応じた「適応（配分）」処理
+    const name = fileName.toLowerCase();
+
+    if (name.includes('suspensions.ini')) {
+        window.currentSuspensionData = normalizedData;
+        sortSus(normalizedData);
+        if (typeof window.syncSus === 'function') window.syncSus();
+        if (typeof window.updateSuspensionEditorUI === 'function') window.updateSuspensionEditorUI(normalizedData);
+
+    } else if (name.includes('aero.ini')) {
+        // 土台として新品のデフォルトデータを読み込み、その上に上書き合流させます
+        const factoryDefault = window.parseINI(default_aero_ini);
+        const hasRealFin0 = normalizedData.hasOwnProperty('FIN_0');
+        window.currentAeroData = { ...factoryDefault, ...normalizedData };
+        // FIN_0 の有効・無効（ENABLED）を判定
+        if (window.currentAeroData.FIN_0) {
+            window.currentAeroData.FIN_0._ENABLED = hasRealFin0;
+        }
+        if (typeof window.initAeroEditor === 'function') window.initAeroEditor(window.currentAeroData);
+        if (typeof window.updateAeroVisuals === 'function') window.updateAeroVisuals();
+
+    } else if (name.includes('tyres.ini')) {
+        window.currentTyreData = normalizedData;
+        if (typeof window.updateTyreEditorUI === 'function') window.updateTyreEditorUI(window.currentTyreData);
+
+    } else if (name.includes('car.ini')) {
+        // コライダーデータのみ保護してから合体させます
+        const preservedColliders = {};
+        if (window.currentCarData) {
+            for (const key in window.currentCarData) {
+                if (key.startsWith('COLLIDER_')) preservedColliders[key] = window.currentCarData[key];
+            }
+        }
+        window.currentCarData = { ...preservedColliders, ...normalizedData };
+        if (typeof window.updateCarEditorUI === 'function') window.updateCarEditorUI(window.currentCarData);
+
+    } else if (name.includes('colliders.ini')) {
+        // 古いコライダーを消去してから新しいデータに入れ替えます
+        if (window.currentCarData) {
+            for (const key in window.currentCarData) {
+                if (key.startsWith('COLLIDER_')) delete window.currentCarData[key];
+            }
+        } else {
+            window.currentCarData = {};
+        }
+        window.currentCarData = { ...window.currentCarData, ...normalizedData };
+        if (typeof window.initColliderEditor === 'function') window.initColliderEditor(normalizedData);
+        if (typeof window.updateColliderVisuals === 'function') window.updateColliderVisuals();
+
+    } else if (name.includes('engine.ini')) {
+        window.currentEngineData = normalizedData;
+        if (typeof window.initEngineEditor === 'function') window.initEngineEditor(window.currentEngineData);
+        if (typeof window.updateEngineGraph === 'function') window.updateEngineGraph();
+
+    } else if (name.includes('drivetrain.ini')) {
+        window.isDrivetrainIniUploaded = true;
+        window.currentDrivetrainData = normalizedData;
+        if (typeof window.loadSetupIniForGears === 'function') window.loadSetupIniForGears(window.currentSetupData);
+        if (typeof window.initDrivetrainEditor === 'function') window.initDrivetrainEditor(window.currentDrivetrainData, fileName);
+        if (typeof window.updateGearChart === 'function') window.updateGearChart();
+
+    } else if (name.includes('setup.ini')) {
+        window.isSetupIniUploaded = true;
+        const completedData = window.mergeWithDefaultSetup(normalizedData);
+        window.currentSetupData = completedData;
+        if (typeof window.initSetupEditor === 'function') window.initSetupEditor(window.currentSetupData);
+        if (typeof window.loadSetupIniForGears === 'function') window.loadSetupIniForGears(window.currentSetupData);
+
+    } else if (name.includes('mirrors.ini')) {
+        window.currentMirrorsData = normalizedData;
+        if (typeof window.updateMirrorsVisuals === 'function') window.updateMirrorsVisuals();
+    }
 }
 /**
  * 複数ファイルアップロード時のメインエントリポイント
@@ -1105,10 +1210,21 @@ export async function handleMultiFileUpload(files) {
 
     // 4. 設定解析
     for (const ini of tasks.iniFiles) {
-        const content = ini.content || await readTextFile(ini);
-        const parsedData = parseINI(content);
-        applyIniData(ini.name, parsedData);
+    console.log(`📝 [適応] 解析中: ${ini.name}`);
+    const content = (ini.content !== undefined) ? ini.content : await readTextFile(ini);
+
+    // 💡 事実：.lut ファイルは INI ではないため、専用のパーサーへ直接渡します
+    if (ini.name.toLowerCase().endsWith('.lut')) {
+        if (ini.name.toLowerCase() === 'power.lut' && typeof window.parsePowerLut === 'function') {
+            window.parsePowerLut(content);
+        }
+        continue; // INI解析へは進ませない
     }
+
+    // 通常の INI 解析
+    const parsedData = parseINI(content);
+    applyIniData(ini.name, parsedData);
+}
 
     console.log("✅ 全ての工程が正常に完了しました。");
 }
