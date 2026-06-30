@@ -1,31 +1,4 @@
 //おまとめテスト
-/**
- * 読み込みに失敗した特定のテクスチャ（exh.dds等）のエラーを非表示にする
- */
-(function() {
-	const originalError = console.error;
-	const originalWarn = console.warn;
-
-	// console.error（赤いエラー）を監視
-	console.error = function(...args) {
-		const message = args.join(' ');
-		// 「exh.dds」や「ERR_FILE_NOT_FOUND」が含まれる場合は、無視して何もしない
-		if (message.includes('exh.dds') || message.includes('ERR_FILE_NOT_FOUND')) {
-			return; 
-		}
-		originalError.apply(console, args);
-	};
-
-	// console.warn（黄色い警告）を監視
-	console.warn = function(...args) {
-		const message = args.join(' ');
-		// 警告も同様にフィルタリング
-		if (message.includes('exh.dds')) {
-			return;
-		}
-		originalWarn.apply(console, args);
-	};
-})();
 window.currentProject = {
 	projectName: "名称未設定",
 	environment: {
