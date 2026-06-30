@@ -810,23 +810,25 @@ ipcMain.handle('delete-project', async (event, projectPath) => {
 	}
 });
 ipcMain.handle('unpack-acd', async (event, acdPath) => {
-    const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe'); // 既存の定義を利用
+    // 💡 過去に使用した変数名 sdkExe (kunossdk.exe) をそのまま使用します [cite: 500]
+    const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
     const carDir = path.dirname(acdPath);
     const outputDir = path.join(carDir, 'data');
 
     return new Promise((resolve) => {
         if (!fs.existsSync(sdkExe)) {
-            resolve({ success: false, error: "kunossdk.exe が見つかりません。" });
+            resolve({ success: false, error: "展開ツール(kunossdk.exe)が見つかりません。" });
             return;
         }
 
-        // 💡 事実：kunossdk.exe は ACD を渡すだけで data フォルダを生成します
-        // 💡 修正：バックティック (`) を使い、変数を正しくコマンドへ流し込みます
+        // 💡 事実：kunossdk.exe は acdPath を渡すだけで自動的に data フォルダを作ります
+        // 💡 バックティック (`) を使うことで、変数の値を正しくコマンドへ流し込みます
         const command = `"${sdkExe}" "${acdPath}"`;
 
         exec(command, (error, stdout, stderr) => {
-            // 物理的な data フォルダが生成されたかどうかだけで成否を判定（最も確実）
+            // 物理的な data フォルダが生成されたかどうかで成功を判定します
             if (fs.existsSync(outputDir)) {
+                // 展開された INI/LUT ファイルを読み込んでフロントエンドへ返します
                 const files = fs.readdirSync(outputDir)
                     .filter(f => f.endsWith('.ini') || f.endsWith('.lut'))
                     .map(f => {

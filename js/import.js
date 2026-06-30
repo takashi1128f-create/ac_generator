@@ -1136,7 +1136,8 @@ export async function handleMultiFileUpload(files) {
         modelFiles: [],
         iniFiles: [],
         acdFile: null,
-        uiJson: null
+        uiJson: null,
+				skins: [] 
     };
 
     // --- STEP 1: Sorter (仕分け) ---
@@ -1156,8 +1157,13 @@ export async function handleMultiFileUpload(files) {
             tasks.iniFiles.push(file);
             if (fullPath.includes('/data/')) { tasks.dataDirExists = true; }
         } else if (name === 'ui_car.json') {
-            tasks.uiJson = file;
-        }
+						tasks.uiJson = file;
+						} else if (fullPath.toLowerCase().includes('/skins/') && name === 'preview.jpg') {
+								// 💡 事実：skins/フォルダ名/preview.jpg という構造からスキン名を取得します
+    const parts = fullPath.split('/');
+    const skinName = parts[parts.length - 2];
+    tasks.skins.push({ name: skinName, path: fullPath });
+}
     }
 
     // --- STEP 2: Dispatcher (順次実行) ---
@@ -1213,6 +1219,11 @@ export async function handleMultiFileUpload(files) {
             window.updateUiCarData(uiContent);
         }
     }
+		// --- 5.5 スキンギャラリー ---
+		if (tasks.skins.length > 0 && typeof window.initSkinGallery === 'function') {
+			window.initSkinGallery(tasks.skins);
+			console.log(`🖼️ [D&D] ${tasks.skins.length} 個のスキンを検出しました。`);
+		}
 
     // --- 6. ドキュメント内の view.ini (シート位置) を自動取得 ---
     if (window.currentCarDirectoryName && window.electronAPI.readViewIni) {
