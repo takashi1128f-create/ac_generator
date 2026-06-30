@@ -1051,9 +1051,7 @@ export async function handleMultiFileUpload(files) {
 
     // --- STEP 1: Sorter (仕分け) ---
     for (const file of fileArray) {
-        // PC環境を問わず認識できるよう、名前を小文字化して比較
         const name = file.name.toLowerCase();
-        // パス区切り文字を統一（Windows環境での認識漏れを防ぐ）
         const fullPath = (file.path || "").replace(/\\/g, '/');
 
         if (name === 'data.acd') {
@@ -1066,10 +1064,7 @@ export async function handleMultiFileUpload(files) {
             tasks.modelFiles.push(file);
         } else if (['.ini', '.lut', '.rto'].some(ext => name.endsWith(ext))) {
             tasks.iniFiles.push(file);
-            // 物理的な data フォルダの中身があるかチェック
-            if (fullPath.includes('/data/')) {
-                tasks.dataDirExists = true;
-            }
+            if (fullPath.includes('/data/')) { tasks.dataDirExists = true; }
         } else if (name === 'ui_car.json') {
             tasks.uiJson = file;
         }
@@ -1078,64 +1073,38 @@ export async function handleMultiFileUpload(files) {
     // --- STEP 2: Dispatcher (順次実行) ---
     console.log("🚀 [Phase 2: Dispatcher] 順次読み込みを開始します...");
 
-    // 1. 車名の確定
-    if (tasks.carRoot) {
-        window.currentCarDirectoryName = tasks.carRoot;
-    }
+    if (tasks.carRoot) window.currentCarDirectoryName = tasks.carRoot;
 
-    // 2. KN5の展開 (FBXを物理的に生成するのを確実に待つ)
-    // ※209行目にあった重複したループは削除し、ここ1箇所にまとめます
+    // 1. KN5展開
     for (const kn5 of tasks.kn5ToUnpack) {
-        console.log(`📦 KN5展開中: ${kn5.name}`);
-        const res = await window.electronAPI.unpackKn5(kn5.path); 
+        const res = await window.electronAPI.unpackKn5(kn5.path);
         if (res.success) {
             const fileName = res.fbxPath.split(/[\\\/]/).pop();
             tasks.modelFiles.push({ name: fileName, path: res.fbxPath, isModel: true });
         }
     }
 
-    // 3. ★設置場所：data.acd の展開
-    // 物理的な data フォルダがなく、かつ acd ファイルがある場合のみ実行
+    // 2. ACD展開 (物理フォルダがない時のみ)
     if (!tasks.dataDirExists && tasks.acdFile) {
-				console.log("📦 [ACD] data.acd の展開を試みます...");
-				
-				// 💡 訂正ポイント：
-				// ブラウザの File オブジェクトから取得できる path をそのまま使用します。
-				// replace(/\\/g, '/') 等の加工を「渡す直前」には行わず、OS標準のパスで渡します。
-				const res = await window.electronAPI.unpackAcd(tasks.acdFile.path);
-				
-				if (res.success) {
-						console.log("✅ [ACD] 展開成功");
-						tasks.dataDirExists = true;
-						if (res.files && res.files.length > 0) {
-								// 重複を避けるため、既存の tasks.iniFiles と合体
-								tasks.iniFiles.push(...res.files);
-						}
-				} else {
-						// コンソールログ7で見られたようなエラー内容を表示
-						console.error("❌ [ACD] 展開失敗:", res.error);
-				}
-		}
+        console.log("📦 [ACD] kunossdk.exe で展開します...");
+        const res = await window.electronAPI.unpackAcd(tasks.acdFile.path);
+        if (res.success) {
+            tasks.dataDirExists = true;
+            if (res.files) tasks.iniFiles.push(...res.files);
+        }
+    }
 
-    // 4. 3Dモデルの描写
+    // 3. 3Dモデル描写
     for (const model of tasks.modelFiles) {
-				console.log(`🎮 3Dモデル読み込み中: ${model.name}`);
-				
-				// Fileオブジェクトを直接使うのではなく、パスがわかっている場合は
-				// 常に実績のある「loadModelByPath (絶対パス経由)」を使わせるように強制します。
-				if (model.path && typeof window.loadModelByPath === 'function') {
-						console.log(`🔗 パス経由で安全に読み込みます: ${model.path}`);
-						await window.loadModelByPath(model.path);
-				} else {
-						// 万が一パスがない場合のみフォールバック（ここは通常通りませんが念のため）
-						await load3DModel(model);
-				}
-		}
+        if (model.path && typeof window.loadModelByPath === 'function') {
+            await window.loadModelByPath(model.path);
+        } else {
+            await load3DModel(model);
+        }
+    }
 
-    // 5. 設定ファイルの解析 (ACDから展開されたものも含めて一括処理)
+    // 4. 設定解析
     for (const ini of tasks.iniFiles) {
-        console.log(`📝 INI解析中: ${ini.name}`);
-        // Electron側でファイルを読み込んで content をセットして返すようにすると安全です
         const content = ini.content || await readTextFile(ini);
         const parsedData = parseINI(content);
         applyIniData(ini.name, parsedData);
