@@ -1170,6 +1170,7 @@ export async function handleMultiFileUpload(files) {
     console.log("🚀 [Phase 2: Dispatcher] 順次読み込みを開始します...");
 
     if (tasks.carRoot) window.currentCarDirectoryName = tasks.carRoot;
+		console.log("DEBUG: KN5処理開始...");
 
     // 1. KN5展開
     for (const kn5 of tasks.kn5ToUnpack) {
@@ -1193,7 +1194,7 @@ export async function handleMultiFileUpload(files) {
             if (res.files) tasks.iniFiles.push(...res.files);
         }
     }
-
+		console.log("DEBUG: モデル読み込み開始...");
     // 3. 3Dモデル描写
     for (const model of tasks.modelFiles) {
         if (model.path && typeof window.loadModelByPath === 'function') {
@@ -1235,7 +1236,7 @@ export async function handleMultiFileUpload(files) {
             console.log("✅ 視点設定を適用しました。");
         }
     }
-
+		console.log("DEBUG: INI/LUT解析開始...");
     // --- 7. 設定ファイルの解析 (INI/LUT) ---
     for (const ini of tasks.iniFiles) {
         // 空ファイル対策を施した安定版 [cite: 874, 929]
@@ -1251,31 +1252,30 @@ export async function handleMultiFileUpload(files) {
         const parsedData = parseINI(content);
         applyIniData(ini.name, parsedData);
     }
-
+		console.log("DEBUG: 全工程終了、関数を抜けます");
     // すべて終わったらスペック表を最終更新 [cite: 143]
     if (typeof window.updateSpecsFromPhysics === 'function') {
         window.updateSpecsFromPhysics();
     }
     console.log("✅ 全てのインポート工程が正常に完了しました。");
     // 4. 設定解析
-    for (const ini of tasks.iniFiles) {
-    console.log(`📝 [適応] 解析中: ${ini.name}`);
-    const content = (ini.content !== undefined) ? ini.content : await readTextFile(ini);
+    // for (const ini of tasks.iniFiles) {
+    // console.log(`📝 [適応] 解析中: ${ini.name}`);
+    // const content = (ini.content !== undefined) ? ini.content : await readTextFile(ini);
 
-    // 💡 事実：.lut ファイルは INI ではないため、専用のパーサーへ直接渡します
-    if (ini.name.toLowerCase().endsWith('.lut')) {
-        if (ini.name.toLowerCase() === 'power.lut' && typeof window.parsePowerLut === 'function') {
-            window.parsePowerLut(content);
-        }
-        continue; // INI解析へは進ませない
-    }
-		
+		// 		// 💡 事実：.lut ファイルは INI ではないため、専用のパーサーへ直接渡します
+		// 		if (ini.name.toLowerCase().endsWith('.lut')) {
+		// 				if (ini.name.toLowerCase() === 'power.lut' && typeof window.parsePowerLut === 'function') {
+		// 						window.parsePowerLut(content);
+		// 				}
+		// 				continue; // INI解析へは進ませない
+		// 		}
+				
 
-    // 通常の INI 解析
-    const parsedData = parseINI(content);
-    applyIniData(ini.name, parsedData);
-}
-
+		// 		// 通常の INI 解析
+		// 		const parsedData = parseINI(content);
+		// 		applyIniData(ini.name, parsedData);
+		// }
     console.log("✅ 全ての工程が正常に完了しました。");
 }
 

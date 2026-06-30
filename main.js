@@ -1129,22 +1129,26 @@ document.addEventListener('drop', async (e) => {
 	}
 	if (filesToProcess.length > 0) {
 		console.log(`[D&D] ${filesToProcess.length}個のファイルを検出しました。読み込みを開始します。`);
-		// import.js の一括読み込み機能（handleMultiFileUpload）に取得したファイルの束をそのまま流し込む！
-		import('./js/import.js').then(module => {
+		try {
+			const module = await import('./js/import.js');
 			if (module.handleMultiFileUpload) {
-				module.handleMultiFileUpload(filesToProcess).then(() => {
-					window.isMultiUploading = false;
-					// ★追加：すべての読み込みが完了した後に、物理スペックを最終確定させる
-					if (typeof window.updateSpecsFromPhysics === 'function') {
-						window.updateSpecsFromPhysics();
-					}
-					console.log("[D&D] すべての読み込みが完了しました！");
-					if (typeof window.updateSpecsDisplay === 'function') {
-						window.updateSpecsDisplay();
-					}
-				});
+				await module.handleMultiFileUpload(filesToProcess);
+				
+				// ★追加：すべての読み込みが完了した後に、物理スペックを最終確定させる
+				if (typeof window.updateSpecsFromPhysics === 'function') {
+					window.updateSpecsFromPhysics();
+				}
+				console.log("[D&D] すべての読み込みが完了しました！");
+				if (typeof window.updateSpecsDisplay === 'function') {
+					window.updateSpecsDisplay();
+				}
 			}
-		});
+		} catch (err) {
+			console.error("❌ ファイル読み込み中にエラーが発生しましたが、ロックを解除します:", err);
+		} finally {
+			// 成功しても失敗（ProgressEvent error等）しても、絶対に false に戻す
+			window.isMultiUploading = false;
+		}
 	} else {
 		window.isMultiUploading = false;
 	}
