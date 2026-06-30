@@ -1,4 +1,31 @@
 //おまとめテスト
+/**
+ * 読み込みに失敗した特定のテクスチャ（exh.dds等）のエラーを非表示にする
+ */
+(function() {
+	const originalError = console.error;
+	const originalWarn = console.warn;
+
+	// console.error（赤いエラー）を監視
+	console.error = function(...args) {
+		const message = args.join(' ');
+		// 「exh.dds」や「ERR_FILE_NOT_FOUND」が含まれる場合は、無視して何もしない
+		if (message.includes('exh.dds') || message.includes('ERR_FILE_NOT_FOUND')) {
+			return; 
+		}
+		originalError.apply(console, args);
+	};
+
+	// console.warn（黄色い警告）を監視
+	console.warn = function(...args) {
+		const message = args.join(' ');
+		// 警告も同様にフィルタリング
+		if (message.includes('exh.dds')) {
+			return;
+		}
+		originalWarn.apply(console, args);
+	};
+})();
 window.currentProject = {
 	projectName: "名称未設定",
 	environment: {
@@ -1130,24 +1157,19 @@ document.addEventListener('drop', async (e) => {
 	if (filesToProcess.length > 0) {
 		console.log(`[D&D] ${filesToProcess.length}個のファイルを検出しました。読み込みを開始します。`);
 		try {
+			console.log("🚀 [Phase A] 読み込みプロセスに入りました (isMultiUploading=true)");
+			window.isMultiUploading = true;
+
 			const module = await import('./js/import.js');
 			if (module.handleMultiFileUpload) {
 				await module.handleMultiFileUpload(filesToProcess);
-				
-				// ★追加：すべての読み込みが完了した後に、物理スペックを最終確定させる
-				if (typeof window.updateSpecsFromPhysics === 'function') {
-					window.updateSpecsFromPhysics();
-				}
-				console.log("[D&D] すべての読み込みが完了しました！");
-				if (typeof window.updateSpecsDisplay === 'function') {
-					window.updateSpecsDisplay();
-				}
+				console.log("✅ [Phase B] handleMultiFileUpload が正常終了しました");
 			}
 		} catch (err) {
-			console.error("❌ ファイル読み込み中にエラーが発生しましたが、ロックを解除します:", err);
+			console.error("❌ [ERROR] 読み込み中に致命的なエラーを検知しました:", err);
 		} finally {
-			// 成功しても失敗（ProgressEvent error等）しても、絶対に false に戻す
 			window.isMultiUploading = false;
+			console.log("🏁 [Phase C] 旗(isMultiUploading)を false に戻しました");
 		}
 	} else {
 		window.isMultiUploading = false;

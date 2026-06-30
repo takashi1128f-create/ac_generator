@@ -42,7 +42,7 @@ window.updateMirrorsVisuals = function() {
 				// ★ここが要！ 3Dモデルの中から部品名（NAME）で検索をかける
 				const mirrorPart = model.getObjectByName(mirrorName);
 				if (mirrorPart) {
-					console.log(`[MIRRORS] 🪞 ミラー部品を発見しました: ${mirrorName}`);
+					// console.log(`[MIRRORS] 🪞 ミラー部品を発見しました: ${mirrorName}`);
 					// 発見した部品を赤い枠線（BoxHelper）で囲んでハイライトする
 					const helper = new THREE.BoxHelper(mirrorPart, 0xff0000);
 					scene.add(helper);

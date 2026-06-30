@@ -1028,6 +1028,11 @@ export async function handleMultiFileUpload(files) {
 	console.log("DEBUG: INI/LUT解析開始...");
 	// --- 7. 設定ファイルの解析 (INI/LUT) ---
 	for (const ini of tasks.iniFiles) {
+		// ファイルサイズが0の場合や、FBX展開時に生成される不要ファイル(.fbx.ini)は読み飛ばす
+		if (ini.size === 0 || (ini.name && ini.name.toLowerCase().includes('.fbx.ini'))) {
+			// console.warn(`⚠️ [SKIP] 読み取り不可または不要なファイルをスキップします: ${ini.name}`);
+			continue;
+		}
 		// 空ファイル対策を施した安定版 [cite: 874, 929]
 		const content = (ini.content !== undefined) ? ini.content : await readTextFile(ini);
 		if (ini.name.toLowerCase().endsWith('.lut')) {
@@ -1044,22 +1049,6 @@ export async function handleMultiFileUpload(files) {
 	if (typeof window.updateSpecsFromPhysics === 'function') {
 		window.updateSpecsFromPhysics();
 	}
-	console.log("✅ 全てのインポート工程が正常に完了しました。");
-	// 4. 設定解析
-	// for (const ini of tasks.iniFiles) {
-	// console.log(`📝 [適応] 解析中: ${ini.name}`);
-	// const content = (ini.content !== undefined) ? ini.content : await readTextFile(ini);
-	// 		// 💡 事実：.lut ファイルは INI ではないため、専用のパーサーへ直接渡します
-	// 		if (ini.name.toLowerCase().endsWith('.lut')) {
-	// 				if (ini.name.toLowerCase() === 'power.lut' && typeof window.parsePowerLut === 'function') {
-	// 						window.parsePowerLut(content);
-	// 				}
-	// 				continue; // INI解析へは進ませない
-	// 		}
-	// 		// 通常の INI 解析
-	// 		const parsedData = parseINI(content);
-	// 		applyIniData(ini.name, parsedData);
-	// }
 	console.log("✅ 全ての工程が正常に完了しました。");
 }
 // サスペンションINI処理
