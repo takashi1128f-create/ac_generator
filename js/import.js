@@ -1196,7 +1196,56 @@ export async function handleMultiFileUpload(files) {
             await load3DModel(model);
         }
     }
+		// data フォルダ、または展開された acd 内に ui フォルダがあればロゴを表示
+    if (window.currentDataFolderPath) {
+        const dataPath = window.currentDataFolderPath.replace(/\\/g, '/');
+        // 親フォルダのパスを渡して badge.png を探しに行かせる [cite: 300]
+        const parentPath = dataPath.substring(0, dataPath.lastIndexOf('/'));
+        if (typeof window.updateBadgeImage === 'function') {
+            window.updateBadgeImage(parentPath);
+        }
+    }
 
+    // ui_car.json が見つかっていれば適用 [cite: 301]
+    if (tasks.uiJson) {
+        const uiContent = await readTextFile(tasks.uiJson);
+        if (typeof window.updateUiCarData === 'function') {
+            window.updateUiCarData(uiContent);
+        }
+    }
+
+    // --- 6. ドキュメント内の view.ini (シート位置) を自動取得 ---
+    if (window.currentCarDirectoryName && window.electronAPI.readViewIni) {
+        console.log("💺 マイドキュメントから視点設定を読み込みます...");
+        const viewRes = await window.electronAPI.readViewIni(window.currentCarDirectoryName);
+        if (viewRes.success) {
+            const parsedView = parseINI(viewRes.content);
+            applyIniData('view.ini', parsedView); // 既存の applyIniData で処理
+            console.log("✅ 視点設定を適用しました。");
+        }
+    }
+
+    // --- 7. 設定ファイルの解析 (INI/LUT) ---
+    for (const ini of tasks.iniFiles) {
+        // 空ファイル対策を施した安定版 [cite: 874, 929]
+        const content = (ini.content !== undefined) ? ini.content : await readTextFile(ini);
+
+        if (ini.name.toLowerCase().endsWith('.lut')) {
+            if (ini.name.toLowerCase() === 'power.lut' && typeof window.parsePowerLut === 'function') {
+                window.parsePowerLut(content);
+            }
+            continue;
+        }
+
+        const parsedData = parseINI(content);
+        applyIniData(ini.name, parsedData);
+    }
+
+    // すべて終わったらスペック表を最終更新 [cite: 143]
+    if (typeof window.updateSpecsFromPhysics === 'function') {
+        window.updateSpecsFromPhysics();
+    }
+    console.log("✅ 全てのインポート工程が正常に完了しました。");
     // 4. 設定解析
     for (const ini of tasks.iniFiles) {
     console.log(`📝 [適応] 解析中: ${ini.name}`);
@@ -1209,6 +1258,7 @@ export async function handleMultiFileUpload(files) {
         }
         continue; // INI解析へは進ませない
     }
+		
 
     // 通常の INI 解析
     const parsedData = parseINI(content);
