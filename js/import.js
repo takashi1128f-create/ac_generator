@@ -1039,36 +1039,35 @@ export async function handleMultiFileUpload(files) {
     const fileArray = Array.from(files);
     console.log("📂 [Phase 1: Sorter] ファイルスキャンを開始します...");
 
-    // --- STEP 1: 全ファイルの事実確認（Sorter） ---
     const tasks = {
-        carRoot: null,    // KN5から特定する車両フォルダ名
-        dataDirExists: false, // 物理的な data フォルダが存在するか
-        kn5ToUnpack: [],  // 展開待ちのKN5
-        modelFiles: [],   // 直接読み込むFBX/GLB
-        iniFiles: [],     // 解析待ちのINI/LUT
-				acdFile: null,    // data.acd を入れる
-        uiJson: null      // ui_car.json
+        carRoot: null,
+        dataDirExists: false,
+        kn5ToUnpack: [],
+        modelFiles: [],
+        iniFiles: [],
+        acdFile: null,
+        uiJson: null
     };
 
-    // 1回ループして「Windows上の事実」を分類する
+    // --- STEP 1: Sorter (仕分け) ---
     for (const file of fileArray) {
+        // PC環境を問わず認識できるよう、名前を小文字化して比較
         const name = file.name.toLowerCase();
-				if (name === 'data.acd') {
-					tasks.acdFile = file; // data.acd を確保
-				}
-        const fullPath = file.path || "";
+        // パス区切り文字を統一（Windows環境での認識漏れを防ぐ）
+        const fullPath = (file.path || "").replace(/\\/g, '/');
 
-        if (name.endsWith('.kn5') && name !== 'collider.kn5') {
+        if (name === 'data.acd') {
+            tasks.acdFile = file;
+        } else if (name.endsWith('.kn5') && name !== 'collider.kn5') {
             tasks.kn5ToUnpack.push(file);
-            // KN5の場所から「車名（フォルダ名）」を最優先で特定 [cite: 611]
-            const parts = fullPath.replace(/\\/g, '/').split('/');
+            const parts = fullPath.split('/');
             tasks.carRoot = parts[parts.length - 2];
         } else if (['.fbx', '.glb', '.gltf'].some(ext => name.endsWith(ext))) {
             tasks.modelFiles.push(file);
         } else if (['.ini', '.lut', '.rto'].some(ext => name.endsWith(ext))) {
             tasks.iniFiles.push(file);
-            // dataフォルダの実在判定：pathに "/data/" が含まれているかチェック
-            if (fullPath.toLowerCase().includes('\\data\\') || fullPath.toLowerCase().includes('/data/')) {
+            // 物理的な data フォルダの中身があるかチェック
+            if (fullPath.includes('/data/')) {
                 tasks.dataDirExists = true;
             }
         } else if (name === 'ui_car.json') {
@@ -1076,31 +1075,7 @@ export async function handleMultiFileUpload(files) {
         }
     }
 
-    // 【重要】ここで認識結果をテーブルで表示（不具合調査用）
-    console.table({
-        "車名特定": tasks.carRoot || "未特定",
-        "dataフォルダ検出": tasks.dataDirExists ? "YES" : "NO (要ACD展開検討)",
-        "KN5数": tasks.kn5ToUnpack.length,
-        "INI/LUT数": tasks.iniFiles.length,
-        "モデルファイル数": tasks.modelFiles.length
-    });
-		for (const kn5 of tasks.kn5ToUnpack) {
-			console.log(`📦 KN5展開中: ${kn5.name}`);
-			const res = await window.electronAPI.unpackKn5(kn5.path); 
-			if (res.success) {
-					// path.basename の代わりに文字列操作を使用
-					const fileName = res.fbxPath.split(/[\\\/]/).pop(); 
-					console.log(`✅ [.kn5] 展開成功、FBXをモデルタスクへ追加: ${fileName}`);
-					
-					tasks.modelFiles.push({ 
-							name: fileName, 
-							path: res.fbxPath, 
-							isModel: true 
-					});
-			}
-		}
-
-    // --- STEP 2: 順次実行（Dispatcher） ---
+    // --- STEP 2: Dispatcher (順次実行) ---
     console.log("🚀 [Phase 2: Dispatcher] 順次読み込みを開始します...");
 
     // 1. 車名の確定
@@ -1108,32 +1083,62 @@ export async function handleMultiFileUpload(files) {
         window.currentCarDirectoryName = tasks.carRoot;
     }
 
-    // 2. KN5の展開（FBXができるのを確実に待つ）
+    // 2. KN5の展開 (FBXを物理的に生成するのを確実に待つ)
+    // ※209行目にあった重複したループは削除し、ここ1箇所にまとめます
     for (const kn5 of tasks.kn5ToUnpack) {
         console.log(`📦 KN5展開中: ${kn5.name}`);
-        const res = await window.electronAPI.unpackKn5(kn5.path); // [cite: 615]
+        const res = await window.electronAPI.unpackKn5(kn5.path); 
         if (res.success) {
-            // 展開成功後、生成されたFBXをモデルタスクへ追加
-            tasks.modelFiles.push({ name: path.basename(res.fbxPath), path: res.fbxPath, isModel: true });
+            const fileName = res.fbxPath.split(/[\\\/]/).pop();
+            tasks.modelFiles.push({ name: fileName, path: res.fbxPath, isModel: true });
         }
     }
 
-    // 3. 3Dモデルの描写（一番重い処理を先に終わらせる）
+    // 3. ★設置場所：data.acd の展開
+    // 物理的な data フォルダがなく、かつ acd ファイルがある場合のみ実行
+    if (!tasks.dataDirExists && tasks.acdFile) {
+				console.log("📦 [ACD] data.acd の展開を試みます...");
+				
+				// 💡 訂正ポイント：
+				// ブラウザの File オブジェクトから取得できる path をそのまま使用します。
+				// replace(/\\/g, '/') 等の加工を「渡す直前」には行わず、OS標準のパスで渡します。
+				const res = await window.electronAPI.unpackAcd(tasks.acdFile.path);
+				
+				if (res.success) {
+						console.log("✅ [ACD] 展開成功");
+						tasks.dataDirExists = true;
+						if (res.files && res.files.length > 0) {
+								// 重複を避けるため、既存の tasks.iniFiles と合体
+								tasks.iniFiles.push(...res.files);
+						}
+				} else {
+						// コンソールログ7で見られたようなエラー内容を表示
+						console.error("❌ [ACD] 展開失敗:", res.error);
+				}
+		}
+
+    // 4. 3Dモデルの描写
     for (const model of tasks.modelFiles) {
-        console.log(`🎮 3Dモデル読み込み中: ${model.name}`);
-        if (model.isModel) {
-            await window.loadModelByPath(model.path); // [cite: 619]
-        } else {
-            await load3DModel(model); // [cite: 602]
-        }
-    }
+				console.log(`🎮 3Dモデル読み込み中: ${model.name}`);
+				
+				// Fileオブジェクトを直接使うのではなく、パスがわかっている場合は
+				// 常に実績のある「loadModelByPath (絶対パス経由)」を使わせるように強制します。
+				if (model.path && typeof window.loadModelByPath === 'function') {
+						console.log(`🔗 パス経由で安全に読み込みます: ${model.path}`);
+						await window.loadModelByPath(model.path);
+				} else {
+						// 万が一パスがない場合のみフォールバック（ここは通常通りませんが念のため）
+						await load3DModel(model);
+				}
+		}
 
-    // 4. 設定ファイルの解析（モデル配置が終わってから数値を流し込む）
+    // 5. 設定ファイルの解析 (ACDから展開されたものも含めて一括処理)
     for (const ini of tasks.iniFiles) {
         console.log(`📝 INI解析中: ${ini.name}`);
+        // Electron側でファイルを読み込んで content をセットして返すようにすると安全です
         const content = ini.content || await readTextFile(ini);
-        // ここで順次 applyIniData 等を実行
-        // (省略: 既存の applyIniData 呼び出しロジック)
+        const parsedData = parseINI(content);
+        applyIniData(ini.name, parsedData);
     }
 
     console.log("✅ 全ての工程が正常に完了しました。");

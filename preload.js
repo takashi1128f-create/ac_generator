@@ -47,4 +47,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	readCarFolderData: (carPath) => ipcRenderer.invoke('read-car-folder-data', carPath),
 	unpackKn5: (filePath) => ipcRenderer.invoke('unpack-kn5', filePath),
 	renameCarFolder: (oldPath, newName) => ipcRenderer.invoke('rename-car-folder', oldPath, newName),
+	unpackAcd: (filePath) => ipcRenderer.invoke('unpack-acd', filePath),
 });

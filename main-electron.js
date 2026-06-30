@@ -809,7 +809,48 @@ ipcMain.handle('delete-project', async (event, projectPath) => {
 		};
 	}
 });
+const QUICKBMS_EXE = path.join(__dirname, 'tools-folder', 'lib', 'quickbms.exe');
+const GETDATA_BMS = path.join(__dirname, 'tools-folder', 'lib', 'getdata.bms');
 
+ipcMain.handle('unpack-acd', async (event, acdPath) => {
+    const carDir = path.dirname(acdPath); // 車両フォルダ (D:\フォント...等)
+    const acdFileName = path.basename(acdPath); // "data.acd"
+    const outputDirName = 'data'; // 出力フォルダ名
+
+    return new Promise((resolve) => {
+        if (!fs.existsSync(QUICKBMS_EXE) || !fs.existsSync(GETDATA_BMS)) {
+            resolve({ success: false, error: "展開ツール(QuickBMS)が見つかりません。" });
+            return;
+        }
+
+        // 💡 訂正ポイント：
+        // パスの文字化けを防ぐため、絶対パスではなく「ファイル名のみ」で実行します。
+        // そのために、exec のオプションで cwd (作業ディレクトリ) を車両フォルダに設定します。
+        const command = `"${QUICKBMS_EXE}" -o "${GETDATA_BMS}" "${acdFileName}" "${outputDirName}"`;
+
+        exec(command, { cwd: carDir }, (error, stdout, stderr) => {
+            const finalDataPath = path.join(carDir, outputDirName);
+            
+            if (!error && fs.existsSync(finalDataPath)) {
+                // 展開されたファイルを読み込む処理
+                const files = fs.readdirSync(finalDataPath)
+                    .filter(f => f.endsWith('.ini') || f.endsWith('.lut'))
+                    .map(f => {
+                        const fullPath = path.join(finalDataPath, f);
+                        return { 
+                            name: f, 
+                            path: fullPath,
+                            content: fs.readFileSync(fullPath, 'utf8') 
+                        };
+                    });
+                resolve({ success: true, path: finalDataPath, files: files });
+            } else {
+                // エラー内容を詳細に返す
+                resolve({ success: false, error: stderr || stdout || "展開に失敗しました。" });
+            }
+        });
+    });
+});
 function saveToRecent(name, filePath) {
 	let list = [];
 	if (fs.existsSync(PATHS.recent)) {
