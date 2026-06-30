@@ -1342,20 +1342,25 @@ document.addEventListener('DOMContentLoaded', () => {
 		e.preventDefault(); // これがないとドロップが許可されない
 	});
 	window.addEventListener('drop', async (e) => {
-		e.preventDefault(); // ブラウザが勝手にファイルを開くのを防ぐ
+		e.preventDefault();
 		const files = e.dataTransfer.files;
 		if (files && files.length > 0) {
-			window.isMultiUploading = true;
-			// 取得したファイルを既存の処理に流し込む
-			await handleMultiFileUpload(Array.from(files));
-			window.isMultiUploading = false;
+			try {
+				window.isMultiUploading = true;
+				await handleMultiFileUpload(Array.from(files));
+			} catch (err) {
+				console.error("Drop import failed:", err);
+			} finally {
+				// 成功しても失敗しても、必ず false に戻す
+				window.isMultiUploading = false;
+			}
 		}
 	});
 	// まとめてアップロード（マルチ）用の処理
 	const multiFileInput = document.getElementById('multiFileUpload');
 	if (multiFileInput) {
-		multiFileInput.addEventListener('change', async (e) => {
-			window.isMultiUploading = true;
+		// multiFileInput.addEventListener('change', async (e) => {
+		// 	window.isMultiUploading = true;
 			// // ★追加：LIVE SYNC の ON/OFF 切り替え時のデータ復元処理
 			// 	const liveSyncSwitch = document.getElementById('liveSyncSwitch');
 			// 	if (liveSyncSwitch) {
@@ -1373,13 +1378,25 @@ document.addEventListener('DOMContentLoaded', () => {
 			// 			}
 			// 		});
 			// 	}
-			const files = Array.from(e.target.files);
+			// const files = Array.from(e.target.files);
 			// ★修正：ここでは一括でパスを記憶せず（3Dモデルのパスを誤認するのを防ぐため）、
 			// 上記の handleMultiFileUpload 内でデータファイルごとに記憶するように処理を移動しました。
 			// handleMultiFileUpload を直接呼び出し、一括処理を開始する
-			await handleMultiFileUpload(files);
-			window.isMultiUploading = false;
-			e.target.value = ''; // 選択をリセット
+		// 	await handleMultiFileUpload(files);
+		// 	window.isMultiUploading = false;
+		// 	e.target.value = ''; // 選択をリセット
+		// });
+		multiFileInput.addEventListener('change', async (e) => {
+			const files = Array.from(e.target.files);
+			try {
+				window.isMultiUploading = true;
+				await handleMultiFileUpload(files);
+			} catch (err) {
+				console.error("Multi upload failed:", err);
+			} finally {
+				window.isMultiUploading = false;
+				e.target.value = ''; // 選択をリセット
+			}
 		});
 	}
 });
