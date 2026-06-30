@@ -89,7 +89,6 @@ window.manualVisibilityState = {
 	tank: false,
 	wing: false
 };
-
 // --- ここから追加：位置とピッチの共通計算関数 ---
 window.calculateCarAlignmentAtZ = function(worldZ, safeData, carData) {
 	const wb = extractNum(safeData?.BASIC?.WHEELBASE) || 2.73;

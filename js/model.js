@@ -84,11 +84,11 @@ function init() {
 		const planeSize = 50;
 		const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
 		// ★変更：colorをmap(画像)に変更し、roughnessを1.0にしてマット（つや消し）に設定
-		const planeMat = new THREE.MeshStandardMaterial({ 
-			map: floorTexture, 
-			roughness: 1.0, 
-			metalness: 0.0, 
-			side: THREE.DoubleSide 
+		const planeMat = new THREE.MeshStandardMaterial({
+			map: floorTexture,
+			roughness: 1.0,
+			metalness: 0.0,
+			side: THREE.DoubleSide
 		});
 		const ground = new THREE.Mesh(planeGeo, planeMat);
 		ground.rotation.x = -Math.PI / 2;
@@ -124,11 +124,11 @@ function init() {
 	suspensionScene.add(suspSun);
 	const planeGeo = new THREE.PlaneGeometry(50, 50);
 	// ★変更：ここもテクスチャを適用し、マットな質感に設定
-	const planeMat = new THREE.MeshStandardMaterial({ 
-		map: floorTexture, 
-		roughness: 1.0, 
-		metalness: 0.0, 
-		side: THREE.DoubleSide 
+	const planeMat = new THREE.MeshStandardMaterial({
+		map: floorTexture,
+		roughness: 1.0,
+		metalness: 0.0,
+		side: THREE.DoubleSide
 	});
 	suspensionGround = new THREE.Mesh(planeGeo, planeMat);
 	suspensionGround.rotation.x = -Math.PI / 2;
@@ -148,18 +148,15 @@ function init() {
 function autoLoadDefaultSky() {
 	const localSkyPath = 'image/sky.jpg';
 	const loader = new THREE.TextureLoader();
-
 	loader.load(localSkyPath, (texture) => {
 		// パノラマ（球状）表示と色味の最適化
 		texture.mapping = THREE.EquirectangularReflectionMapping;
 		texture.colorSpace = THREE.SRGBColorSpace;
-
 		// 1. サスペンションシーン（メイン3D空間）に適用
 		if (typeof suspensionScene !== 'undefined' && suspensionScene) {
 			suspensionScene.background = texture;
-			suspensionScene.environment = null; 
+			suspensionScene.environment = null;
 		}
-
 		// 2. 6つのカメラプレビュー用シーンすべてに適用
 		if (window.scenes && window.scenes.length > 0) {
 			window.scenes.forEach(scene => {
@@ -167,14 +164,12 @@ function autoLoadDefaultSky() {
 				scene.environment = null;
 			});
 		}
-
 		// 3. 画面を再描画して反映
 		if (typeof requestRender === 'function') {
 			requestRender();
 		}
 		console.log("Panoramic background 'sky.jpg' has been auto-loaded to all scenes.");
 	});
-
 	// CSS側の背景設定（3D描画前の隙間埋め用）
 	document.querySelectorAll('.preview-area').forEach(el => {
 		// ★追加：特定のIDを持つエリアには背景画像を適用しない（除外設定）
@@ -182,7 +177,6 @@ function autoLoadDefaultSky() {
 		if (excludeIds.includes(el.id)) {
 			return; // このIDの要素だった場合は、以下の処理をせずに次の要素へ進む
 		}
-
 		el.style.backgroundImage = `url(${localSkyPath})`;
 		el.style.backgroundSize = 'cover';
 		el.style.backgroundPosition = 'center';
@@ -327,7 +321,6 @@ function updateUIFromConfig(id) {
 		cam.updateProjectionMatrix();
 	}
 }
-
 //requestAnimationFrame を使ったループ）に対して、**「データが変わったから、次のフレームで画面を書き直してね」**と合図を送っています。
 function requestRender() {
 	needsUpdate = true;
@@ -352,12 +345,10 @@ window.handleModelFile = function(file) {
 	}
 	// ★修正：モデルを「1回だけ」読み込んで、それを各シーンにクローンして配る
 	loader.load(url, (object) => {
-    const originalModel = object.scene ? object.scene : object;
-    
-    // 🚨 修正：スケール調整（0.01倍）を完全に削除しました。
-    // これにより FBX と GLB が同じサイズ（1.0倍）で処理されます。
-
-    applyModelPatches(originalModel);
+		const originalModel = object.scene ? object.scene : object;
+		// 🚨 修正：スケール調整（0.01倍）を完全に削除しました。
+		// これにより FBX と GLB が同じサイズ（1.0倍）で処理されます。
+		applyModelPatches(originalModel);
 		// 2. カメラ1〜6（メイン画面）へクローンを配る
 		for (let i = 0; i < NUM_CAMERAS; i++) {
 			if (currentModels[i]) scenes[i].remove(currentModels[i]);
@@ -386,8 +377,8 @@ function applyModelPatches(model) {
 		if (child.isMesh && child.material) {
 			const mats = Array.isArray(child.material) ? child.material : [child.material];
 			mats.forEach(mat => {
-			const meshName = child.name.toLowerCase();
-			if (meshName.includes('glass') || meshName.includes('window') || meshName.includes('vetro') || meshName.includes('windshield') || meshName.includes('steklo')) {
+				const meshName = child.name.toLowerCase();
+				if (meshName.includes('glass') || meshName.includes('window') || meshName.includes('vetro') || meshName.includes('windshield') || meshName.includes('steklo')) {
 					if (Array.isArray(child.material)) {
 						child.material[mats.indexOf(mat)] = glassMaterial;
 					} else {
@@ -397,11 +388,11 @@ function applyModelPatches(model) {
 				}
 				mat.side = THREE.DoubleSide;
 				mat.map = null;
-			mat.color.set(modelBaseColor);
-			mat.roughness = 0.3;
-			mat.metalness = 0.5;
-			mat.transparent = false;
-			mat.depthWrite = true;
+				mat.color.set(modelBaseColor);
+				mat.roughness = 0.3;
+				mat.metalness = 0.5;
+				mat.transparent = false;
+				mat.depthWrite = true;
 				mat.alphaTest = 0.5;
 			});
 		}
@@ -502,7 +493,6 @@ if (mColorPicker) {
 // 					texture.mapping = THREE.EquirectangularReflectionMapping;
 // 					// ★追加：画像の色味を正しく表示するための設定です
 // 					texture.colorSpace = THREE.SRGBColorSpace;
-
 // 					suspensionScene.background = texture;
 // 					suspensionScene.environment = null;
 // 					requestRender();
@@ -676,7 +666,7 @@ window.loadModelByPath = async function(path) {
 	if (!path) return;
 	// ★追加：読み込んだFBXのパスをプロジェクトデータに確実に記憶させます
 	if (window.currentProject && window.currentProject.environment) {
-			window.currentProject.environment.model_path = path;
+		window.currentProject.environment.model_path = path;
 	}
 	console.log("[MODEL] プロジェクトからモデルを復元します（安全ルート）:", path);
 	try {
@@ -711,15 +701,15 @@ window.loadModelByPath = async function(path) {
 			if (typeof window.requestRender === 'function') window.requestRender();
 		}, 500);
 	} catch (error) {
-            console.error("[MODEL] モデルデータの復元処理に失敗しました:", error);
-            // --- 修正：ユーザーへ警告を表示 ---
-            let msg = "⚠️ 3Dモデルの読み込みに失敗しました。\n\n";
-            if (error.message.includes('name')) {
-                msg += "原因：FBXファイルが破損しているか、非対応の形式です。Blender等で開けるか確認してください。";
-            } else {
-                msg += "原因：" + error.message;
-            }
-            alert(msg);
-            // --------------------------------
-        }
+		console.error("[MODEL] モデルデータの復元処理に失敗しました:", error);
+		// --- 修正：ユーザーへ警告を表示 ---
+		let msg = "⚠️ 3Dモデルの読み込みに失敗しました。\n\n";
+		if (error.message.includes('name')) {
+			msg += "原因：FBXファイルが破損しているか、非対応の形式です。Blender等で開けるか確認してください。";
+		} else {
+			msg += "原因：" + error.message;
+		}
+		alert(msg);
+		// --------------------------------
+	}
 };

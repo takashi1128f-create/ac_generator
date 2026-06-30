@@ -231,13 +231,7 @@ window.executeBulkExport = async function() {
 	let exportSuccess = true;
 	let dataResultPath = "";
 	if (filesToExport.length > 0) {
-		const result = await window.electronAPI.exportFilesToFolder(
-        baseDir, 
-        projectName, 
-        window.EXPORT_CONFIG, 
-        isOverwrite, 
-        window.pendingBadgePath || null
-    );
+		const result = await window.electronAPI.exportFilesToFolder(baseDir, projectName, window.EXPORT_CONFIG, isOverwrite, window.pendingBadgePath || null);
 		console.log("🏁 [DEBUG] 書き出し結果:", result);
 		if (result && result.success) {
 			dataResultPath = result.path;
@@ -341,7 +335,10 @@ window.triggerLiveSync = function() {
 					if (file.id === 'view') {
 						viewIniContent = content;
 					} else {
-						filesToExport.push({ name: file.name, content: content });
+						filesToExport.push({
+							name: file.name,
+							content: content
+						});
 					}
 				}
 				console.log("🔍 [LIVE SYNC] 送信対象のファイル数:", filesToExport.length);
@@ -587,14 +584,14 @@ window.downloadAeroIni = function(isExport = false) {
 };
 window.downloadEngineIni = function(isExport = false) {
 	const data = window.currentEngineData;
-	if (!data) { alert("エンジンデータが存在しません。"); return; }
-	
+	if (!data) {
+		alert("エンジンデータが存在しません。");
+		return;
+	}
 	// ★追加済み：UI（セレクトボックス）で選ばれているターボの総数を取得する
 	const turboCountSelect = document.getElementById('turbo-count-select');
 	const turboCount = turboCountSelect ? parseInt(turboCountSelect.value) : 1;
-
 	let iniContent = "";
-
 	// 1. 書き出しの理想的な順番を定義する（これで [TURBO_0] の下に [TURBO_1] が並びます）
 	const sectionOrder = ['HEADER', 'ENGINE_DATA', 'COAST_REF', 'COAST_DATA', 'COAST_CURVE'];
 	// ターボを 0 から順番にリストへ追加する
@@ -603,9 +600,7 @@ window.downloadEngineIni = function(isExport = false) {
 	}
 	// 最後にダメージ設定などを置く
 	sectionOrder.push('DAMAGE');
-
 	const writtenSections = new Set();
-
 	// 2. リストに定義した順番通りに書き出す
 	sectionOrder.forEach(secName => {
 		if (data[secName]) {
@@ -619,7 +614,6 @@ window.downloadEngineIni = function(isExport = false) {
 			writtenSections.add(secName);
 		}
 	});
-
 	// 3. もしデータ内に上記リストにない未知のセクションがあれば最後に追加（安全策）
 	for (const secName in data) {
 		if (!writtenSections.has(secName)) {
@@ -636,10 +630,8 @@ window.downloadEngineIni = function(isExport = false) {
 			iniContent += "\n";
 		}
 	}
-
 	// ★ 修正：個別ダウンロードの処理が走る「前」に、テキストだけを返して終わらせる
 	if (isExport === true) return iniContent;
-
 	// === 以下は個別保存ボタン用 ===
 	const blob = new Blob([iniContent], {
 		type: 'text/plain'

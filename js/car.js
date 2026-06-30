@@ -141,7 +141,9 @@ window.updateCarEditorUI = function(data) {
 					}
 					// ★追加：TOTALMASS変更時、表示を更新する
 					if (section === 'BASIC' && key === 'TOTALMASS') {
-						window.updateSpecsDisplay({ weight: window.currentCarData[section][key] });
+						window.updateSpecsDisplay({
+							weight: window.currentCarData[section][key]
+						});
 					}
 					if (key === 'STEER_LOCK' || key === 'STEER_RATIO') {
 						const steerSlider = document.getElementById('steer-tester');
@@ -276,7 +278,9 @@ window.updateCarEditorUI = function(data) {
 	});
 	if (data && data.BASIC && data.BASIC.TOTALMASS !== undefined) {
 		if (typeof window.updateSpecsDisplay === 'function') {
-			window.updateSpecsDisplay({ weight: data.BASIC.TOTALMASS });
+			window.updateSpecsDisplay({
+				weight: data.BASIC.TOTALMASS
+			});
 		}
 	}
 };

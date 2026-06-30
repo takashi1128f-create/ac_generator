@@ -65,7 +65,6 @@ window.initDrivetrainEditor = function(initialData = null) {
 		if (set.data && set.data.GEARS) {
 			const gears = set.data.GEARS;
 			let maxGearFound = parseInt(gears.COUNT) || 0;
-
 			Object.keys(gears).forEach(key => {
 				if (key.startsWith('GEAR_') && key !== 'GEAR_R') {
 					const num = parseInt(key.replace('GEAR_', ''));
@@ -149,13 +148,13 @@ window.renderDrivetrainUI = function() {
 			`;
 		}).join('');
 		window.gearSetList.forEach((_, idx) => {
-            const radio = document.getElementById(`radio-main-${idx}`);
-            if (radio) {
-                radio.addEventListener('change', () => {
-                    window.setMainGear(idx);
-                });
-            }
-        });
+			const radio = document.getElementById(`radio-main-${idx}`);
+			if (radio) {
+				radio.addEventListener('change', () => {
+					window.setMainGear(idx);
+				});
+			}
+		});
 		// 2. GEARS入力 (7速固定でCOUNT連動)
 		const ratioBox = document.getElementById('gear-ratio-inputs');
 		const gearsData = activeSet.data.GEARS || {};
@@ -194,7 +193,6 @@ window.renderDrivetrainUI = function() {
 			const div = document.createElement('div');
 			div.className = 'suspension-item';
 			div.style.opacity = opacity;
-
 			if (key === 'COUNT') {
 				let options = '';
 				for (let i = 1; i <= 7; i++) {
