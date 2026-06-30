@@ -701,7 +701,7 @@ export function load3DModel(file) {
 // 	}
 // }
 export function applyIniData(fileName, parsedData) {
-    // 1. データの正規化：数値を文字列に変換し、配列をカンマ区切りにする
+    // 1. データの正規化（既存の処理を維持）
     const normalizedData = JSON.parse(JSON.stringify(parsedData));
     for (let section in normalizedData) {
         for (let key in normalizedData[section]) {
@@ -714,27 +714,23 @@ export function applyIniData(fileName, parsedData) {
         }
     }
 
-    // 2. 拡張物理スイッチ（extended-2等）の自動判定
+    // 2. 拡張物理スイッチの自動判定
     let detectedExtended = false;
-    if (fileName.includes('car.ini') && normalizedData.HEADER?.VERSION === 'extended-2') {
-        detectedExtended = true;
-    }
-    if (fileName.includes('suspensions.ini') && (normalizedData._EXTENSION || normalizedData._EXTENSION_FLEX)) {
-        detectedExtended = true;
-    }
+    if (fileName.includes('car.ini') && normalizedData.HEADER?.VERSION === 'extended-2') detectedExtended = true;
+    if (fileName.includes('suspensions.ini') && (normalizedData._EXTENSION || normalizedData._EXTENSION_FLEX)) detectedExtended = true;
     if (detectedExtended) {
         window.isExtendedPhysicsEnabled = true;
         const masterSwitch = document.getElementById('extendedPhysicsSwitch');
         if (masterSwitch) masterSwitch.checked = true;
     }
 
-    // 3. 全体データの保存（ini_DATA への格納）
+    // 3. 全体データの保存 [5]
     if (!window.ini_DATA) window.ini_DATA = {};
     window.ini_DATA[fileName] = normalizedData;
 
-    // 4. 各ファイル名に応じた「適応（配分）」処理
     const name = fileName.toLowerCase();
 
+    // 4. 各ファイル名に応じた「適応」処理
     if (name.includes('suspensions.ini')) {
         window.currentSuspensionData = normalizedData;
         sortSus(normalizedData);
@@ -742,23 +738,15 @@ export function applyIniData(fileName, parsedData) {
         if (typeof window.updateSuspensionEditorUI === 'function') window.updateSuspensionEditorUI(normalizedData);
 
     } else if (name.includes('aero.ini')) {
-        // 土台として新品のデフォルトデータを読み込み、その上に上書き合流させます
         const factoryDefault = window.parseINI(default_aero_ini);
-        const hasRealFin0 = normalizedData.hasOwnProperty('FIN_0');
         window.currentAeroData = { ...factoryDefault, ...normalizedData };
-        // FIN_0 の有効・無効（ENABLED）を判定
-        if (window.currentAeroData.FIN_0) {
-            window.currentAeroData.FIN_0._ENABLED = hasRealFin0;
-        }
         if (typeof window.initAeroEditor === 'function') window.initAeroEditor(window.currentAeroData);
-        if (typeof window.updateAeroVisuals === 'function') window.updateAeroVisuals();
 
     } else if (name.includes('tyres.ini')) {
         window.currentTyreData = normalizedData;
         if (typeof window.updateTyreEditorUI === 'function') window.updateTyreEditorUI(window.currentTyreData);
 
     } else if (name.includes('car.ini')) {
-        // コライダーデータのみ保護してから合体させます
         const preservedColliders = {};
         if (window.currentCarData) {
             for (const key in window.currentCarData) {
@@ -768,37 +756,34 @@ export function applyIniData(fileName, parsedData) {
         window.currentCarData = { ...preservedColliders, ...normalizedData };
         if (typeof window.updateCarEditorUI === 'function') window.updateCarEditorUI(window.currentCarData);
 
-    } else if (name.includes('colliders.ini')) {
-        // 古いコライダーを消去してから新しいデータに入れ替えます
-        if (window.currentCarData) {
-            for (const key in window.currentCarData) {
-                if (key.startsWith('COLLIDER_')) delete window.currentCarData[key];
-            }
-        } else {
-            window.currentCarData = {};
-        }
-        window.currentCarData = { ...window.currentCarData, ...normalizedData };
-        if (typeof window.initColliderEditor === 'function') window.initColliderEditor(normalizedData);
-        if (typeof window.updateColliderVisuals === 'function') window.updateColliderVisuals();
-
     } else if (name.includes('engine.ini')) {
         window.currentEngineData = normalizedData;
         if (typeof window.initEngineEditor === 'function') window.initEngineEditor(window.currentEngineData);
-        if (typeof window.updateEngineGraph === 'function') window.updateEngineGraph();
 
     } else if (name.includes('drivetrain.ini')) {
         window.isDrivetrainIniUploaded = true;
         window.currentDrivetrainData = normalizedData;
-        if (typeof window.loadSetupIniForGears === 'function') window.loadSetupIniForGears(window.currentSetupData);
-        if (typeof window.initDrivetrainEditor === 'function') window.initDrivetrainEditor(window.currentDrivetrainData, fileName);
-        if (typeof window.updateGearChart === 'function') window.updateGearChart();
+        
+        // 💡 重要：以前のゴミを消して新しく作り直します
+        window.gearSetList = []; 
+        if (typeof window.initDrivetrainEditor === 'function') {
+            window.initDrivetrainEditor(window.currentDrivetrainData, fileName);
+        }
+        if (typeof window.loadSetupIniForGears === 'function') {
+            window.loadSetupIniForGears(window.currentSetupData);
+        }
 
     } else if (name.includes('setup.ini')) {
         window.isSetupIniUploaded = true;
-        const completedData = window.mergeWithDefaultSetup(normalizedData);
-        window.currentSetupData = completedData;
-        if (typeof window.initSetupEditor === 'function') window.initSetupEditor(window.currentSetupData);
-        if (typeof window.loadSetupIniForGears === 'function') window.loadSetupIniForGears(window.currentSetupData);
+        window.currentSetupData = window.mergeWithDefaultSetup(normalizedData);
+        
+        if (typeof window.initSetupEditor === 'function') {
+            window.initSetupEditor(window.currentSetupData);
+        }
+        // 💡 setup.ini からギアの選択肢を読み込みます
+        if (typeof window.loadSetupIniForGears === 'function') {
+            window.loadSetupIniForGears(window.currentSetupData);
+        }
 
     } else if (name.includes('mirrors.ini')) {
         window.currentMirrorsData = normalizedData;
@@ -1182,10 +1167,14 @@ export async function handleMultiFileUpload(files) {
 
     // 1. KN5展開
     for (const kn5 of tasks.kn5ToUnpack) {
+        console.log(`📦 KN5展開中: ${kn5.name}`);
         const res = await window.electronAPI.unpackKn5(kn5.path);
+        
         if (res.success) {
-            const fileName = res.fbxPath.split(/[\\\/]/).pop();
+            // 💡 path.basename(res.fbxPath) の代わりにこれを使います
+            const fileName = res.fbxPath.split(/[\\\/]/).pop(); 
             tasks.modelFiles.push({ name: fileName, path: res.fbxPath, isModel: true });
+            console.log(`✅ [.kn5] 展開成功、FBXをモデルタスクへ追加: ${fileName}`);
         }
     }
 
