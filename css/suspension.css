@@ -68,10 +68,6 @@ div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
 	border-bottom: 1px solid #d1d1d1;
 	margin-bottom: 0.3rem;
 }
-.suspension-tab-btn.active {
-	background: #333;
-	color: #fff;
-}
 /* パネル制御 */
 .suspension-tab-panel {
 	display: none;

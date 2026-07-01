@@ -389,10 +389,12 @@ input, textarea {
 	border-bottom: none;
 	border-right: none;
 	border-left: none;
+	/* background: #dbdbdb;
+	box-shadow: inset -3px -2px 5px 0px rgba(0, 0, 0, 0.7), inset 3px 3px 5px 0px rgba(255, 255, 255, 0.7); */
 }
 .tab-content .camera-section {
 	display: flex;
-	background: #fff;
+	/* background: #fff; */
 	border-radius: 0;
 	box-shadow: none;
 	overflow: hidden;

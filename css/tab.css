@@ -17,13 +17,15 @@
 	transition: 0.3s;
 	border: 1px #333 solid;
 	border-bottom: none;
-	background-color: transparent;
+	box-shadow: inset -2px -2px 3px 0px rgba(0, 0, 0, 0.7), inset 2px 2px 3px 0px rgba(255, 255, 255, 0.69);
 }
+.suspension-tab-btn.active,
 .tab-btn.active {
-	background: #333;
+	background: #dbdbdb;
 	border: 1px #333 solid;
 	border-bottom: none;
-	color: #fff;
+	color: #595959;
+	box-shadow: inset -2px -2px 3px 0px rgba(255, 255, 255, 0.7), inset 2px 2px 3px 0px rgba(0, 0, 0, 0.69);
 }
 /* ワークベンチなどの表示が切り替わる際の親要素の高さ維持（任意） */
 .workbench-outer_box,
