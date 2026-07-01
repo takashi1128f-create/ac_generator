@@ -300,70 +300,57 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // ★追加：リアルタイム連動（デバウンス）ロジック
 let syncTimer = null;
-window.triggerLiveSync = function() {
-	const syncSwitch = document.getElementById('liveSyncSwitch');
-	if (!syncSwitch || !syncSwitch.checked || !window.currentDataFolderPath) return;
-	// すでにタイマーが動いていたらリセット（操作が止まるまで待つ）
-	if (syncTimer) clearTimeout(syncTimer);
-	syncTimer = setTimeout(async () => {
-		console.log("🔄 [LIVE SYNC] 自動書き出しを実行中...");
-		// executeBulkExportを「上書きモード」かつ「通知なし」で実行する仕組み
-		// ここでは簡易的に、現在編集中の全ファイルを data フォルダへ流し込みます
-		const filesToExport = [];
-		for (const file of window.EXPORT_CONFIG) {
-			// 1. 🛡️ 安全ガード：データが読み込まれていない項目はスキップ
-			if (file.id === 'view' && !window.currentCarData) continue;
-			if (file.id === 'dash_cam' && !window.currentCarData) continue;
-			if (file.id === 'tyres' && (!window.tyreCompoundList || window.tyreCompoundList.length === 0)) continue;
-			if (file.id === 'suspensions' && !window.currentSuspensionData) continue;
-			if (file.id === 'car' && !window.currentCarData) continue;
-			if (file.id === 'engine' && !window.currentEngineData) continue;
-			if (file.id === 'aero' && !window.currentAeroData) continue;
-			if (file.id === 'setup' && !window.currentSetupData) continue;
-			if (file.id === 'mirrors' && !window.currentMirrorsData) continue;
-			if (file.id === 'drivetrain' && !window.currentDrivetrainData) continue;
-			// 2. ⚡ 効率化 ＆ クラッシュ防止：
-			// マウス操作で実際に編集された（modifiedStatusがtrue）ファイルのみを処理対象にします。
-			// これにより、起動時の「自動復元」による勝手な上書きを完全にブロックします。
-			const statusKey = (file.id === 'view' || file.id === 'dash_cam') ? 'car' : file.id;
-			if (!window.modifiedStatus || !window.modifiedStatus[statusKey]) continue;
-			const getFunc = window[file.func];
-			if (typeof getFunc === 'function') {
-				const content = getFunc(true);
-				if (content) {
-					// ★ここを追加：view.ini の場合は data 用リストに入れず、専用変数に保管
-					if (file.id === 'view') {
-						viewIniContent = content;
-					} else {
-						filesToExport.push({
-							name: file.name,
-							content: content
-						});
-					}
-				}
-				console.log("🔍 [LIVE SYNC] 送信対象のファイル数:", filesToExport.length);
-			}
-		}
-		// 3. 変更があったファイルがある場合のみ、Electron経由で実ファイルを上書き
-		if (window.uiCarData) {
+window.triggerLiveSync = function(isUiField = false) {
+    // dataフォルダのパスが無い場合は保存できないので中断
+    if (!window.currentDataFolderPath) return;
+
+    const syncSwitch = document.getElementById('liveSyncSwitch');
+    const isLiveSyncOn = syncSwitch && syncSwitch.checked;
+
+    // ★重要：スイッチがOFF、かつ基本情報の入力でもない場合は、何もせず終了
+    if (!isLiveSyncOn && !isUiField) return;
+
+    if (syncTimer) clearTimeout(syncTimer);
+    syncTimer = setTimeout(async () => {
+        console.log(`🔄 [SYNC] 自動保存を開始します (LIVE SYNC: ${isLiveSyncOn ? 'ON' : 'OFF'})`);
+
+        // 1. ui_car.json の保存（基本情報入力時、またはLIVE SYNCがONの時）
+        if (window.uiCarData) {
             const latestUiValues = (typeof window.collectUiCarData === 'function') ? window.collectUiCarData() : {};
             Object.assign(window.uiCarData, latestUiValues);
-            
-            // ui フォルダのパスを計算（dataの親フォルダ/ui）
-            const carRoot = window.currentCarRootPath || window.currentDataFolderPath?.replace(/[\/]?data$/i, '');
+
+            // 正しい ui フォルダのパスを計算（data フォルダの1つ上にある ui）
+            const carRoot = window.currentDataFolderPath.replace(/[\\/]data$/i, '');
             const uiPath = carRoot + '/ui';
 
             const uiJsonContent = JSON.stringify(window.uiCarData, null, 2);
             await window.electronAPI.exportFilesToFolder(null, "", [{ name: 'ui_car.json', content: uiJsonContent }], true, uiPath);
-            console.log("✅ [LIVE SYNC] ui_car.json を ui フォルダへ反映しました。");
+            console.log(`✅ [SYNC] ui_car.json を反映しました: ${uiPath}`);
         }
 
-        if (filesToExport.length > 0) {
-            // INIファイルなどは今まで通り data フォルダへ保存
-            console.log(`📤 [LIVE SYNC] ${filesToExport.length}個の物理データを反映中...`);
-            await window.electronAPI.exportFilesToFolder(null, "", filesToExport, true, window.currentDataFolderPath);
+        // 2. INIファイルなどの保存（LIVE SYNC が ON の時のみ実行）
+        if (isLiveSyncOn) {
+            const filesToExport = [];
+            for (const file of window.EXPORT_CONFIG) {
+                // UIファイルや読み込まれていないデータはスキップ
+                if (file.id === 'view' || file.id === 'ui_car' || file.name === 'ui_car.json') continue;
+                
+                const statusKey = (file.id === 'dash_cam') ? 'car' : file.id;
+                if (!window.modifiedStatus || !window.modifiedStatus[statusKey]) continue;
+
+                const getFunc = window[file.func];
+                if (typeof getFunc === 'function') {
+                    const content = getFunc(true);
+                    if (content) filesToExport.push({ name: file.name, content: content });
+                }
+            }
+
+            if (filesToExport.length > 0) {
+                console.log(`📤 [LIVE SYNC] ${filesToExport.length}個の物理データを反映中...`);
+                await window.electronAPI.exportFilesToFolder(null, "", filesToExport, true, window.currentDataFolderPath);
+            }
         }
-	}, 300); // 0.3秒間操作が止まったら書き出し
+    }, 300);
 };
 window.downloadFinalRto = function(isExport = false) {
 	let res = "";

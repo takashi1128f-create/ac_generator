@@ -54,21 +54,18 @@ document.addEventListener('input', async (e) => {
 
 	// 1. 物理スペック（馬力など）の再計算
 	if (typeof window.updateSpecsFromPhysics === 'function') {
-		window.updateSpecsFromPhysics();
-	}
-// ★重要：なぜ保存されないかの理由を特定するログ
-    if (e.target.id && e.target.id.startsWith('ui-')) {
-        console.log(`✅ [DEBUG] IDが"ui-"で始まるためJSON同期の対象です: ${e.target.id}`);
-    } else {
-        console.log(`⚠️ [DEBUG] ID("${e.target.id}")が"ui-"で始まらないため、直接のJSON書き出しは行いません。物理計算経由での同期を待ちます。`);
+        window.updateSpecsFromPhysics();
     }
 
-    // テキスト入力も物理設定も、すべて「0.3秒後の保存」へ合流させます
-    if (typeof window.triggerLiveSync === 'function') {
-        window.triggerLiveSync();
-    }
+    // ★修正：基本情報の入力かどうかを triggerLiveSync に伝えます
+    const isUiField = e.target.id && e.target.id.startsWith('ui-');
     
-    // ★重要：ここから下にあった「if (e.target.id && e.target.id.startsWith('ui-')) { ... }」の塊は、
+    if (typeof window.triggerLiveSync === 'function') {
+        // 第1引数に true/false を渡すように変更します
+        window.triggerLiveSync(isUiField);
+    }
+
+    // ★重要：ここから下にあった「if (e.target.id && e.target.id.startsWith('ui-')) { ... }」の塊（約40行）は
     // 全て削除して、この関数の閉じカッコ「 }); 」に繋げてください。
 });
 // 以下、既存のコードが続く...
