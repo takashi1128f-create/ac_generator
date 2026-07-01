@@ -1218,11 +1218,19 @@ function cleanupSyncBackup(folderPath, shouldRestore) {
 		const carName = path.basename(path.dirname(folderPath));
 		const docViewIni = path.join(app.getPath('documents'), 'Assetto Corsa', 'cfg', 'cars', carName, 'view.ini');
 		const viewIniOld = path.join(path.dirname(docViewIni), 'view.ini_old');
-		if (shouldRestore && fs.existsSync(viewIniOld)) {
-			fs.copyFileSync(viewIniOld, docViewIni);
-			fs.unlinkSync(viewIniOld);
-			console.log("🧹 [LIVE SYNC] view.ini を復元しました。");
-		} else if (fs.existsSync(viewIniOld)) {
+		const carRootDir = path.dirname(folderPath);
+        const uiBackupPath = path.join(carRootDir, 'ui', 'ui_car.json_backup');
+        const uiJsonPath = path.join(carRootDir, 'ui', 'ui_car.json');
+
+        if (fs.existsSync(uiBackupPath)) {
+            if (shouldRestore) {
+                fs.copyFileSync(uiBackupPath, uiJsonPath);
+                console.log("🧹 [LIVE SYNC] ui_car.json を復元しました。");
+            }
+            fs.unlinkSync(uiBackupPath); // バックアップを削除
+        }
+
+        if (shouldRestore && fs.existsSync(viewIniOld)) {
 			fs.unlinkSync(viewIniOld);
 		}
 		const backupDir = path.join(folderPath, 'sync_backup');
@@ -1268,10 +1276,17 @@ ipcMain.handle('sync-backup-start', async (event, folderPath, files) => {
 		}
 		const backupDir = path.join(folderPath, 'sync_backup');
 		activeSyncFolderPath = folderPath;
-		if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, {
-			recursive: true
-		});
-		files.forEach(fileName => {
+		if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+
+        // ★追加：ui_car.json のバックアップ（dataフォルダの隣の ui フォルダから取得）
+        const carRootDir = path.dirname(folderPath); // folderPath(data) の親を取得
+        const uiJsonPath = path.join(carRootDir, 'ui', 'ui_car.json');
+        if (fs.existsSync(uiJsonPath)) {
+            fs.copyFileSync(uiJsonPath, path.join(carRootDir, 'ui', 'ui_car.json_backup'));
+            console.log("✅ [LIVE SYNC] ui_car.json_backup を作成しました。");
+        }
+
+        files.forEach(fileName => {
 			// ★【修正】view.ini がリストにあっても sync_backup にはコピーしない
 			if (fileName !== 'view.ini') {
 				const src = path.join(folderPath, fileName);

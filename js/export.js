@@ -349,9 +349,15 @@ window.triggerLiveSync = function() {
 			console.log(`📤 [LIVE SYNC] ${filesToExport.length}個の変更を反映中...`);
 			await window.electronAPI.exportFilesToFolder(null, "", filesToExport, true, window.currentDataFolderPath);
 			// ★ここを追加：保管された view.ini のデータがあれば、マイドキュメントへ保存
-			if (viewIniContent) {
-				const carName = window.currentCarDirectoryName || "Unknown-Car";
-				await window.electronAPI.saveViewIni(carName, viewIniContent);
+			if (window.uiCarData) {
+            const uiJsonContent = JSON.stringify(window.uiCarData, null, 2);
+            filesToExport.push({ name: 'ui_car.json', content: uiJsonContent, isUiFile: true });
+        }
+
+        if (filesToExport.length > 0) {
+            console.log(`📤 [LIVE SYNC] ${filesToExport.length}個の変更を反映中...`);
+            // ★重要：ui_car.json だけ保存先が data の隣の ui フォルダなので、Electron側で判定させる
+            await window.electronAPI.exportFilesToFolder(null, "", filesToExport, true, window.currentDataFolderPath);
 			}
 		}
 	}, 300); // 0.3秒間操作が止まったら書き出し
