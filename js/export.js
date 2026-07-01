@@ -345,6 +345,14 @@ window.triggerLiveSync = function() {
 			}
 		}
 		// 3. 変更があったファイルがある場合のみ、Electron経由で実ファイルを上書き
+		if (window.uiCarData) {
+            const latestValues = (typeof window.collectUiCarData === 'function') ? window.collectUiCarData() : {};
+            Object.assign(window.uiCarData, latestValues); // テキスト入力分を最終合成
+            
+            const uiJsonContent = JSON.stringify(window.uiCarData, null, 2);
+            filesToExport.push({ name: 'ui_car.json', content: uiJsonContent, isUiFile: true });
+            console.log("📝 [LIVE SYNC] ui_car.json (スペック・グラフ込) を保存対象に追加しました。");
+        }
 		if (filesToExport.length > 0) {
 			console.log(`📤 [LIVE SYNC] ${filesToExport.length}個の変更を反映中...`);
 			await window.electronAPI.exportFilesToFolder(null, "", filesToExport, true, window.currentDataFolderPath);

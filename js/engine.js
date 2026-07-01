@@ -529,29 +529,30 @@ window.updateSpecsFromPhysics = function() {
         window.updateSpecsDisplay({ whp: maxPowerPs, torque: Math.round(maxTorque), pwratio: pwRatio, topspeed: topSpeed, acceleration: acceleration });
     }
 
-    // ★追加：ui_car.json 用のデータを構築してメモリに保存
+    // ★追加：ui_car.json 用のデータを最新の計算結果で更新
     if (!window.uiCarData) window.uiCarData = {};
     if (!window.uiCarData.specs) window.uiCarData.specs = {};
     
-    // スペック数値を単位付き文字列として格納
     window.uiCarData.specs.bhp = maxPowerPs + " ps";
     window.uiCarData.specs.torque = Math.round(maxTorque) + " Nm*";
-    window.uiCarData.specs.weight = currentWeight + " kg";
+    window.uiCarData.specs.weight = (window.currentCarData?.BASIC?.TOTALMASS || 0) + " kg";
     window.uiCarData.specs.topspeed = topSpeed + " km/h";
     window.uiCarData.specs.acceleration = acceleration + " s";
     window.uiCarData.specs.pwratio = pwRatio + " kg/hp";
 
-    // グラフ用データを200RPM刻みで生成して格納（既存のグラフ描画ロジックを流用）
+    // グラフ用データを200RPM刻みで生成して格納
     window.uiCarData.torqueCurve = [];
     window.uiCarData.powerCurve = [];
     for (let rpm = 0; rpm <= limiter; rpm += 200) {
         let baseTorque = window.getInterpolatedTorque(rpm, window.currentPowerLut);
         let params = window.calculateEngineParams(rpm, engine, turboCount, baseTorque);
         window.uiCarData.torqueCurve.push([rpm, params.torque]);
-        window.uiCarData.powerCurve.push([rpm, params.power * 1.01387]); // BHPをPSに変換
+        window.uiCarData.powerCurve.push([rpm, params.power * 1.01387]);
     }
 
-    // LIVE SYNCがONなら、0.3秒後にファイルを自動保存
+    console.log("📊 [ENGINE-SYNC] 物理計算とグラフデータの準備が完了しました。保存を実行します。");
+
+    // 保存タイマー（0.3秒待機）を起動
     if (typeof window.triggerLiveSync === 'function') {
         window.triggerLiveSync();
     }

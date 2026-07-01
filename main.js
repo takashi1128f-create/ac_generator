@@ -56,7 +56,17 @@ document.addEventListener('input', async (e) => {
 	if (typeof window.updateSpecsFromPhysics === 'function') {
 		window.updateSpecsFromPhysics();
 	}
+// ★重要：なぜ保存されないかの理由を特定するログ
+    if (e.target.id && e.target.id.startsWith('ui-')) {
+        console.log(`✅ [DEBUG] IDが"ui-"で始まるためJSON同期の対象です: ${e.target.id}`);
+    } else {
+        console.log(`⚠️ [DEBUG] ID("${e.target.id}")が"ui-"で始まらないため、直接のJSON書き出しは行いません。物理計算経由での同期を待ちます。`);
+    }
 
+    // テキスト入力も物理設定も、すべて「0.3秒後の保存」へ合流させます
+    if (typeof window.triggerLiveSync === 'function') {
+        window.triggerLiveSync();
+    }
 	// 2. 「ui\ui_car.json」の同期チェック
 	if (e.target.id && e.target.id.startsWith('ui-')) {
 		console.log(`🚀 [UI-SYNC] 同期対象の入力を確認: ${e.target.id}`);
