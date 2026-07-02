@@ -1079,8 +1079,17 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
         if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
         // ★修正：新規書き出し（isOverwrite=false）の時だけ、子フォルダを作る
-        const dataDir = isOverwrite ? targetDir : path.join(targetDir, 'data');
-        const uiDir = isOverwrite ? targetDir : path.join(targetDir, 'ui');
+        let dataDir = targetDir;
+				let uiDir = targetDir;
+
+				if (!isOverwrite) {
+						dataDir = path.join(targetDir, 'data');
+						uiDir = path.join(targetDir, 'ui');
+				} else if (targetDir.toLowerCase().endsWith('data')) {
+						// 上書き先が data フォルダなら、ui フォルダはその隣にあると判断
+						const carRoot = path.dirname(targetDir);
+						uiDir = path.join(carRoot, 'ui');
+				}
 
         if (!isOverwrite) {
             if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });

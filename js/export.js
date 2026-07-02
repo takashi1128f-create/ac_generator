@@ -229,10 +229,11 @@ window.executeBulkExport = async function() {
 	}
 	// --- 4. Electronのメインプロセスに「フォルダ作成」と「一括保存」を依頼 ---
 	let exportSuccess = true;
-	let dataResultPath = "";
-	if (filesToExport.length > 0) {
-        // ★修正：第3引数を window.EXPORT_CONFIG ではなく、実際に集めた filesToExport に変更します
-        const result = await window.electronAPI.exportFilesToFolder(baseDir, projectName, filesToExport, isOverwrite, window.pendingBadgePath || null);
+    let dataResultPath = "";
+    if (filesToExport.length > 0) {
+        // ★修正：画像パスではなく、アプリが保持している現在のデータフォルダパスを渡します
+        const targetPath = isOverwrite ? window.currentDataFolderPath : (window.pendingBadgePath || null);
+        const result = await window.electronAPI.exportFilesToFolder(baseDir, projectName, filesToExport, isOverwrite, targetPath);
         console.log("🏁 [Export] プロセス完了。");
 		if (result && result.success) {
 			dataResultPath = result.path;
