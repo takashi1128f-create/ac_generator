@@ -65,8 +65,8 @@ div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0 1px;
-	border-bottom: 1px solid #d1d1d1;
-	margin-bottom: 0.3rem;
+	/* border-bottom: 1px solid #d1d1d1; */
+	/* margin-bottom: 0.3rem; */
 }
 /* パネル制御 */
 .suspension-tab-panel {
@@ -142,12 +142,12 @@ div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
 	padding-bottom: 5px;
 }
 .visibility-controls {
-	padding: 0;
 	/* border: 1px solid #333; */
 	margin-bottom: 0.5rem;
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
 	gap: 0.1em 0em;
+	margin: 0.3em;
 }
 .visibility-controls label {
 	line-height: 1;

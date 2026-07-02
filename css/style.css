@@ -34,9 +34,9 @@ h5 {
 .ce-between {
 	align-items: baseline;
 }
-#wrapper section:not(:last-child) {
+/* #wrapper section:not(:last-child) {
 	margin-bottom: 50px;
-}
+} */
 .main-setting-title_box p:not(:last-child) {
 	margin-bottom: 1em;
 }
@@ -112,7 +112,7 @@ canvas {
 .control-panel {
 	width: 40%;
 	padding: 15px;
-	background: #fff;
+	/* background: #fff; */
 	padding: 1rem 1.5rem;
 }
 .header-row {

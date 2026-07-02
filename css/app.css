@@ -15,6 +15,10 @@
 	font-family: "Shippori Antique B1";
 	src: url('../fonts/ShipporiAntiqueB1-Regular.ttf') format('truetype');
 }
+html{
+	background-color: #efefef;
+	height: 100%;
+}
 html, body {
 	overflow: hidden;
 	height: auto;
@@ -243,7 +247,7 @@ input, textarea {
 .drop-zone #wrapper .workbench-outer_box {
 	flex: 7;
 	margin: 0;
-	background-color: #fff;
+	/* background-color: #fff; */
 	border-radius: 0.5rem;
 	height: 100%;
 }
@@ -504,10 +508,18 @@ label {
 	width: 100%;
 	height: 100%;
 }
+.suspension-outer-box .model-outer_box {
+	margin-top: 0.5em;
+}
+.engine-section,
+.engine-preview-container{
+	gap: 0.5em;
+}
 .tire-section{
 	display: flex;
 	width: 100%;
 	align-items: flex-start;
+	gap: 0.5em;
 }
 #tyre-compound-list{
 	margin-bottom: 0.5em;
@@ -552,7 +564,7 @@ label {
 /* エンジン */
 #engine-editor {
 	display: flex;
-	background: #fff;
+	/* background: #fff; */
 	border-radius: 0;
 	box-shadow: none;
 	overflow: hidden;
@@ -649,10 +661,10 @@ label {
 .engine-section {
 	width: 100%;
 }
-.workbench-control-panel,
+/* .workbench-control-panel,
 #gear-preview-container .workbench-control-panel {
 	padding-left: 0.5rem;
-}
+} */
 /* #gear-preview-container .engine-section .preview-area_box {
 	aspect-ratio: 16 / 9;
 } */
@@ -739,7 +751,7 @@ label {
 	font-size: 0.9rem;
 	padding: 0.2rem;
 	border: 1px solid #c1c1c1;
-	border-radius: 3px;
+	border-radius: 0.5rem;
 }
 .info-gear {
 	color: #eee;
@@ -1713,15 +1725,23 @@ label {
 	font-size: 0.3em;
 }
 /* ロゴとネーム */
+.input-with-range {
+	padding: 0 0.2em;
+}
+.control-panel,
+.suspension-editor_box,
+.preview-area_box,
+/* .suspension-tab-content, */
 .logo-name-inner_box article{
 	padding: 0.5em;
 	border: 1px solid #333333;
-	border-radius: 0.5em;
+	padding: 0.5em;
 	background-color: rgb(0 0 0 / 30%);
 	box-shadow: inset -3px -2px 5px 0px rgba(0, 0, 0, 0.7), inset 3px 3px 5px 0px rgba(255, 255, 255, 0.7);
+	border-radius: 0.5em
 }
 #logo-name-content{
-	padding: 0.5em;
+	padding: 0.5em 0 0;
 }
 .logo-name-inner_box article:not(:last-of-type){
 	height: 100%;
@@ -1747,11 +1767,36 @@ label {
 .logo-editor-img-outer_box{
 	margin-bottom: 0.5em;
 }
+.suspension-tab-content{
+	margin-top: 0.5rem;
+}
+.visibility-controls{
+	margin-bottom: 0.2rem;
+}
+.color-preview_box,
+.torque-graph_box,
+.logo-editor-img-outer_box{
+	padding: 1rem;
+}
+.visibility-controls{
+	padding: 0.5em;
+}
+.suspension-item input{
+	margin: 0 0.2em;
+}
+.tyres_select-explain_box,
+.suspension-item input,
+#desc-setup,
+#desc-tire,
+#desc-gear,
+#desc-engine,
+#desc-suspension,
+.visibility-controls,
+.subtab-pane,
 .color-preview_box,
 .torque-graph_box,
 .logo-editor-img-outer_box{
 	background-color: #b3b3b3;
-	padding: 1rem;
 	box-shadow: -1px -1px 1px 1px rgba(0, 0, 0, 0.64), 1px 1px 1px 1px rgba(255, 255, 255, 1);
 	border-radius: 0.5em;
 }
