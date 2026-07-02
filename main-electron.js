@@ -1076,19 +1076,23 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 			}
 		}
 		// 📁 フォルダの準備
-        if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+         if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
 
-        // ★修正：新規書き出し（isOverwrite=false）の時だけ、子フォルダを作る
-        const dataDir = isOverwrite ? targetDir : path.join(targetDir, 'data');
-        const uiDir = isOverwrite ? targetDir : path.join(targetDir, 'ui');
-
+        // ★新規書き出し（Overwrite:OFF）の時は、中に data と ui フォルダを作成する
+        let dataDir, uiDir;
         if (!isOverwrite) {
+            dataDir = path.join(targetDir, 'data');
+            uiDir = path.join(targetDir, 'ui');
             if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
             if (!fs.existsSync(uiDir)) fs.mkdirSync(uiDir, { recursive: true });
+        } else {
+            // 上書き（Overwrite:ON）の時は、sourcePath(dataフォルダ)と、その一つ上(uiフォルダ)を使用
+            dataDir = targetDir; 
+            uiDir = path.join(path.dirname(targetDir), 'ui');
         }
 
         for (const file of files) {
-            // ★修正：ファイル名によって保存先を自動で振り分ける
+            // ★ファイル名によって保存先を自動で振り分ける
             let finalPath;
             if (file.name === 'ui_car.json') {
                 finalPath = path.join(uiDir, file.name);
@@ -1096,30 +1100,37 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
                 finalPath = path.join(dataDir, file.name);
             }
 
-            // ratios.rto の重複チェック
+            // ratios.rto の重複チェックなどは維持
             if (file.name === 'ratios.rto' && fs.existsSync(finalPath)) continue;
 
             try {
                 fs.writeFileSync(finalPath, file.content, 'utf8');
-                console.log(`📝 [Export] ${file.name} -> ${path.basename(path.dirname(finalPath))} フォルダ`);
+                console.log(`📝 [Save] ${file.name} -> ${path.basename(path.dirname(finalPath))} フォルダ`);
             } catch (writeErr) {
-                console.error(`❌ ファイル ${file.name} の書き込みに失敗:`, writeErr.message);
+                console.error(`❌ 書き込み失敗: ${file.name}`, writeErr.message);
             }
         }
 		// 保存先が ui フォルダそのものではない（＝通常の data フォルダ等である）場合のみ実行
-		if (sourcePath && fs.existsSync(sourcePath) && !isUiFolder) {
-			const uiDirPath = path.join(targetDir, 'ui'); 
-			if (!fs.existsSync(uiDirPath)) {
-				fs.mkdirSync(uiDirPath, { recursive: true });
-			}
-			const destPath = path.join(uiDirPath, 'badge.png');
-			
-			// sourcePathがファイルであることを確認してコピー
-			if (fs.statSync(sourcePath).isFile()) {
-				fs.copyFileSync(sourcePath, destPath);
-				console.log("✅ バッジ画像をコピーしました:", destPath);
-			}
-		}
+		if (sourcePath && !isUiFolder) {
+    // 読み込み元の車両ルートフォルダ（dataフォルダのひとつ上）を特定
+    const carRoot = path.dirname(sourcePath);
+    const srcBadgePath = path.join(carRoot, 'ui', 'badge.png');
+    
+    // 保存先の ui フォルダを特定
+    const uiDirName = isOverwrite ? path.join(path.dirname(targetDir), 'ui') : path.join(targetDir, 'ui');
+    const destBadgePath = path.join(uiDirName, 'badge.png');
+
+    // 元場所にバッジ画像があればコピーを実行
+    if (fs.existsSync(srcBadgePath)) {
+        if (!fs.existsSync(uiDirName)) fs.mkdirSync(uiDirName, { recursive: true });
+        try {
+            fs.copyFileSync(srcBadgePath, destBadgePath);
+            console.log("✅ badge.png を保存先へコピーしました。");
+        } catch (e) {
+            console.error("❌ badge.png のコピーに失敗:", e.message);
+        }
+    }
+}
 		return {
 			success: true,
 			path: targetDir
