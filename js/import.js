@@ -607,56 +607,6 @@ export function applyIniData(fileName, parsedData) {
 const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
 export async function handleMultiFileUpload(files) {
 	const fileArray = Array.from(files);
-	// 🌟 追加：パスからACルートと車名を特定してUIに表示する
-    let detectedCarName = "";
-    let acRootPath = null;
-
-    for (const f of fileArray) {
-        const filePath = (f.path || "").replace(/\\/g, '/');
-        const acMarker = "/content/cars/";
-        const idx = filePath.toLowerCase().indexOf(acMarker);
-
-        if (idx !== -1) {
-            // 1. ACルートフォルダを特定
-            acRootPath = filePath.substring(0, idx);
-            // 2. ベース車両名を特定（markerの後の最初のフォルダ名）
-            const afterMarker = filePath.substring(idx + acMarker.length);
-            detectedCarName = afterMarker.split('/');
-            break;
-        }
-    }
-
-    if (acRootPath && detectedCarName) {
-        // UI要素を取得
-        const acPathInput = document.getElementById('ac-root-path');
-        const carSelect = document.getElementById('ac-car-select');
-        const newProjectInput = document.getElementById('new-car-project-name');
-
-        // ① ルートパスをセット
-        if (acPathInput) acPathInput.value = acRootPath.replace(/\//g, '\\');
-        
-        // ② 車両リストを更新（既存の関数を使用）
-        if (typeof window.refreshCarList === 'function') {
-            await window.refreshCarList(acRootPath);
-        }
-
-        // ③ ドロップされた車名をリストから選ぶ（なければ追加）
-        if (carSelect) {
-            let exists = Array.from(carSelect.options).some(opt => opt.value === detectedCarName);
-            if (!exists) {
-                const opt = document.createElement('option');
-                opt.value = detectedCarName;
-                opt.textContent = detectedCarName;
-                carSelect.appendChild(opt);
-            }
-            carSelect.value = detectedCarName;
-        }
-
-        // ④ フォルダ名（プロジェクト名）の初期値をセット
-        if (newProjectInput && !newProjectInput.value) {
-            newProjectInput.value = detectedCarName;
-        }
-    }
 	// 🌟 追加：読み込み開始（5%）
     window.updateLoadingProgress(5, "車両データを読み込み中...", "ファイルをスキャンしています...");
 	console.log("📂 [Phase 1: Sorter] ファイルスキャンを開始します...");
