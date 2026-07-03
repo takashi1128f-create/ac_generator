@@ -29,6 +29,17 @@ import {
 	updateUiCarData,
 	collectUiCarData
 } from './logo-name.js';
+window.updateLoadingProgress = (percent, title, detail) => {
+	const overlay = document.getElementById('loading-overlay');
+	const bar = document.getElementById('loading-bar');
+	const titleEl = document.getElementById('loading-title');
+	const detailEl = document.getElementById('loading-detail');
+
+	if (overlay) overlay.classList.remove('hidden');
+	if (bar) bar.style.width = percent + '%';
+	if (title) titleEl.textContent = title;
+	if (detail) detailEl.textContent = detail;
+};
 // --- 1. データ保持・状態管理 ---
 window.THREE = THREE;
 // 各ファイルの編集状態（false:未編集, true:編集済み）を管理するオブジェクト
@@ -596,6 +607,8 @@ export function applyIniData(fileName, parsedData) {
 const ALLOWED_FILES = ['aero.ini', 'cameras.ini', 'car.ini', 'colliders.ini', 'dash_cam.ini', 'drivetrain.ini', 'engine.ini', 'final.rto', 'power.lut', 'setup.ini', 'suspensions.ini', 'tyres.ini', 'mirrors.ini', 'ui_car.json'];
 export async function handleMultiFileUpload(files) {
 	const fileArray = Array.from(files);
+	// 🌟 追加：読み込み開始（5%）
+    window.updateLoadingProgress(5, "車両データを読み込み中...", "ファイルをスキャンしています...");
 	console.log("📂 [Phase 1: Sorter] ファイルスキャンを開始します...");
 	//データファイル（ini等）が含まれている場合、その親フォルダを「保存先」として記憶する
 	for (const f of fileArray) {
@@ -653,6 +666,10 @@ export async function handleMultiFileUpload(files) {
 			});
 		}
 	}
+	// 🌟 追加：振り分け完了（25%）
+    // tasks.carRoot があれば車名をタイトルに表示
+    const carTitle = tasks.carRoot ? `「${tasks.carRoot}」を読み込み中...` : "車両データを読み込み中...";
+    window.updateLoadingProgress(25, carTitle, "圧縮ファイルを展開しています...");
 	// --- STEP 2: Dispatcher (順次実行) ---
 	console.log("🚀 [Phase 2: Dispatcher] 順次読み込みを開始します...");
 	if (tasks.carRoot) window.currentCarDirectoryName = tasks.carRoot;
@@ -674,6 +691,8 @@ export async function handleMultiFileUpload(files) {
 	}
 	// 2. ACD展開 (物理フォルダがない時のみ)
 if (!tasks.dataDirExists && tasks.acdFile) {
+	// 🌟 追加：詳細メッセージだけ更新
+        window.updateLoadingProgress(35, null, "ACD設定ファイルを展開しています...");
     console.log("📦 [ACD] kunossdk.exe で展開します...");
     const res = await window.electronAPI.unpackAcd(tasks.acdFile.path);
     if (res.success) {
@@ -692,6 +711,8 @@ if (!tasks.dataDirExists && tasks.acdFile) {
         }
     }
 }
+// 🌟 追加：展開フェーズ完了（50%）
+    window.updateLoadingProgress(50, null, "3Dモデルと設定ファイルを解析しています...");
 	console.log("DEBUG: モデル読み込み開始...");
 	// 3. 3Dモデル描写
 	for (const model of tasks.modelFiles) {
@@ -754,12 +775,27 @@ if (!tasks.dataDirExists && tasks.acdFile) {
 		const parsedData = parseINI(content);
 		applyIniData(ini.name, parsedData);
 	}
+	// 🌟 追加：解析フェーズ完了（75%）
+    window.updateLoadingProgress(75, null, "最終調整を行っています...");
 	console.log("DEBUG: 全工程終了、関数を抜けます");
 	// すべて終わったらスペック表を最終更新 [cite: 143]
 	if (typeof window.updateSpecsFromPhysics === 'function') {
 		window.updateSpecsFromPhysics();
 	}
-	console.log("✅ 全ての工程が正常に完了しました。");
+	// 🌟 追加：完了（100%）
+    window.updateLoadingProgress(100, "読み込み完了！", "エディターを表示します...");
+		// 🌟 🎵 追加ポイント：SEを鳴らす
+    const audio = new Audio('audio/complete.mp3'); // 音源ファイルのパスを指定
+		audio.volume = 0.7; // 🌟 ここで音量を調整（0.0 〜 1.0）
+    audio.play().catch(e => console.warn("SEの再生に失敗しました:", e));
+    console.log("✅ 全ての工程が正常に完了しました。");
+
+    // 🌟 追加：0.8秒だけ「完了」を見せてからモーダルを隠す
+    setTimeout(() => {
+        document.getElementById('loading-overlay')?.classList.add('hidden');
+    }, 800);
+
+    return { success: true };
 }
 // サスペンションINI処理
 // --- suspensions.ini 用のハンドラ ---

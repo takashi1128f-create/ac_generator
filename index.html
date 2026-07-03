@@ -35,6 +35,18 @@
 			<progress id="update-progress" value="0" max="100"></progress>
 		</div>
 	</div>
+	<!-- 🌟 読み込み進捗モーダル（ここから） -->
+	<div id="loading-overlay" class="modal-overlay hidden">
+		<div class="loading-container">
+			<div class="google-spinner"></div>
+			<p id="loading-title" class="loading-title">車両データを読み込み中...</p>
+			<div class="progress-wrapper">
+				<div id="loading-bar" class="progress-bar"></div>
+			</div>
+			<p id="loading-detail" class="loading-detail">準備中...</p>
+		</div>
+	</div>
+	<!-- 🌟 読み込み進捗モーダル（ここまで） -->
 	<main id="wrapper">
 		<section class="guide_box">
 			<div class="h2-title_box">

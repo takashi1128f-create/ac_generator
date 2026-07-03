@@ -1238,6 +1238,10 @@ if (carSelect) {
 }
 // ★ 修正版：D&Dと全く同じ仕組みで、データの反映までを「自然に」待つ命令
 async function loadCarToEditor(carFullPath, carDirName) {
+	// 🌟 読み込み開始！
+    if (typeof window.updateLoadingProgress === 'function') {
+        window.updateLoadingProgress(10, `「${carDirName}」を読み込み中...`, "初期化しています...");
+    }
 	// 1. D&Dと同じ「一括処理中フラグ」を立てて、途中のUI更新を一時停止させる
 	window.isMultiUploading = true;
 	// 2. 裏側(Electron)にフォルダ内のINIやKN5のリストアップを依頼
