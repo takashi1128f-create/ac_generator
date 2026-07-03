@@ -15,19 +15,56 @@ window.updateBadgeImage = updateBadgeImage;
  * バッジ画像の置換機能を初期化する
  */
 export const initBadgeHandler = () => {
-	const badgeInput = document.getElementById('badge-file-input');
-	const badgeBtn = document.getElementById('btn-change-badge');
-	if (!badgeBtn || !badgeInput) return;
-	badgeBtn.addEventListener('click', () => badgeInput.click());
-	badgeInput.addEventListener('change', (e) => {
-		const file = e.target.files;
-		if (file && file.path) {
-			const formattedPath = file.path.replace(/\\/g, '/');
-			window.pendingBadgePath = formattedPath;
-			const badgeImg = document.getElementById('ui-badge');
-			if (badgeImg) badgeImg.src = `file:///${formattedPath}`;
-		}
-	});
+    const badgeInput = document.getElementById('badge-file-input');
+    const badgeBtn = document.getElementById('btn-change-badge');
+
+    if (!badgeBtn || !badgeInput) return;
+
+    // 「置換」ボタンをクリックした時にファイル選択ダイアログを開く
+    badgeBtn.addEventListener('click', () => badgeInput.click());
+
+    // ファイルが選択された時の処理
+    badgeInput.addEventListener('change', (e) => {
+        // 【重要】e.target.files（カゴ）から、0番目の要素（ファイル本体）を取り出す
+        const file = e.target.files[0]; 
+        
+        // --- 掴んだファイルが正しいかコンソールで確認 ---
+        if (file) {
+            console.log(" [DEBUG-BADGE] カゴからファイルを取り出しました！");
+            console.log(" ➔ 名前:", file.name);
+            console.log(" ➔ 型:", file.type);
+            
+            // Electron環境であれば、ここでフルパスが表示されます
+            if (file.path) {
+                console.log(" ➔ 物理パスを確認:", file.path);
+            }
+        } else {
+            console.warn(" [DEBUG-BADGE] ファイルが選択されませんでした。");
+            return;
+        }
+
+        // 表示先の <img> 要素を取得
+        const badgeImg = document.getElementById('ui-badge');
+        if (!badgeImg) return;
+
+        // --- 画像の表示処理 ---
+        // ドラッグ＆ドロップ（D&D）と同じように、Electronのパスがあればそれを使用し、
+        // なければ Web標準の ObjectURL を生成して表示します。
+        if (file.path) {
+            // Electron環境：物理パスをURL形式に変換
+            const formattedPath = file.path.replace(/\\/g, '/');
+            window.pendingBadgePath = formattedPath; // 保存用にパスを保持
+            
+            // あなたの環境で動作実績のある形式でセット
+            badgeImg.src = `file:///${formattedPath}`;
+            console.log(" [DEBUG-BADGE] file:/// 形式で表示を更新しました。");
+        } else {
+            // ブラウザ環境：メモリ上の一時URLを生成
+            const imageUrl = URL.createObjectURL(file);
+            badgeImg.src = imageUrl;
+            console.log(" [DEBUG-BADGE] createObjectURL 形式で表示を更新しました。");
+        }
+    });
 };
 /**
  * ui_car.json をパースして適用する（<br>を改行コードに変換）
