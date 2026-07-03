@@ -681,7 +681,7 @@ if (!tasks.dataDirExists && tasks.acdFile) {
 
         // 🌟 修正ポイント：展開されたファイルのパスから「dataフォルダ」の場所を記憶する
         if (res.files && res.files.length > 0) {
-            const firstFile = res.files;
+            const firstFile = res.files[0];
             if (firstFile.path) {
                 // ファイルのフルパスから末尾のファイル名を削って、dataフォルダのパスを取得
                 const filePath = firstFile.path.replace(/\\/g, '/');
