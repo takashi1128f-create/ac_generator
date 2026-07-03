@@ -1232,7 +1232,7 @@ if (carSelect) {
 	carSelect.addEventListener('change', () => {
 		const newNameInput = document.getElementById('new-car-project-name');
 		if (newNameInput && carSelect.value !== "") {
-			newNameInput.value = carSelect.value + "_mod";
+			newNameInput.value = carSelect.value + "_copy";
 		}
 	});
 }
