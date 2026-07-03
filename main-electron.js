@@ -951,6 +951,13 @@ ipcMain.handle('read-car-folder-data', async (event, carPath) => {
 						isModel: true // 重要：これを付けることでフロント側で自動展開処理へ誘導します
 					});
 				}
+				// ★追加：data.acd も読み取り対象に含める（これがないとボタン経由で展開が始まりません）
+        else if (lowerName === 'data.acd') {
+          filesRead.push({
+            name: file,
+            path: path.join(carPath, file)
+          });
+        }
 			}
 		}
 		// 2. 「data」フォルダ内の設定ファイルを読み取る
