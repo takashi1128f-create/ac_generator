@@ -1134,13 +1134,14 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
                 console.error(`❌ ファイル ${file.name} の書き込みに失敗:`, writeErr.message);
             }
         }
-
-		// 🌟 [LIVE SYNC 専用] 
-        // もし第6引数(imageSource)に画像パスが入っていれば、無条件で badge.png として保存先にコピーする
+// 🌟 修正ポイント：コピー先を targetDir から uiDir に変更します
         if (imageSource && fs.existsSync(imageSource)) {
-            const destPath = path.join(targetDir, 'badge.png');
+            // uiフォルダが作られていることを確認（新規書き出し対策）
+            if (!fs.existsSync(uiDir)) fs.mkdirSync(uiDir, { recursive: true });
+
+            const destPath = path.join(uiDir, 'badge.png');
             fs.copyFileSync(imageSource, destPath);
-            console.log("✅ [LIVE SYNC] 画像を更新しました:", destPath);
+            console.log("✅ [Export/Overwrite] badge.png を更新しました:", destPath);
         }
         // 🌟 [通常の「一括書き出し」専用] 
         // 保存先が通常のフォルダ（data等）で、sourcePathが指定されている場合（古い仕様の互換用）
