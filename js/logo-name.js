@@ -58,6 +58,10 @@ export const initBadgeHandler = () => {
             // あなたの環境で動作実績のある形式でセット
             badgeImg.src = `file:///${formattedPath}`;
             console.log(" [DEBUG-BADGE] file:/// 形式で表示を更新しました。");
+						// LIVE SYNCがONなら、今すぐゲームフォルダにコピーを実行させる
+            if (typeof window.triggerLiveSync === 'function') {
+                window.triggerLiveSync(true); 
+            }
         } else {
             // ブラウザ環境：メモリ上の一時URLを生成
             const imageUrl = URL.createObjectURL(file);

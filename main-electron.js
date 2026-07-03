@@ -1259,15 +1259,23 @@ function cleanupSyncBackup(folderPath, shouldRestore) {
 		const docViewIni = path.join(app.getPath('documents'), 'Assetto Corsa', 'cfg', 'cars', carName, 'view.ini');
 		const viewIniOld = path.join(path.dirname(docViewIni), 'view.ini_old');
 		const carRootDir = path.dirname(folderPath);
-        const uiBackupPath = path.join(carRootDir, 'ui', 'ui_car.json_backup');
-        const uiJsonPath = path.join(carRootDir, 'ui', 'ui_car.json');
+        const uiDirPath = path.join(carRootDir, 'ui');
+        const liveBackupDir = path.join(uiDirPath, 'live_backup');
 
-        if (fs.existsSync(uiBackupPath)) {
+        // --- ユーザー要求：live_backup フォルダから復元して削除 ---
+        if (fs.existsSync(liveBackupDir)) {
             if (shouldRestore) {
-                fs.copyFileSync(uiBackupPath, uiJsonPath);
-                console.log("🧹 [LIVE SYNC] ui_car.json を復元しました。");
+                // live_backup 内にある全ファイルを ui フォルダに戻す
+                const backupFiles = fs.readdirSync(liveBackupDir);
+                backupFiles.forEach(f => {
+                    const src = path.join(liveBackupDir, f);
+                    const dest = path.join(uiDirPath, f);
+                    if (fs.existsSync(src)) fs.copyFileSync(src, dest);
+                });
+                console.log("🧹 [LIVE SYNC] ui/live_backup からファイルを復元しました。");
             }
-            fs.unlinkSync(uiBackupPath); // バックアップを削除
+            // バックアップフォルダ自体を削除
+            fs.rmSync(liveBackupDir, { recursive: true, force: true });
         }
 
         if (shouldRestore && fs.existsSync(viewIniOld)) {
@@ -1318,13 +1326,26 @@ ipcMain.handle('sync-backup-start', async (event, folderPath, files) => {
 		activeSyncFolderPath = folderPath;
 		if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
 
-        // ★追加：ui_car.json のバックアップ（dataフォルダの隣の ui フォルダから取得）
-        const carRootDir = path.dirname(folderPath); // folderPath(data) の親を取得
-        const uiJsonPath = path.join(carRootDir, 'ui', 'ui_car.json');
-        if (fs.existsSync(uiJsonPath)) {
-            fs.copyFileSync(uiJsonPath, path.join(carRootDir, 'ui', 'ui_car.json_backup'));
-            console.log("✅ [LIVE SYNC] ui_car.json_backup を作成しました。");
-        }
+        // --- ユーザー要求：uiフォルダ内に live_backup を作成して退避 ---
+            const carRootDir = path.dirname(folderPath); // dataの親（車両ルート）
+            const uiDirPath = path.join(carRootDir, 'ui');
+            const liveBackupDir = path.join(uiDirPath, 'live_backup');
+
+            // live_backup フォルダが無ければ作成
+            if (!fs.existsSync(liveBackupDir)) fs.mkdirSync(liveBackupDir, { recursive: true });
+
+            // 1. badge.png のバックアップ（存在すればコピー）
+            const badgePath = path.join(uiDirPath, 'badge.png');
+            if (fs.existsSync(badgePath)) {
+                fs.copyFileSync(badgePath, path.join(liveBackupDir, 'badge.png'));
+            }
+
+            // 2. ui_car.json のバックアップ（存在すればコピー）
+            const uiJsonPath = path.join(uiDirPath, 'ui_car.json');
+            if (fs.existsSync(uiJsonPath)) {
+                fs.copyFileSync(uiJsonPath, path.join(liveBackupDir, 'ui_car.json'));
+            }
+            console.log("✅ [LIVE SYNC] ui/live_backup に badge.png と ui_car.json を退避しました。")
 
         files.forEach(fileName => {
 			// ★【修正】view.ini がリストにあっても sync_backup にはコピーしない

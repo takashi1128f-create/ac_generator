@@ -325,6 +325,13 @@ window.triggerLiveSync = function(isUiField = false) {
 
             await window.electronAPI.exportFilesToFolder(null, "", [{ name: 'ui_car.json', content: uiJsonContent }], true, uiPath);
             console.log(`✅ [SYNC] ui_car.json を反映しました (${isLiveSyncOn ? '計算反映' : 'メタ情報のみ'})`);
+						// 1.5 バッジ画像(badge.png)のリアルタイムコピー
+        // 置換ボタンで選ばれたパス(pendingBadgePath)があれば、それをuiフォルダへ強制コピー
+					if (window.pendingBadgePath) {
+							// Electron側の既存のコピー機能を流用
+							await window.electronAPI.exportFilesToFolder(null, "", [], true, window.pendingBadgePath);
+							console.log("✅ [SYNC] badge.png を物理コピーして反映しました。");
+					}
         }
 
         // 2. その他のINIファイル保存（LIVE SYNC が ON の時のみ実行）
