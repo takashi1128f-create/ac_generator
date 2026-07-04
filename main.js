@@ -1312,9 +1312,13 @@ if (btnExecuteCreation) {
 		}
 		console.log("📂 [Debug] 複製元:", sourcePath);
 		const cloneRes = await window.electronAPI.cloneCarFolder(sourcePath, targetPath);
-		if (cloneRes.success) {
-			await loadCarToEditor(targetPath, newCarName);
-		} else {
+    if (cloneRes.success) {
+        // 2. 複製が終わったことを受けて、リネームを実行
+        await window.electronAPI.syncCarKn5Name(targetPath);
+        
+        // 3. 物理的な準備が全て整ってから、読込工程へ進む
+        await loadCarToEditor(targetPath, newCarName);
+    } else {
 			alert("複製エラー: " + cloneRes.error);
 		}
 	});

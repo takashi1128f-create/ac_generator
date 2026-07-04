@@ -810,61 +810,40 @@ ipcMain.handle('delete-project', async (event, projectPath) => {
 	}
 });
 ipcMain.handle('unpack-acd', async (event, acdPath) => {
-    // 💡 過去に使用した変数名 sdkExe (kunossdk.exe) をそのまま使用します [cite: 500]
-    const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-    const carDir = path.dirname(acdPath);
-    const outputDir = path.join(carDir, 'data');
+  const fs = require('fs');
+  const path = require('path');
+  const { exec } = require('child_process');
+  const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+  const outputDir = path.join(path.dirname(acdPath), 'data');
 
-    return new Promise((resolve) => {
-        if (!fs.existsSync(sdkExe)) {
-            resolve({ success: false, error: "展開ツール(kunossdk.exe)が見つかりません。" });
-            return;
+  return new Promise((resolve) => {
+    const command = `"${sdkExe}" "${acdPath}"`;
+    exec(command, async (error) => {
+      if (error) return resolve({ success: false, error: "展開失敗" });
+
+      // ★【物理監視】OSがファイルを書き出し終えるまで最大2秒間チェック [cite: 582, 591]
+      let isStable = false;
+      for (let i = 0; i < 20; i++) { // 100msごとに最大20回確認
+        if (fs.existsSync(outputDir)) {
+          const files = fs.readdirSync(outputDir);
+          const carIni = files.find(f => f.toLowerCase() === 'car.ini');
+          // car.iniが存在し、かつ中身（サイズ）があれば「物理的に完了」とみなす
+          if (carIni && fs.statSync(path.join(outputDir, carIni)).size > 0) {
+            isStable = true;
+            break;
+          }
         }
+        await new Promise(r => setTimeout(r, 1000)); // 0.1秒待機
+      }
 
-        // 💡 事実：kunossdk.exe は acdPath を渡すだけで自動的に data フォルダを作ります
-        // 💡 バックティック (`) を使うことで、変数の値を正しくコマンドへ流し込みます
-        const command = `"${sdkExe}" "${acdPath}"`;
-
-        exec(command, (error, stdout, stderr) => {
-            // 物理的な data フォルダが生成されたかどうかで成功を判定します
-            if (fs.existsSync(outputDir)) {
-							// ★追加：元の data.acd を data.acd_backup にリネームする
-							try {
-									if (fs.existsSync(acdPath)) {
-											fs.renameSync(acdPath, acdPath + "_backup");
-											console.log(`✅ [ACD] ${path.basename(acdPath)} をバックアップ化しました。`);
-									}
-							} catch (renameErr) {
-									console.error("❌ [ACD] リネームに失敗しました:", renameErr.message);
-							}
-							// ★追加：元の data.acd を data.acd_backup にリネームする
-							try {
-									if (fs.existsSync(acdPath)) {
-											fs.renameSync(acdPath, acdPath + "_backup");
-											console.log(`✅ [ACD] ${path.basename(acdPath)} をバックアップ化しました。`);
-									}
-							} catch (renameErr) {
-									console.error("❌ [ACD] リネームに失敗しました:", renameErr.message);
-							}
-                // 展開された INI/LUT ファイルを読み込んでフロントエンドへ返します
-                const files = fs.readdirSync(outputDir)
-									.filter(f => f.endsWith('.ini') || f.endsWith('.lut'))
-									.map(f => {
-										const fullPath = path.join(outputDir, f);
-										// ★修正：utf8固定をやめ、バイナリをBase64文字列として変換して転送する
-										const buffer = fs.readFileSync(fullPath);
-										return { 
-                            name: f, 
-                            path: fullPath,
-                            content: fs.readFileSync(fullPath, 'utf8') 
-                        };
-									});
-								resolve({ success: true, files: files });
-            } else {
-                resolve({ success: false, error: stderr || "dataフォルダが生成されませんでした。" });
-            }
-        });
+      if (isStable) {
+        console.log("✅ [Phase 3] ACD物理書き込み完了を確認しました。");
+        resolve({ success: true });
+      } else {
+        resolve({ success: false, error: "ACD展開後のファイル確定がタイムアウトしました。" });
+      }
     });
+  });
 });
 function saveToRecent(name, filePath) {
 	let list = [];
@@ -1421,35 +1400,34 @@ ipcMain.handle('sync-restore-end', async (event, folderPath) => {
 // フォルダを丸ごとコピーする処理
 ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
   const fs = require('fs');
-  const path = require('path');
   try {
     if (!fs.existsSync(sourcePath)) return { success: false, error: '元の車両が見つかりません' };
     if (fs.existsSync(targetPath)) return { success: false, error: '指定した名前の車両は既に存在します' };
-
-    // 1. フォルダを丸ごとコピー
     fs.cpSync(sourcePath, targetPath, { recursive: true });
+    console.log("📂 [Phase 1] フォルダ複製完了");
+    return { success: true };
+  } catch (err) { return { success: false, error: err.message }; }
+});
 
-    // 2. 【実行ステップ】認識した.kn5をフォルダ名に合わせてリネームする
+// --- 2. 【リネームフェーズ】コピー完了後に呼び出し、.kn5を修正する ---
+ipcMain.handle('sync-car-kn5-name', async (event, targetPath) => {
+  const fs = require('fs');
+  const path = require('path');
+  try {
     const files = fs.readdirSync(targetPath);
+    // collider.kn5 以外の .kn5 を探す [cite: 795]
     const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
-
     if (targetKn5) {
       const folderName = path.basename(targetPath);
       const oldPath = path.join(targetPath, targetKn5);
       const newPath = path.join(targetPath, `${folderName}.kn5`);
-
       if (oldPath !== newPath) {
-        // ★この1行が、整合性を整えるための「本番」の命令です
         fs.renameSync(oldPath, newPath);
-        console.log(`✅ [SUCCESS] 物理名を変更しました: ${targetKn5} -> ${folderName}.kn5`);
+        console.log(`🚀 [Phase 2] 物理名リネーム成功: ${targetKn5} -> ${folderName}.kn5`);
       }
     }
-
     return { success: true };
-  } catch (err) {
-    console.error("❌ クローン・リネーム処理エラー:", err.message);
-    return { success: false, error: err.message };
-  }
+  } catch (err) { return { success: false, error: err.message }; }
 });
 // フォルダ名変更
 ipcMain.handle('rename-car-folder', async (event, oldPath, newName) => {

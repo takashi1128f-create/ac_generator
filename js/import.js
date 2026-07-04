@@ -676,41 +676,31 @@ export async function handleMultiFileUpload(files) {
 	console.log("DEBUG: KN5処理開始...");
 	// 1. KN5展開
 	for (const kn5 of tasks.kn5ToUnpack) {
-		console.log(`📦 KN5展開中: ${kn5.name}`);
-		const res = await window.electronAPI.unpackKn5(kn5.path);
-		if (res.success) {
-			// 💡 path.basename(res.fbxPath) の代わりにこれを使います
-			const fileName = res.fbxPath.split(/[\\\/]/).pop();
-			tasks.modelFiles.push({
-				name: fileName,
-				path: res.fbxPath,
-				isModel: true
-			});
-			console.log(`✅ [.kn5] 展開成功、FBXをモデルタスクへ追加: ${fileName}`);
-		}
-	}
-	// 2. ACD展開 (物理フォルダがない時のみ)
-if (!tasks.dataDirExists && tasks.acdFile) {
-	// 🌟 追加：詳細メッセージだけ更新
-        window.updateLoadingProgress(35, null, "ACD設定ファイルを展開しています...");
-    console.log("📦 [ACD] kunossdk.exe で展開します...");
+    console.log(`📦 KN5展開中: ${kn5.name}`);
+    const res = await window.electronAPI.unpackKn5(kn5.path);
+    if (res.success) {
+      // 既存の変数 tasks.modelFiles をそのまま使用 [cite: 110]
+      tasks.modelFiles.push({ 
+        name: res.fbxPath.split(/[\\/]/).pop(), 
+        path: res.fbxPath, 
+        isModel: true 
+      });
+    }
+  }
+  console.log("✅ FBX展開完了。次にACD展開へ進みます。");
+
+  // --- 2. FBXが終わったことを確認してから ACD 展開（物理監視付き）を開始 ---
+  if (!tasks.dataDirExists && tasks.acdFile) {
+    console.log(`📦 ACD展開開始: ${tasks.acdFile.name}`);
     const res = await window.electronAPI.unpackAcd(tasks.acdFile.path);
     if (res.success) {
-        tasks.dataDirExists = true;
-
-        // 🌟 修正ポイント：展開されたファイルのパスから「dataフォルダ」の場所を記憶する
-        if (res.files && res.files.length > 0) {
-            const firstFile = res.files[0];
-            if (firstFile.path) {
-                // ファイルのフルパスから末尾のファイル名を削って、dataフォルダのパスを取得
-                const filePath = firstFile.path.replace(/\\/g, '/');
-                window.currentDataFolderPath = filePath.substring(0, filePath.lastIndexOf('/'));
-                console.log("📍 [ACD] 展開後の保存先を特定しました:", window.currentDataFolderPath);
-            }
-            tasks.iniFiles.push(...res.files);
-        }
+      tasks.dataDirExists = true;
+      // 裏側で監視・収集されたファイルを既存の tasks.iniFiles へ流し込む [cite: 110, 112]
+      if (res.files) {
+        tasks.iniFiles.push(...res.files);
+      }
     }
-}
+  }
 // 🌟 追加：展開フェーズ完了（50%）
     window.updateLoadingProgress(50, null, "3Dモデルと設定ファイルを解析しています...");
 	console.log("DEBUG: モデル読み込み開始...");
