@@ -1421,44 +1421,83 @@ async function recognizeMainKn5File(carPath) {
 	}
 }
 ipcMain.handle('sync-restore-end', async (event, folderPath) => {
-	return {
-		success: cleanupSyncBackup(folderPath, true)
-	};
+    return { success: cleanupSyncBackup(folderPath, true) };
 });
-// フォルダを丸ごとコピーする処理
+// --- 💡ここからが修正対象となる clone-car-folder です（590行目付近） ---
 ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
-	const fs = require('fs');
-	const path = require('path');
-	try {
-		if (!fs.existsSync(sourcePath)) return {
-			success: false,
-			error: '元の車両が見つかりません'
-		};
-		if (fs.existsSync(targetPath)) return {
-			success: false,
-			error: '指定した名前の車両は既に存在します'
-		};
-		// 1. フォルダを丸ごとコピー
-		fs.cpSync(sourcePath, targetPath, {
-			recursive: true
-		});
-		// 2. 【実行ステップ】認識した.kn5をフォルダ名に合わせてリネームする
-		const files = fs.readdirSync(targetPath);
-		const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
-		if (targetKn5) {
-			const folderName = path.basename(targetPath);
-			const oldPath = path.join(targetPath, targetKn5);
-			const newPath = path.join(targetPath, `${folderName}.kn5`);
-			if (oldPath !== newPath) {
-				// ★この1行が、整合性を整えるための「本番」の命令です
-				fs.renameSync(oldPath, newPath);
-				console.log(`✅ [SUCCESS] 物理名を変更しました: ${targetKn5} -> ${folderName}.kn5`);
-			}
-		}
-		return {
-			success: true
-		};
-	} catch (err) {
+    const fs = require('fs');
+    const path = require('path');
+    const { execSync } = require('child_process'); // 順次実行(待機)のために必要
+
+    try {
+        if (!fs.existsSync(sourcePath)) return { success: false, error: '元の車両が見つかりません' };
+        if (fs.existsSync(targetPath)) return { success: false, error: '指定した名前の車両は既に存在します' };
+
+        const dataDirPath = path.join(sourcePath, 'data');
+        const acdPath = path.join(sourcePath, 'data.acd');
+        const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+        let isTemporarilyUnpacked = false;
+
+        // ==========================================
+        // PHASE 1: 元フォルダの事前準備（バックアップ復帰 ➔ 展開）
+        // ==========================================
+        console.log("🕵️ [PHASE 1] 元フォルダの調査と準備を開始...");
+
+        // 1.1 あらゆる末尾の data.acd_... を data.acd に戻す
+        if (!fs.existsSync(acdPath)) {
+            const allFiles = fs.readdirSync(sourcePath);
+            const anyAcdBackup = allFiles.find(f => f.startsWith('data.acd') && f !== 'data.acd');
+            if (anyAcdBackup) {
+                fs.renameSync(path.join(sourcePath, anyAcdBackup), acdPath);
+                console.log(`🔄 ACD復帰成功: ${anyAcdBackup}`);
+            }
+        }
+
+        // 1.2 dataフォルダがない場合のみ展開して「複製できる状態」にする
+        if (!fs.existsSync(dataDirPath) && fs.existsSync(acdPath)) {
+            execSync(`"${sdkExe}" "${acdPath}"`); // 完了するまで次へ進まない
+            isTemporarilyUnpacked = true;
+            console.log("✅ 元フォルダ内への一時展開が完了しました。");
+        }
+
+        // ==========================================
+        // PHASE 2: 物理的な複製（コピー）
+        // ==========================================
+        console.log("🚚 [PHASE 2] フォルダの物理コピーを開始...");
+        
+        // 元フォルダが「展開済み」になったのを確認してからコピーを実行
+        fs.cpSync(sourcePath, targetPath, { recursive: true });
+        
+        console.log("✅ コピーが完了しました。");
+
+        // ==========================================
+        // PHASE 3: 複製先でのメインKN5リネーム処理
+        // ==========================================
+        console.log("📝 [PHASE 3] 複製先でのメインKN5のリネームを開始...");
+
+        const files = fs.readdirSync(targetPath); // 複製先のファイル一覧を取得
+        // 過去の協議で確定した「メインKN5」の認識ルール（collider以外）を使用 [cite: 512, 546]
+        const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
+
+        if (targetKn5) {
+            const folderName = path.basename(targetPath); // 複製先フォルダの名前を取得
+            const oldPath = path.join(targetPath, targetKn5);
+            const newPath = path.join(targetPath, `${folderName}.kn5`);
+
+            if (oldPath !== newPath) {
+                // 物理的なファイル名変更を実行 [cite: 513, 547]
+                fs.renameSync(oldPath, newPath);
+                console.log(`✅ [PHASE 3] リネーム成功: ${targetKn5} -> ${folderName}.kn5`);
+            } else {
+                console.log("ℹ️ [PHASE 3] すでに正しい名前のため、リネームをスキップしました。");
+            }
+        } else {
+            console.warn("⚠️ [PHASE 3] 警告：複製先にメインの.kn5ファイルが見つかりませんでした。");
+        }
+
+// --- 修正箇所の「下」数行（次のPHASEへ続く） ---
+        return { success: true };
+    } catch (err) {
 		console.error("❌ クローン・リネーム処理エラー:", err.message);
 		return {
 			success: false,
