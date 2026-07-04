@@ -314,28 +314,48 @@ window.updateProjectSidebar = async function() {
 };
 // フォルダ名変更
 document.getElementById('car-name-edit').addEventListener('click', async () => {
-	const newName = document.getElementById('new-car-project-name').value.trim();
-	if (!newName) return alert("車両名を入力してください");
-	// 【修正箇所】window.parent(path) ではなく、文字列操作で data フォルダを削る
-	const oldDataPath = window.currentDataFolderPath; // 例: "C:\...\car_folder\data"
-	const oldPath = oldDataPath ? oldDataPath.replace(/[\\/]data$/i, '') : null;
-	// 1. 物理フォルダをリネーム（必要な場合のみ）
-	if (oldPath && confirm(`フォルダ名を「${newName}」に変更しますか？`)) {
-		// window.electronAPI.renameCarFolder が main-electron.js / preload.js に実装されている必要があります
-		const res = await window.electronAPI.renameCarFolder(oldPath, newName);
-		if (res.success) {
-			// 保存パスを新しいフォルダ基準のdataフォルダに書き換える
-			window.currentDataFolderPath = res.newPath + "\\data";
-			// リネーム成功直後にサウンド修正を呼び出す
-			await window.fixCarSound(res.newPath, oldName, newName);
+    console.log("🔘 [DEBUG] フォルダ名変更ボタンがクリックされました");
 
-		} else {
-			return alert("フォルダのリネームに失敗しました: " + res.error);
-		}
-	}
-	// 2. 内部変数を新しい名前にセット
-	window.currentCarDirectoryName = newName;
-	alert(`車両名を「${newName}」に変更しました。`);
+    const newName = document.getElementById('new-car-project-name').value.trim();
+    if (!newName) return alert("車両名を入力してください");
+
+    // 1. 名前の不一致を修正：window.currentCarDirectoryName が空ならパスから逆算する [cite: 343, 347]
+    let oldName = window.currentCarDirectoryName;
+    if (!oldName && window.currentDataFolderPath) {
+        // "C:\...\car_folder\data" の後ろから2番目を取得して補完
+        const pathParts = window.currentDataFolderPath.split(/[\\/]/);
+        oldName = pathParts[pathParts.length - 2];
+    }
+
+    const oldDataPath = window.currentDataFolderPath;
+    const oldPath = oldDataPath ? oldDataPath.replace(/[\\/]data$/i, '') : null;
+
+    console.log(`📂 [DEBUG] 変換前: ${oldName}, 変換後: ${newName}`);
+
+    // 2. 物理フォルダをリネーム
+    if (oldPath && confirm(`フォルダ名を「${newName}」に変更します完？`)) {
+        const res = await window.electronAPI.renameCarFolder(oldPath, newName);
+        if (res.success) {
+            // 修正：バックスラッシュは必ず2つ書く [cite: 302]
+            window.currentDataFolderPath = res.newPath + "\\data";
+            
+            // 3. サウンド設定(GUIDs等)の自動修正を実行
+            await window.fixCarSound(res.newPath, oldName, newName);
+
+            // 4. アプリ内の管理名を更新
+            window.currentCarDirectoryName = newName;
+
+            // 5. 修正：標準アラートではなく、プロジェクト共通のモーダルを表示する [cite: 55, 68]
+            if (typeof window.showCustomPopup === 'function') {
+                window.showCustomPopup(`✅ 車両名を「<strong>${newName}</strong>」に変更しました。<br>サウンド設定も自動修正されました。`);
+            } else {
+                alert(`車両名を「${newName}」に変更しました。`);
+            }
+
+        } else {
+            return alert("フォルダのリネームに失敗しました: " + res.error);
+        }
+    }
 });
 // ==========================================
 // ★ 新設：サウンドの整合性を整える共通司令塔
