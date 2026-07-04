@@ -1671,33 +1671,34 @@ ipcMain.handle('rename-car-kn5', async (event, carPath, newName) => {
         return { success: false, error: err.message };
     }
 });
+// kn5のモデルの置き換えする為lods.iniの書き換えを追加
 function updateLodsIni(carPath, newName) {
     const fs = require('fs');
     const path = require('path');
-    
-    // 1. 住所の特定：data/lods.ini へのパスを作成 [cite: 556]
     const lodsIniPath = path.join(carPath, 'data', 'lods.ini');
 
-    // 2. 存在確認：他のファイル確認コードと同様にチェック [cite: 534, 566]
     if (fs.existsSync(lodsIniPath)) {
         try {
-            console.log(`🔍 [LODS-CHECK] ファイルを発見しました。更新を開始します: ${lodsIniPath}`);
-            
-            // utf8形式でテキストを読み込み
+            // 1. 読込
             let content = fs.readFileSync(lodsIniPath, 'utf8');
 
-            // 3. 置換：バックティックで囲み、変数を正しく展開します
-            // FILE= で始まる行を、新しい車両名.kn5 に書き換えます
-            content = content.replace(/^FILE=.*$/mi, `FILE=${newName}.kn5`);
+            // 2. 置換（メモリ上でのデータ作成） [cite: 550]
+            // 変数を確実に展開するため、バックティック( ` )で囲みます
+            const updatedContent = content.replace(/^FILE=.*$/mi, `FILE=${newName}.kn5`);
 
-            // 4. 保存：上書き保存を実行
-            fs.writeFileSync(lodsIniPath, content, 'utf8');
-            console.log(`✅ [LODS] 書き換えに成功しました: FILE=${newName}.kn5`);
+            // --- 追加された最後の工程：ディスクへの書き込み ---
+            // 既存の GUIDs.txt 等の書き換え処理と同じ作法で保存を実行します [cite: 549]
+            fs.writeFileSync(lodsIniPath, updatedContent, 'utf8');
+            
+            // 完了を報告（ここもバックティックで囲み、文法エラーを防止します）
+            console.log(`✅ [LODS-UPDATE] 書き換えと保存が完了しました: FILE=${newName}.kn5`);
+            // ----------------------------------------------
+
         } catch (err) {
-            console.error(`❌ [LODS] 書き換え中にエラーが発生しました:`, err.message);
+            // 書き込み権限がない場合や、保存中にエラーが起きた場合に報告
+            console.error(`❌ [LODS-ERROR] 書き込み工程で失敗しました:`, err.message);
         }
     } else {
-        // ファイルがなかった場合は警告を出して安全に終了
-        console.log(`⚠ [LODS-CHECK] 住所は正しいですが、ファイルが見つかりません: ${lodsIniPath}`);
+        console.log(`❌ [LODS-CHECK] 保存対象のファイルが見つかりません: ${lodsIniPath}`);
     }
 }
