@@ -705,14 +705,31 @@ if (!tasks.dataDirExists && tasks.acdFile) {
                 // ファイルのフルパスから末尾のファイル名を削って、dataフォルダのパスを取得
                 const filePath = firstFile.path.replace(/\\/g, '/');
                 window.currentDataFolderPath = filePath.substring(0, filePath.lastIndexOf('/'));
-                console.log("📍 [ACD] 展開後の保存先を特定しました:", window.currentDataFolderPath);
+                console.log("📍 [ACD] 展開成功。ディスクの安定を待ちます..."); 
             }
-            tasks.iniFiles.push(...res.files);
+            // tasks.iniFiles.push(...res.files); ← 削除して、この行を空にします [cite: 228]
         }
+    }
+}
+window.updateLoadingProgress(60, null, "展開されたファイルを再スキャンしています...");
+await new Promise(resolve => setTimeout(resolve, 500)); // 0.5秒待機してOSの書き込みを待つ [cite: 228]
+
+if (window.currentCarRootPath || window.currentDataFolderPath) {
+    const scanPath = (window.currentDataFolderPath) 
+        ? window.currentDataFolderPath.replace(/[\/]data$/i, '') 
+        : window.currentCarRootPath;
+    
+    // 過去に使用した信頼できる「一括読込関数」を再利用 [cite: 572, 657, 721]
+    const refresh = await window.electronAPI.readCarFolderData(scanPath);
+    if (refresh.success) {
+        // 物理ディスクに確実に存在する「本物のファイルリスト」で中身を入れ替える
+        tasks.iniFiles = refresh.files.filter(f => !f.isModel && f.name !== 'ui_car.json');
+        tasks.uiJson = refresh.files.find(f => f.name === 'ui_car.json') || tasks.uiJson;
     }
 }
 // 🌟 追加：展開フェーズ完了（50%）
     window.updateLoadingProgress(50, null, "3Dモデルと設定ファイルを解析しています...");
+
 	console.log("DEBUG: モデル読み込み開始...");
 	// 3. 3Dモデル描写
 	for (const model of tasks.modelFiles) {

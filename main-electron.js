@@ -1428,6 +1428,7 @@ ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
 
     // 1. フォルダを丸ごとコピー
     fs.cpSync(sourcePath, targetPath, { recursive: true });
+		await new Promise(resolve => setTimeout(resolve, 500));
 
     // 2. 【実行ステップ】認識した.kn5をフォルダ名に合わせてリネームする
     const files = fs.readdirSync(targetPath);

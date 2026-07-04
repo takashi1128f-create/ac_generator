@@ -1313,6 +1313,9 @@ if (btnExecuteCreation) {
 		console.log("📂 [Debug] 複製元:", sourcePath);
 		const cloneRes = await window.electronAPI.cloneCarFolder(sourcePath, targetPath);
 		if (cloneRes.success) {
+			// 🌟【重要】複製・リネーム後にディスクが安定するまで待機
+			await new Promise(resolve => setTimeout(resolve, 500));
+			// 安定した状態で、中身を「ゼロからスキャンし直す」モードで読み込み
 			await loadCarToEditor(targetPath, newCarName);
 		} else {
 			alert("複製エラー: " + cloneRes.error);
