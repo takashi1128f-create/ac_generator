@@ -810,62 +810,67 @@ ipcMain.handle('delete-project', async (event, projectPath) => {
 	}
 });
 ipcMain.handle('unpack-acd', async (event, acdPath) => {
-    // 💡 過去に使用した変数名 sdkExe (kunossdk.exe) をそのまま使用します [cite: 500]
-    const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-    const carDir = path.dirname(acdPath);
-    const outputDir = path.join(carDir, 'data');
-
-    return new Promise((resolve) => {
-        if (!fs.existsSync(sdkExe)) {
-            resolve({ success: false, error: "展開ツール(kunossdk.exe)が見つかりません。" });
-            return;
-        }
-
-        // 💡 事実：kunossdk.exe は acdPath を渡すだけで自動的に data フォルダを作ります
-        // 💡 バックティック (`) を使うことで、変数の値を正しくコマンドへ流し込みます
-        const command = `"${sdkExe}" "${acdPath}"`;
-
-        exec(command, (error, stdout, stderr) => {
-            // 物理的な data フォルダが生成されたかどうかで成功を判定します
-            if (fs.existsSync(outputDir)) {
-							// ★追加：元の data.acd を data.acd_backup にリネームする
-							try {
-									if (fs.existsSync(acdPath)) {
-											fs.renameSync(acdPath, acdPath + "_backup");
-											console.log(`✅ [ACD] ${path.basename(acdPath)} をバックアップ化しました。`);
-									}
-							} catch (renameErr) {
-									console.error("❌ [ACD] リネームに失敗しました:", renameErr.message);
-							}
-							// ★追加：元の data.acd を data.acd_backup にリネームする
-							try {
-									if (fs.existsSync(acdPath)) {
-											fs.renameSync(acdPath, acdPath + "_backup");
-											console.log(`✅ [ACD] ${path.basename(acdPath)} をバックアップ化しました。`);
-									}
-							} catch (renameErr) {
-									console.error("❌ [ACD] リネームに失敗しました:", renameErr.message);
-							}
-                // 展開された INI/LUT ファイルを読み込んでフロントエンドへ返します
-                const files = fs.readdirSync(outputDir)
-									.filter(f => f.endsWith('.ini') || f.endsWith('.lut'))
-									.map(f => {
-										const fullPath = path.join(outputDir, f);
-										// ★修正：utf8固定をやめ、バイナリをBase64文字列として変換して転送する
-										const buffer = fs.readFileSync(fullPath);
-										return { 
-                            name: f, 
-                            path: fullPath,
-                            content: fs.readFileSync(fullPath, 'utf8') 
-                        };
-									});
-								resolve({ success: true, files: files });
-            } else {
-                resolve({ success: false, error: stderr || "dataフォルダが生成されませんでした。" });
-            }
-        });
-    });
+	// 💡 過去に使用した変数名 sdkExe (kunossdk.exe) をそのまま使用します [cite: 500]
+	const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+	const carDir = path.dirname(acdPath);
+	const outputDir = path.join(carDir, 'data');
+	return new Promise((resolve) => {
+		if (!fs.existsSync(sdkExe)) {
+			resolve({
+				success: false,
+				error: "展開ツール(kunossdk.exe)が見つかりません。"
+			});
+			return;
+		}
+		// 💡 事実：kunossdk.exe は acdPath を渡すだけで自動的に data フォルダを作ります
+		// 💡 バックティック (`) を使うことで、変数の値を正しくコマンドへ流し込みます
+		const command = `"${sdkExe}" "${acdPath}"`;
+		exec(command, (error, stdout, stderr) => {
+			// 物理的な data フォルダが生成されたかどうかで成功を判定します
+			if (fs.existsSync(outputDir)) {
+				// ★追加：元の data.acd を data.acd_backup にリネームする
+				try {
+					if (fs.existsSync(acdPath)) {
+						fs.renameSync(acdPath, acdPath + "_backup");
+						console.log(`✅ [ACD] ${path.basename(acdPath)} をバックアップ化しました。`);
+					}
+				} catch (renameErr) {
+					console.error("❌ [ACD] リネームに失敗しました:", renameErr.message);
+				}
+				// ★追加：元の data.acd を data.acd_backup にリネームする
+				try {
+					if (fs.existsSync(acdPath)) {
+						fs.renameSync(acdPath, acdPath + "_backup");
+						console.log(`✅ [ACD] ${path.basename(acdPath)} をバックアップ化しました。`);
+					}
+				} catch (renameErr) {
+					console.error("❌ [ACD] リネームに失敗しました:", renameErr.message);
+				}
+				// 展開された INI/LUT ファイルを読み込んでフロントエンドへ返します
+				const files = fs.readdirSync(outputDir).filter(f => f.endsWith('.ini') || f.endsWith('.lut')).map(f => {
+					const fullPath = path.join(outputDir, f);
+					// ★修正：utf8固定をやめ、バイナリをBase64文字列として変換して転送する
+					const buffer = fs.readFileSync(fullPath);
+					return {
+						name: f,
+						path: fullPath,
+						content: fs.readFileSync(fullPath, 'utf8')
+					};
+				});
+				resolve({
+					success: true,
+					files: files
+				});
+			} else {
+				resolve({
+					success: false,
+					error: stderr || "dataフォルダが生成されませんでした。"
+				});
+			}
+		});
+	});
 });
+
 function saveToRecent(name, filePath) {
 	let list = [];
 	if (fs.existsSync(PATHS.recent)) {
@@ -954,12 +959,12 @@ ipcMain.handle('read-car-folder-data', async (event, carPath) => {
 					});
 				}
 				// ★追加：data.acd も読み取り対象に含める（これがないとボタン経由で展開が始まりません）
-        else if (lowerName === 'data.acd') {
-          filesRead.push({
-            name: file,
-            path: path.join(carPath, file)
-          });
-        }
+				else if (lowerName === 'data.acd') {
+					filesRead.push({
+						name: file,
+						path: path.join(carPath, file)
+					});
+				}
 			}
 		}
 		// 2. 「data」フォルダ内の設定ファイルを読み取る
@@ -1026,52 +1031,57 @@ ipcMain.handle('read-car-folder-data', async (event, carPath) => {
 });
 // ★引数を (event, baseDir, folderName, files, isOverwrite, sourcePath) であることを確認
 ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, files, isOverwrite, sourcePath, imageSource) => {
-  try {
+	try {
 		let targetDir = "";
 		if (isOverwrite) {
-            // 🔄 【スイッチON：元のデータに上書き】
-            if (!sourcePath) {
-                const result = await dialog.showOpenDialog({ properties: ['openDirectory'], title: '上書き先のデータフォルダを選択してください' });
-                if (result.canceled || result.filePaths.length === 0) return { success: false, error: 'キャンセルされました' };
-                targetDir = result.filePaths;
-            } else {
-                targetDir = sourcePath;
-            }
-
-            // 🌟 修正ポイント：手動の上書き（folderNameが空ではない）の時だけバックアップを実行
-            if (folderName !== "") { 
-                
-                // 1. ui_backup の作成（UI関連ファイルの保護）
-                const carRoot = (targetDir.toLowerCase().endsWith('data') || targetDir.toLowerCase().endsWith('ui')) 
-                                ? path.dirname(targetDir) : targetDir;
-                const uiPath = path.join(carRoot, 'ui');
-
-                if (fs.existsSync(uiPath)) {
-                    const uiBackupDir = path.join(uiPath, 'ui_backup');
-                    if (!fs.existsSync(uiBackupDir)) fs.mkdirSync(uiBackupDir, { recursive: true });
-                    ['ui_car.json', 'badge.png'].forEach(f => {
-                        const src = path.join(uiPath, f);
-                        if (fs.existsSync(src)) fs.copyFileSync(src, path.join(uiBackupDir, f));
-                    });
-                    console.log("📂 [Overwrite] 手動上書きのため ui_backup を作成しました。");
-                }
-
-                // 2. data_backup の作成（INIファイルの保護）
-                const isUiFolder = targetDir.replace(/[\/]$/, '').toLowerCase().endsWith('ui');
-                if (!isUiFolder) {
-                    const backupDir = path.join(targetDir, 'data_backup');
-                    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-                    for (const file of files) {
-                        const srcFile = path.join(targetDir, file.name);
-                        const destFile = path.join(backupDir, file.name);
-                        if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
-                            fs.copyFileSync(srcFile, destFile);
-                        }
-                    }
-                    console.log("📂 [Overwrite] 手動上書きのため data_backup を作成しました。");
-                }
-            } // 🌟 ここまでが手動上書き専用のバックアップ処理
-        } else {
+			// 🔄 【スイッチON：元のデータに上書き】
+			if (!sourcePath) {
+				const result = await dialog.showOpenDialog({
+					properties: ['openDirectory'],
+					title: '上書き先のデータフォルダを選択してください'
+				});
+				if (result.canceled || result.filePaths.length === 0) return {
+					success: false,
+					error: 'キャンセルされました'
+				};
+				targetDir = result.filePaths;
+			} else {
+				targetDir = sourcePath;
+			}
+			// 🌟 修正ポイント：手動の上書き（folderNameが空ではない）の時だけバックアップを実行
+			if (folderName !== "") {
+				// 1. ui_backup の作成（UI関連ファイルの保護）
+				const carRoot = (targetDir.toLowerCase().endsWith('data') || targetDir.toLowerCase().endsWith('ui')) ? path.dirname(targetDir) : targetDir;
+				const uiPath = path.join(carRoot, 'ui');
+				if (fs.existsSync(uiPath)) {
+					const uiBackupDir = path.join(uiPath, 'ui_backup');
+					if (!fs.existsSync(uiBackupDir)) fs.mkdirSync(uiBackupDir, {
+						recursive: true
+					});
+					['ui_car.json', 'badge.png'].forEach(f => {
+						const src = path.join(uiPath, f);
+						if (fs.existsSync(src)) fs.copyFileSync(src, path.join(uiBackupDir, f));
+					});
+					console.log("📂 [Overwrite] 手動上書きのため ui_backup を作成しました。");
+				}
+				// 2. data_backup の作成（INIファイルの保護）
+				const isUiFolder = targetDir.replace(/[\/]$/, '').toLowerCase().endsWith('ui');
+				if (!isUiFolder) {
+					const backupDir = path.join(targetDir, 'data_backup');
+					if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, {
+						recursive: true
+					});
+					for (const file of files) {
+						const srcFile = path.join(targetDir, file.name);
+						const destFile = path.join(backupDir, file.name);
+						if (fs.existsSync(srcFile) && !fs.existsSync(destFile)) {
+							fs.copyFileSync(srcFile, destFile);
+						}
+					}
+					console.log("📂 [Overwrite] 手動上書きのため data_backup を作成しました。");
+				}
+			} // 🌟 ここまでが手動上書き専用のバックアップ処理
+		} else {
 			// 💾 【スイッチOFF：新規書き出し】
 			// バックアップは絶対に作らない
 			if (!baseDir) {
@@ -1091,72 +1101,74 @@ ipcMain.handle('export-files-to-folder', async (event, baseDir, folderName, file
 			}
 		}
 		// 📁 フォルダの準備
-        if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-
-        // ★修正：新規書き出し（isOverwrite=false）の時だけ、子フォルダを作る
-        let dataDir = targetDir;
-				let uiDir = targetDir;
-
-				if (!isOverwrite) {
-						dataDir = path.join(targetDir, 'data');
-						uiDir = path.join(targetDir, 'ui');
-				} else if (targetDir.toLowerCase().endsWith('data')) {
-						// 上書き先が data フォルダなら、ui フォルダはその隣にあると判断
-						const carRoot = path.dirname(targetDir);
-						uiDir = path.join(carRoot, 'ui');
-				}
-
-        if (!isOverwrite) {
-            if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-            if (!fs.existsSync(uiDir)) fs.mkdirSync(uiDir, { recursive: true });
-        }
-
-        for (const file of files) {
-            // ★修正：ファイル名によって保存先を自動で振り分ける
-            let finalPath;
-            if (file.name === 'ui_car.json') {
-                finalPath = path.join(uiDir, file.name);
-            } else {
-                finalPath = path.join(dataDir, file.name);
-            }
-
-            // ratios.rto の重複チェック
-            if (file.name === 'ratios.rto' && fs.existsSync(finalPath)) continue;
-
-            try {
-                fs.writeFileSync(finalPath, file.content, 'utf8');
-                console.log(`📝 [Export] ${file.name} -> ${path.basename(path.dirname(finalPath))} フォルダ`);
-            } catch (writeErr) {
-                console.error(`❌ ファイル ${file.name} の書き込みに失敗:`, writeErr.message);
-            }
-        }
-// 🌟 修正ポイント：コピー先を targetDir から uiDir に変更します
-        if (imageSource && fs.existsSync(imageSource)) {
-            // uiフォルダが作られていることを確認（新規書き出し対策）
-            if (!fs.existsSync(uiDir)) fs.mkdirSync(uiDir, { recursive: true });
-
-            const destPath = path.join(uiDir, 'badge.png');
-            fs.copyFileSync(imageSource, destPath);
-            console.log("✅ [Export/Overwrite] badge.png を更新しました:", destPath);
-        }
-        // 🌟 [通常の「一括書き出し」専用] 
-        // 保存先が通常のフォルダ（data等）で、sourcePathが指定されている場合（古い仕様の互換用）
-        else if (sourcePath && fs.existsSync(sourcePath) && !isUiFolder) {
-            const uiDirPath = path.join(targetDir, 'ui'); 
-            if (!fs.existsSync(uiDirPath)) {
-                fs.mkdirSync(uiDirPath, { recursive: true });
-            }
-            const destPath = path.join(uiDirPath, 'badge.png');
-            if (fs.statSync(sourcePath).isFile()) {
-                fs.copyFileSync(sourcePath, destPath);
-                console.log("✅ 通常書き出し: バッジ画像をコピーしました:", destPath);
-            }
-        }
-
-        return {
-            success: true,
-            path: targetDir
-        };
+		if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, {
+			recursive: true
+		});
+		// ★修正：新規書き出し（isOverwrite=false）の時だけ、子フォルダを作る
+		let dataDir = targetDir;
+		let uiDir = targetDir;
+		if (!isOverwrite) {
+			dataDir = path.join(targetDir, 'data');
+			uiDir = path.join(targetDir, 'ui');
+		} else if (targetDir.toLowerCase().endsWith('data')) {
+			// 上書き先が data フォルダなら、ui フォルダはその隣にあると判断
+			const carRoot = path.dirname(targetDir);
+			uiDir = path.join(carRoot, 'ui');
+		}
+		if (!isOverwrite) {
+			if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, {
+				recursive: true
+			});
+			if (!fs.existsSync(uiDir)) fs.mkdirSync(uiDir, {
+				recursive: true
+			});
+		}
+		for (const file of files) {
+			// ★修正：ファイル名によって保存先を自動で振り分ける
+			let finalPath;
+			if (file.name === 'ui_car.json') {
+				finalPath = path.join(uiDir, file.name);
+			} else {
+				finalPath = path.join(dataDir, file.name);
+			}
+			// ratios.rto の重複チェック
+			if (file.name === 'ratios.rto' && fs.existsSync(finalPath)) continue;
+			try {
+				fs.writeFileSync(finalPath, file.content, 'utf8');
+				console.log(`📝 [Export] ${file.name} -> ${path.basename(path.dirname(finalPath))} フォルダ`);
+			} catch (writeErr) {
+				console.error(`❌ ファイル ${file.name} の書き込みに失敗:`, writeErr.message);
+			}
+		}
+		// 🌟 修正ポイント：コピー先を targetDir から uiDir に変更します
+		if (imageSource && fs.existsSync(imageSource)) {
+			// uiフォルダが作られていることを確認（新規書き出し対策）
+			if (!fs.existsSync(uiDir)) fs.mkdirSync(uiDir, {
+				recursive: true
+			});
+			const destPath = path.join(uiDir, 'badge.png');
+			fs.copyFileSync(imageSource, destPath);
+			console.log("✅ [Export/Overwrite] badge.png を更新しました:", destPath);
+		}
+		// 🌟 [通常の「一括書き出し」専用] 
+		// 保存先が通常のフォルダ（data等）で、sourcePathが指定されている場合（古い仕様の互換用）
+		else if (sourcePath && fs.existsSync(sourcePath) && !isUiFolder) {
+			const uiDirPath = path.join(targetDir, 'ui');
+			if (!fs.existsSync(uiDirPath)) {
+				fs.mkdirSync(uiDirPath, {
+					recursive: true
+				});
+			}
+			const destPath = path.join(uiDirPath, 'badge.png');
+			if (fs.statSync(sourcePath).isFile()) {
+				fs.copyFileSync(sourcePath, destPath);
+				console.log("✅ 通常書き出し: バッジ画像をコピーしました:", destPath);
+			}
+		}
+		return {
+			success: true,
+			path: targetDir
+		};
 	} catch (error) {
 		return {
 			success: false,
@@ -1283,26 +1295,27 @@ function cleanupSyncBackup(folderPath, shouldRestore) {
 		const docViewIni = path.join(app.getPath('documents'), 'Assetto Corsa', 'cfg', 'cars', carName, 'view.ini');
 		const viewIniOld = path.join(path.dirname(docViewIni), 'view.ini_old');
 		const carRootDir = path.dirname(folderPath);
-        const uiDirPath = path.join(carRootDir, 'ui');
-        const liveBackupDir = path.join(uiDirPath, 'live_backup');
-
-        // --- ユーザー要求：live_backup フォルダから復元して削除 ---
-        if (fs.existsSync(liveBackupDir)) {
-            if (shouldRestore) {
-                // live_backup 内にある全ファイルを ui フォルダに戻す
-                const backupFiles = fs.readdirSync(liveBackupDir);
-                backupFiles.forEach(f => {
-                    const src = path.join(liveBackupDir, f);
-                    const dest = path.join(uiDirPath, f);
-                    if (fs.existsSync(src)) fs.copyFileSync(src, dest);
-                });
-                console.log("🧹 [LIVE SYNC] ui/live_backup からファイルを復元しました。");
-            }
-            // バックアップフォルダ自体を削除
-            fs.rmSync(liveBackupDir, { recursive: true, force: true });
-        }
-
-        if (shouldRestore && fs.existsSync(viewIniOld)) {
+		const uiDirPath = path.join(carRootDir, 'ui');
+		const liveBackupDir = path.join(uiDirPath, 'live_backup');
+		// --- ユーザー要求：live_backup フォルダから復元して削除 ---
+		if (fs.existsSync(liveBackupDir)) {
+			if (shouldRestore) {
+				// live_backup 内にある全ファイルを ui フォルダに戻す
+				const backupFiles = fs.readdirSync(liveBackupDir);
+				backupFiles.forEach(f => {
+					const src = path.join(liveBackupDir, f);
+					const dest = path.join(uiDirPath, f);
+					if (fs.existsSync(src)) fs.copyFileSync(src, dest);
+				});
+				console.log("🧹 [LIVE SYNC] ui/live_backup からファイルを復元しました。");
+			}
+			// バックアップフォルダ自体を削除
+			fs.rmSync(liveBackupDir, {
+				recursive: true,
+				force: true
+			});
+		}
+		if (shouldRestore && fs.existsSync(viewIniOld)) {
 			fs.unlinkSync(viewIniOld);
 		}
 		const backupDir = path.join(folderPath, 'sync_backup');
@@ -1348,30 +1361,29 @@ ipcMain.handle('sync-backup-start', async (event, folderPath, files) => {
 		}
 		const backupDir = path.join(folderPath, 'sync_backup');
 		activeSyncFolderPath = folderPath;
-		if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-
-        // --- ユーザー要求：uiフォルダ内に live_backup を作成して退避 ---
-            const carRootDir = path.dirname(folderPath); // dataの親（車両ルート）
-            const uiDirPath = path.join(carRootDir, 'ui');
-            const liveBackupDir = path.join(uiDirPath, 'live_backup');
-
-            // live_backup フォルダが無ければ作成
-            if (!fs.existsSync(liveBackupDir)) fs.mkdirSync(liveBackupDir, { recursive: true });
-
-            // 1. badge.png のバックアップ（存在すればコピー）
-            const badgePath = path.join(uiDirPath, 'badge.png');
-            if (fs.existsSync(badgePath)) {
-                fs.copyFileSync(badgePath, path.join(liveBackupDir, 'badge.png'));
-            }
-
-            // 2. ui_car.json のバックアップ（存在すればコピー）
-            const uiJsonPath = path.join(uiDirPath, 'ui_car.json');
-            if (fs.existsSync(uiJsonPath)) {
-                fs.copyFileSync(uiJsonPath, path.join(liveBackupDir, 'ui_car.json'));
-            }
-            console.log("✅ [LIVE SYNC] ui/live_backup に badge.png と ui_car.json を退避しました。")
-
-        files.forEach(fileName => {
+		if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, {
+			recursive: true
+		});
+		// --- ユーザー要求：uiフォルダ内に live_backup を作成して退避 ---
+		const carRootDir = path.dirname(folderPath); // dataの親（車両ルート）
+		const uiDirPath = path.join(carRootDir, 'ui');
+		const liveBackupDir = path.join(uiDirPath, 'live_backup');
+		// live_backup フォルダが無ければ作成
+		if (!fs.existsSync(liveBackupDir)) fs.mkdirSync(liveBackupDir, {
+			recursive: true
+		});
+		// 1. badge.png のバックアップ（存在すればコピー）
+		const badgePath = path.join(uiDirPath, 'badge.png');
+		if (fs.existsSync(badgePath)) {
+			fs.copyFileSync(badgePath, path.join(liveBackupDir, 'badge.png'));
+		}
+		// 2. ui_car.json のバックアップ（存在すればコピー）
+		const uiJsonPath = path.join(uiDirPath, 'ui_car.json');
+		if (fs.existsSync(uiJsonPath)) {
+			fs.copyFileSync(uiJsonPath, path.join(liveBackupDir, 'ui_car.json'));
+		}
+		console.log("✅ [LIVE SYNC] ui/live_backup に badge.png と ui_car.json を退避しました。")
+		files.forEach(fileName => {
 			// ★【修正】view.ini がリストにあっても sync_backup にはコピーしない
 			if (fileName !== 'view.ini') {
 				const src = path.join(folderPath, fileName);
@@ -1390,28 +1402,23 @@ ipcMain.handle('sync-backup-start', async (event, folderPath, files) => {
 });
 // ★ 認識のみ：フォルダ内の車体ファイルを特定し、ログに報告する関数
 async function recognizeMainKn5File(carPath) {
-  const fs = require('fs');
-  const path = require('path');
-  console.log("--- 🔍 [RECOGNITION-TEST] 認識ステップ開始 ---");
-  console.log("探索対象パス:", carPath);
-
-  try {
-    const files = fs.readdirSync(carPath);
-    
-    // 既存のFBX展開時と同じ認識ルール [cite: 324, 707]
-    const targetFile = files.find(f => 
-      f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5'
-    );
-
-    if (targetFile) {
-      console.log("✅ 【認識成功】メイン車体として特定したファイル:", targetFile);
-      console.log("💡 次のステップでは、このファイルを「" + path.basename(carPath) + ".kn5」に変える予定です。");
-    } else {
-      console.log("❌ 【認識失敗】.kn5（collider以外）が見つかりませんでした。");
-    }
-  } catch (err) {
-    console.error("❌ 【エラー】フォルダのスキャン自体に失敗:", err.message);
-  }
+	const fs = require('fs');
+	const path = require('path');
+	console.log("--- 🔍 [RECOGNITION-TEST] 認識ステップ開始 ---");
+	console.log("探索対象パス:", carPath);
+	try {
+		const files = fs.readdirSync(carPath);
+		// 既存のFBX展開時と同じ認識ルール [cite: 324, 707]
+		const targetFile = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
+		if (targetFile) {
+			console.log("✅ 【認識成功】メイン車体として特定したファイル:", targetFile);
+			console.log("💡 次のステップでは、このファイルを「" + path.basename(carPath) + ".kn5」に変える予定です。");
+		} else {
+			console.log("❌ 【認識失敗】.kn5（collider以外）が見つかりませんでした。");
+		}
+	} catch (err) {
+		console.error("❌ 【エラー】フォルダのスキャン自体に失敗:", err.message);
+	}
 }
 ipcMain.handle('sync-restore-end', async (event, folderPath) => {
 	return {
@@ -1420,36 +1427,44 @@ ipcMain.handle('sync-restore-end', async (event, folderPath) => {
 });
 // フォルダを丸ごとコピーする処理
 ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
-  const fs = require('fs');
-  const path = require('path');
-  try {
-    if (!fs.existsSync(sourcePath)) return { success: false, error: '元の車両が見つかりません' };
-    if (fs.existsSync(targetPath)) return { success: false, error: '指定した名前の車両は既に存在します' };
-
-    // 1. フォルダを丸ごとコピー
-    fs.cpSync(sourcePath, targetPath, { recursive: true });
-
-    // 2. 【実行ステップ】認識した.kn5をフォルダ名に合わせてリネームする
-    const files = fs.readdirSync(targetPath);
-    const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
-
-    if (targetKn5) {
-      const folderName = path.basename(targetPath);
-      const oldPath = path.join(targetPath, targetKn5);
-      const newPath = path.join(targetPath, `${folderName}.kn5`);
-
-      if (oldPath !== newPath) {
-        // ★この1行が、整合性を整えるための「本番」の命令です
-        fs.renameSync(oldPath, newPath);
-        console.log(`✅ [SUCCESS] 物理名を変更しました: ${targetKn5} -> ${folderName}.kn5`);
-      }
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error("❌ クローン・リネーム処理エラー:", err.message);
-    return { success: false, error: err.message };
-  }
+	const fs = require('fs');
+	const path = require('path');
+	try {
+		if (!fs.existsSync(sourcePath)) return {
+			success: false,
+			error: '元の車両が見つかりません'
+		};
+		if (fs.existsSync(targetPath)) return {
+			success: false,
+			error: '指定した名前の車両は既に存在します'
+		};
+		// 1. フォルダを丸ごとコピー
+		fs.cpSync(sourcePath, targetPath, {
+			recursive: true
+		});
+		// 2. 【実行ステップ】認識した.kn5をフォルダ名に合わせてリネームする
+		const files = fs.readdirSync(targetPath);
+		const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
+		if (targetKn5) {
+			const folderName = path.basename(targetPath);
+			const oldPath = path.join(targetPath, targetKn5);
+			const newPath = path.join(targetPath, `${folderName}.kn5`);
+			if (oldPath !== newPath) {
+				// ★この1行が、整合性を整えるための「本番」の命令です
+				fs.renameSync(oldPath, newPath);
+				console.log(`✅ [SUCCESS] 物理名を変更しました: ${targetKn5} -> ${folderName}.kn5`);
+			}
+		}
+		return {
+			success: true
+		};
+	} catch (err) {
+		console.error("❌ クローン・リネーム処理エラー:", err.message);
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 // フォルダ名変更
 ipcMain.handle('rename-car-folder', async (event, oldPath, newName) => {

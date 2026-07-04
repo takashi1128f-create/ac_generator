@@ -45,29 +45,22 @@ window.APP_CONFIG = {
 document.addEventListener('input', async (e) => {
 	// ★ログ1：そもそも「何か入力された」ことを検知
 	console.log(`[DEBUG-INPUT] 入力検知: ID=${e.target.id}, Tag=${e.target.tagName}`);
-
 	const isInsideEditor = e.target.closest('#wrapper');
 	if (!isInsideEditor) {
 		console.warn("[DEBUG-INPUT] 警告：#wrapper の外側での入力のため無視されました");
 		return;
 	}
-
 	// 1. 物理スペック（馬力など）の再計算
 	if (typeof window.updateSpecsFromPhysics === 'function') {
-        window.updateSpecsFromPhysics();
-    }
-
-    // ★事実に基づく修正：あなたが指定した「常に更新してほしいメタデータ」のIDリスト
-    const alwaysSyncIds = [
-        'ui-name', 'ui-author', 'ui-brand', 'ui-tags', 'ui-class', 
-        'ui-country', 'ui-version', 'ui-url', 'ui-year', 'ui-description'
-    ];
-    // 入力された項目のIDがリストに含まれているか確認
-    const isUiField = alwaysSyncIds.includes(e.target.id);
-
-    if (typeof window.triggerLiveSync === 'function') {
-        window.triggerLiveSync(isUiField);
-    }
+		window.updateSpecsFromPhysics();
+	}
+	// ★事実に基づく修正：あなたが指定した「常に更新してほしいメタデータ」のIDリスト
+	const alwaysSyncIds = ['ui-name', 'ui-author', 'ui-brand', 'ui-tags', 'ui-class', 'ui-country', 'ui-version', 'ui-url', 'ui-year', 'ui-description'];
+	// 入力された項目のIDがリストに含まれているか確認
+	const isUiField = alwaysSyncIds.includes(e.target.id);
+	if (typeof window.triggerLiveSync === 'function') {
+		window.triggerLiveSync(isUiField);
+	}
 });
 // 以下、既存のコードが続く...
 // 起動時のチラつき防止（目印がある場合は最初から透明にしておく）
@@ -564,22 +557,21 @@ window.loadProjectToUI = async function(projectState) {
 	console.log("✅ [同期完了] すべてのデータが復元されました。");
 	window.isRestoring = false;
 	if (window.currentProject && window.currentProject.environment) {
-        const env = window.currentProject.environment;
-        const badgeImg = document.getElementById('ui-badge');
-
-        if (badgeImg) {
-            if (env.custom_badge_path) {
-                // 1. もし「置換」ボタンで個別に選んだパスがあれば、そちらを優先して表示
-                badgeImg.src = `file:///${env.custom_badge_path.replace(/\\/g, '/')}`;
-                // 次回の「保存」に備えて、作業用変数(pendingBadgePath)も同期しておく
-                window.pendingBadgePath = env.custom_badge_path;
-                console.log(" [RESTORE] 置換されたカスタム画像を復元しました:", env.custom_badge_path);
-            } else if (env.data_folder) {
-                // 2. 個別パスが保存されていない場合は、標準の「車両フォルダ/ui/badge.png」を表示
-                window.updateBadgeImage(env.data_folder);
-            }
-        }
-    }
+		const env = window.currentProject.environment;
+		const badgeImg = document.getElementById('ui-badge');
+		if (badgeImg) {
+			if (env.custom_badge_path) {
+				// 1. もし「置換」ボタンで個別に選んだパスがあれば、そちらを優先して表示
+				badgeImg.src = `file:///${env.custom_badge_path.replace(/\\/g, '/')}`;
+				// 次回の「保存」に備えて、作業用変数(pendingBadgePath)も同期しておく
+				window.pendingBadgePath = env.custom_badge_path;
+				console.log(" [RESTORE] 置換されたカスタム画像を復元しました:", env.custom_badge_path);
+			} else if (env.data_folder) {
+				// 2. 個別パスが保存されていない場合は、標準の「車両フォルダ/ui/badge.png」を表示
+				window.updateBadgeImage(env.data_folder);
+			}
+		}
+	}
 	if (typeof window.updateProjectSidebar === 'function') {
 		window.updateProjectSidebar();
 	}
@@ -688,12 +680,12 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (!window.currentProject.files) window.currentProject.files = {};
 			// --- 追加：環境情報（フォルダパスや置換した画像パス）の更新 ---
 			window.currentProject.environment = {
-					// 車両データ全体のフォルダパスを保持
-					data_folder: window.currentDataFolderPath || "",
-					// 3Dモデルのパスを保持（既存の値を優先）
-					model_path: window.currentProject.environment?.model_path || "",
-					// ★最重要：置換ボタンで選ばれた「新しいロゴ画像の絶対パス」を記録！
-					custom_badge_path: window.pendingBadgePath || ""
+				// 車両データ全体のフォルダパスを保持
+				data_folder: window.currentDataFolderPath || "",
+				// 3Dモデルのパスを保持（既存の値を優先）
+				model_path: window.currentProject.environment?.model_path || "",
+				// ★最重要：置換ボタンで選ばれた「新しいロゴ画像の絶対パス」を記録！
+				custom_badge_path: window.pendingBadgePath || ""
 			};
 			// 2. 画面のデータをすべて回収（最新の全ファイルに対応）
 			const dataMap = {
@@ -1173,7 +1165,6 @@ document.addEventListener('drop', async (e) => {
 		try {
 			console.log("🚀 [Phase A] 読み込みプロセスに入りました (isMultiUploading=true)");
 			window.isMultiUploading = true;
-
 			const module = await import('./js/import.js');
 			if (module.handleMultiFileUpload) {
 				await module.handleMultiFileUpload(filesToProcess);
@@ -1184,7 +1175,7 @@ document.addEventListener('drop', async (e) => {
 		} finally {
 			window.isMultiUploading = false;
 			if (typeof window.updateSpecsFromPhysics === 'function') {
-					window.updateSpecsFromPhysics();
+				window.updateSpecsFromPhysics();
 			}
 			console.log("🏁 [Phase C] 旗(isMultiUploading)を false に戻しました");
 		}
@@ -1239,9 +1230,9 @@ if (carSelect) {
 // ★ 修正版：D&Dと全く同じ仕組みで、データの反映までを「自然に」待つ命令
 async function loadCarToEditor(carFullPath, carDirName) {
 	// 🌟 読み込み開始！
-    if (typeof window.updateLoadingProgress === 'function') {
-        window.updateLoadingProgress(10, `「${carDirName}」を読み込み中...`, "初期化しています...");
-    }
+	if (typeof window.updateLoadingProgress === 'function') {
+		window.updateLoadingProgress(10, `「${carDirName}」を読み込み中...`, "初期化しています...");
+	}
 	// 1. D&Dと同じ「一括処理中フラグ」を立てて、途中のUI更新を一時停止させる
 	window.isMultiUploading = true;
 	// 2. 裏側(Electron)にフォルダ内のINIやKN5のリストアップを依頼
