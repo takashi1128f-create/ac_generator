@@ -264,26 +264,40 @@
 							<div>
 								<p>エンジンスワップ</p>
 								<div>
-									<p>エンジンスワップの説明が入ります。エンジンスワップの説明が入ります。</p>
+									<p>簡単にエンジンスワップが出来ます。希望のエンジン搭載の車種を選んでもらう事でワンタッチで載替可能です。
+										<br>元のエンジンは同フォルダに「old-engine」に保存されています。</p>
 								</div>
 							</div>
-							<div>
-								<select id="engine-select">
-										<option value="">-- エンジンを選んでください --</option>
-								</select>
+							<div class="swap-select-outer_box">
+								<div id="engine-data">
+									<div>現在のエンジン（載せ替えた場合の元の車のフォルダ名）</div>
+								</div>
+								<div>
+									<select id="engine-select">
+											<option value="">-- エンジンを選んでください --</option>
+									</select>
+									<button id="engine-swap_btn" class="select-set-btn">SWAP</button>
+								</div>
 							</div>
 						</div>
 						<div class="car-select-outer_box">
 							<div>
 								<p>サウンドスワップ</p>
 								<div>
-									<p>サウンドスワップの説明が入ります。サウンドスワップの説明が入ります。</p>
+									<p>簡単にサウンドスワップが出来ます。希望のサウンド搭載の車種を選んでもらう事でワンタッチで載替可能です。
+										<br>元のエンジンは同フォルダに「old-sound」に保存されています。</p>
 								</div>
 							</div>
-							<div>
-								<select id="sound-select">
-										<option value="">-- サウンドを選んでください --</option>
-								</select>
+							<div class="swap-select-outer_box">
+								<div>
+									<div id="sound-data">現在のサウンド（載せ替えた場合の元の車のフォルダ名）</div>
+								</div>
+								<div>
+									<select id="sound-select">
+											<option value="">-- サウンドを選んでください --</option>
+									</select>
+									<button id="sound-swap_btn" class="select-set-btn">SWAP</button>
+								</div>
 							</div>
 						</div>
 					</article>

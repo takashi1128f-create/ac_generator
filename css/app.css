@@ -1862,6 +1862,7 @@ label {
 	padding: 0.2em;
 	border-radius: 0.5em;
 }
+.swap-select-outer_box select,
 .p-edit-name_box,
 .p-edit-name,
 .setting-item input,
@@ -1966,6 +1967,7 @@ label {
 .car-select-inner_box > div:not(:last-of-type){
 	margin-bottom: 0.5em;
 }
+.swap-select-outer_box select,
 .p-edit-name_box,
 .setting-item input,
 .setting-item select{
@@ -2176,4 +2178,11 @@ em
 .loading-detail {
 	color: #aaa;
 	font-size: 0.9rem;
+}
+.swap-select-outer_box > div:nth-of-type(2){
+	display: flex;
+	gap: 0.5em;
+}
+.swap-select-outer_box select{
+	width: 100%;
 }
