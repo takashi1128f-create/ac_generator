@@ -384,3 +384,44 @@ window.fixCarSound = async function(carPath, oldName, newName) {
         console.error("❌ [SFX] サウンド修正中にエラーが発生しました:", res.error);
     }
 };
+// ★追加：サウンドスワップ・ボタンの処理
+document.getElementById('sound-swap_btn').addEventListener('click', async () => {
+    console.log("🔘 [PHASE 1] サウンドスワップを開始...");
+
+    const donorName = document.getElementById('sound-select').value;
+    if (!donorName || donorName.startsWith('--')) return alert("移植元のサウンド（ドナー）を選択してください");
+
+    // 今の車のパスと名前を特定
+    const targetDataPath = window.currentDataFolderPath; // 例: .../cars/target/data
+    const targetPath = targetDataPath ? targetDataPath.replace(/[\\/]data$/i, '') : null;
+    const targetName = window.currentCarDirectoryName;
+
+    if (!targetPath) return alert("車両を読み込んでから実行してください。");
+
+    // ドナーのパスを算出（今の車の住所をヒントにする）
+    const pathParts = targetPath.split(/[\\/]/);
+    pathParts.pop(); // 自分の名前を削る
+    const donorPath = pathParts.join('\\') + "\\" + donorName;
+
+    console.log(`🎵 スワップ元: ${donorName} -> スワップ先: ${targetName}`);
+
+    // --- [PHASE 2 & 3] 物理スワップ（バックアップ保護付き） ---
+    if (confirm(`「${donorName}」のサウンドを移植しますか？\n（現在の音は 'old-sound' に保存されます）`)) {
+        const res = await window.electronAPI.swapCarSound(targetPath, donorPath);
+
+        if (res.success) {
+            // --- [PHASE 4] 再利用：移植された音の中身を今の車に適合させる ---
+            console.log("🎵 [PHASE 4] 移植されたサウンドの整合性を修正中...");
+            await window.fixCarSound(targetPath, donorName, targetName);
+
+            // --- [PHASE 5] 完了通知 ---
+            if (typeof window.showCustomPopup === 'function') {
+                window.showCustomPopup(`✅ <strong>${donorName}</strong> のサウンドを移植しました。<br>元の音は 'old-sound' フォルダに保管されています。`);
+            } else {
+                alert("サウンドのスワップが完了しました。");
+            }
+        } else {
+            alert("スワップ失敗: " + res.error);
+        }
+    }
+});

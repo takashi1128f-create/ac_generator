@@ -1537,8 +1537,7 @@ ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
             fs.renameSync(acdPath, originalAcdPath);
             console.log(`🔄 data.acd を元の名前「${originalAcdFileName}」に戻しました。`);
         }
-
-// --- 修正箇所の「下」数行（次のPHASEへ続く） ---
+				// --- 修正箇所の「下」数行（次のPHASEへ続く） ---
         return { success: true };
     } catch (err) {
 		console.error("❌ クローン・リネーム処理エラー:", err.message);
@@ -1547,6 +1546,46 @@ ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
 			error: err.message
 		};
 	}
+});
+// 物理サウンドスワップAPI
+ipcMain.handle('swap-car-sound', async (event, targetCarPath, donorCarPath) => {
+    const fs = require('fs');
+    const path = require('path');
+    try {
+        const targetSfx = path.join(targetCarPath, 'sfx');
+        const donorSfx = path.join(donorCarPath, 'sfx');
+        // ★修正：バックアップ先を sfx フォルダの中に変更
+        const backupSfx = path.join(targetSfx, 'old-sound');
+
+        // [PHASE 2] バックアップ作成（sfxフォルダ内へ）
+        if (fs.existsSync(targetSfx) && !fs.existsSync(backupSfx)) {
+            fs.mkdirSync(backupSfx, { recursive: true }); // まずフォルダを作る
+            
+            // sfxの中身をループして、ファイルだけを old-sound にコピーする
+            const currentFiles = fs.readdirSync(targetSfx);
+            for (const file of currentFiles) {
+                if (file === 'old-sound') continue; // 自分自身（バックアップフォルダ）はコピーしない
+                const src = path.join(targetSfx, file);
+                const dest = path.join(backupSfx, file);
+                if (fs.statSync(src).isFile()) {
+                    fs.copyFileSync(src, dest);
+                }
+            }
+            console.log("📂 [SFX] オリジナル音源を 'sfx/old-sound' に保護しました。");
+        }
+
+        // [PHASE 3] ドナーからの物理コピー
+        if (fs.existsSync(donorSfx)) {
+            fs.cpSync(donorSfx, targetSfx, { recursive: true });
+            console.log("🚚 [SFX] ドナー車両から sfx を移植完了しました。");
+        } else {
+            throw new Error("ドナー車両に sfx フォルダが見つかりません。");
+        }
+
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
 });
 // フォルダ名変更
 ipcMain.handle('rename-car-folder', async (event, oldPath, newName) => {

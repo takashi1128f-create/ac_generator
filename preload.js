@@ -51,4 +51,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
 	unpackAcd: (filePath) => ipcRenderer.invoke('unpack-acd', filePath),
 	updateCarSound: (carPath, oldName, newName) => ipcRenderer.invoke('update-car-sound', carPath, oldName, newName),
 	renameCarKn5: (carPath, newName) => ipcRenderer.invoke('rename-car-kn5', carPath, newName),
+	swapCarSound: (targetPath, donorPath) => ipcRenderer.invoke('swap-car-sound', targetPath, donorPath),
 });

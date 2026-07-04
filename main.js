@@ -1184,25 +1184,42 @@ document.addEventListener('drop', async (e) => {
 	}
 });
 // ACフォルダ選択ボタン（ご自身でHTMLに追加したボタンのIDに合わせてください）
-// --- 1. 車両リストを更新する共通関数 (新設) ---
+// --- 1. 車両リストを更新する共通関数---
+// 拡張版：車両リストを全てのプルダウン（メイン・エンジン・サウンド）に同期する関数
 window.refreshCarList = async function(acRoot) {
-	const carSelect = document.getElementById('ac-car-select');
-	const acPathInput = document.getElementById('ac-root-path');
-	if (!carSelect || !acRoot) return;
-	if (acPathInput) acPathInput.value = acRoot;
-	// ★修正：すでに content\cars が含まれているパスならそのまま、そうでなければ付与して探りに行く
-	const carsPath = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars')) ? acRoot : acRoot + "\\content\\cars";
-	const res = await window.electronAPI.getFolderList(carsPath);
-	if (res.success) {
-		carSelect.innerHTML = '<option value="">-- 車両を選択してください --</option>';
-		res.folders.forEach(carDir => {
-			const opt = document.createElement('option');
-			opt.value = carDir;
-			opt.textContent = carDir;
-			carSelect.appendChild(opt);
-		});
-		console.log("✅ [System] 車両リストを自動更新しました。");
-	}
+    const carSelect = document.getElementById('ac-car-select');
+    const engineSelect = document.getElementById('engine-select'); // 今回のHTML調整で追加されたID [cite: 7]
+    const soundSelect = document.getElementById('sound-select');   // 今回のHTML調整で追加されたID [cite: 7]
+    const acPathInput = document.getElementById('ac-root-path');
+
+    if (!carSelect || !acRoot) return;
+    if (acPathInput) acPathInput.value = acRoot;
+
+    // パスの正規化：すでに content\cars が含まれているか判定 [cite: 808]
+    const carsPath = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars')) ? acRoot : acRoot + "\\content\\cars";
+    
+    console.log("🔍 [System] 車両リストを取得中:", carsPath);
+    const res = await window.electronAPI.getFolderList(carsPath);
+
+    if (res.success) {
+        // 1. 全てのセレクトボックスを一旦空にする（初期化）
+        carSelect.innerHTML = '<option value="">-- 車両を選択してください --</option>';
+        if (engineSelect) engineSelect.innerHTML = '<option value="">-- エンジンを選んでください --</option>';
+        if (soundSelect) soundSelect.innerHTML = '<option value="">-- サウンドを選んでください --</option>';
+
+        // 2. 見つかったフォルダ名を全てのリストに追加していく
+        res.folders.forEach(carDir => {
+            const opt = document.createElement('option');
+            opt.value = carDir;
+            opt.textContent = carDir;
+
+            // 各セレクトボックスに同じ選択肢を配る（再利用）
+            carSelect.appendChild(opt.cloneNode(true));
+            if (engineSelect) engineSelect.appendChild(opt.cloneNode(true));
+            if (soundSelect) soundSelect.appendChild(opt.cloneNode(true));
+        });
+        console.log("✅ [System] 全ての車両リストを自動更新・同期しました。");
+    }
 }
 // --- 2. ACフォルダ選択ボタン & 選択時の挙動 (更新) ---
 const btnSelectAC = document.getElementById('btn-select-ac-path');
