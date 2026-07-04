@@ -1492,6 +1492,15 @@ ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
                 // 物理的なファイル名変更を実行 [cite: 513, 547]
                 fs.renameSync(oldPath, newPath);
                 console.log(`✅ [PHASE 3] リネーム成功: ${targetKn5} -> ${folderName}.kn5`);
+								// 複製先の data/lods.ini を探し、FILE= の行を新しい名前に書き換えます
+								const lodsIniPath = path.join(targetPath, 'data', 'lods.ini');
+								if (fs.existsSync(lodsIniPath)) {
+										let content = fs.readFileSync(lodsIniPath, 'utf8');
+										// 正規表現で FILE=... の行を見つけ、新しい車両名.kn5 に置き換えます
+										content = content.replace(/^FILE=.*$/mi, `FILE=${folderName}.kn5`);
+										fs.writeFileSync(lodsIniPath, content, 'utf8');
+										console.log(`📝 [LODS] 複製先の lods.ini を更新しました: ${folderName}.kn5`);
+								}
             } else {
                 console.log("ℹ️ [PHASE 3] すでに正しい名前のため、リネームをスキップしました。");
             }
@@ -1661,6 +1670,15 @@ ipcMain.handle('rename-car-kn5', async (event, carPath, newName) => {
             const newKn5Path = path.join(carPath, `${newName}.kn5`);
             fs.renameSync(oldKn5Path, newKn5Path);
             console.log(`💎 [MODEL] リネーム成功: ${targetKn5} -> ${newName}.kn5`);
+						// 車両フォルダ内の data/lods.ini を探し、FILE= の行を書き換えます
+            const lodsIniPath = path.join(carPath, 'data', 'lods.ini');
+            if (fs.existsSync(lodsIniPath)) {
+                let content = fs.readFileSync(lodsIniPath, 'utf8');
+                // FILE= で始まる行を、新車両名.kn5 に置換します
+                content = content.replace(/^FILE=.*$/mi, `FILE=${newName}.kn5`);
+                fs.writeFileSync(lodsIniPath, content, 'utf8');
+                console.log(`📝 [LODS] lods.ini の FILE 項目を更新しました: ${newName}.kn5`);
+            }
         }
         return { success: true };
     } catch (err) {
