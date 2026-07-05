@@ -418,15 +418,13 @@ document.getElementById('sound-swap_btn').addEventListener('click', async () => 
 			// ★UIの表示を更新（黄色い文字と「移植済み」を追加）
 			const soundDataBox = document.getElementById('sound-data');
 			if (soundDataBox) {
-				// 黄色い文字（#fbbf24）でドナー名を表示し、「(移植済み)」を添えます [cite: 331, 356]
 				soundDataBox.innerHTML = `<div>現在のサウンド</div><div>${donorName}</div>`;
 			}
 			// ★修正2：プロジェクトデータへの記憶（階層を合わせる）
-			// 保存ボタン（main.js）は window.currentProject.engine_origin を見に行きます [cite: 721, 834]
+			// 保存ボタン（main.js）は window.currentProject.engine_origin を見に行きます
 			if (!window.currentProject) window.currentProject = {};
-			window.currentProject.engine_origin = donorName;
 			window.currentProject.sound_origin = donorName;
-			// --- [PHASE 5] 完了通知 --- [cite: 326, 351]
+			// --- [PHASE 5] 完了通知 --- 
 			if (typeof window.showCustomPopup === 'function') {
 				window.showCustomPopup(`✅ <strong>${donorName}</strong> のサウンドを移植しました。<br>元の音は 'old-sound' フォルダに保管されています。`);
 			} else {
@@ -485,7 +483,6 @@ if (engineSwapBtn) {
 				}
 				console.log("🔄 [System] エンジン関連データのみを最新に同期しました。");
 		}
-
 		// 看板の更新（styleは書きません）
 		const engineDataBox = document.getElementById('engine-data');
 		if (engineDataBox) {
@@ -495,11 +492,10 @@ if (engineSwapBtn) {
 		if (soundDataBox) {
 				soundDataBox.innerHTML = `<div>現在のサウンド</div><div>${donorName}</div>`;
 		}
-
 		// 由来の記録
 		if (!window.currentProject) window.currentProject = {};
 		window.currentProject.engine_origin = donorName;
-
+		window.currentProject.sound_origin = donorName;
 		alert(`✨ ${donorName} からのエンジン・サウンド移植とデータ同期が完了しました！`);
 	});
 }
