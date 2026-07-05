@@ -1803,9 +1803,14 @@ label {
 .visibility-controls{
 	padding: 0.5em;
 }
+.engine-sound-text_box{
+	padding: 0.2em;
+}
 .suspension-item input{
 	margin: 0 0.2em;
 }
+.preview-area,
+.engine-sound-text_box,
 .tyres_select-explain_box,
 .suspension-item input,
 #desc-setup,
@@ -1847,6 +1852,7 @@ label {
 .car-data_box > div:not(:last-of-type){
 	margin-bottom: 0.5em;
 }
+.engine-sound-text_box p,
 .logo-editor_box h4,
 .torque-graph-outer_box > div:nth-child(2) p,
 .car-spec-data_box > p,
@@ -2185,4 +2191,13 @@ em
 }
 .swap-select-outer_box select{
 	width: 100%;
+}
+.engine-sound-outer_box .car-select-outer_box:not(:last-of-type){	
+	margin-bottom: 0.5em;
+}
+.swap-select-outer_box{
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	justify-content: center;
 }
