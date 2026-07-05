@@ -315,249 +315,193 @@ window.updateProjectSidebar = async function() {
 // フォルダ名変更
 // --- [PHASE 0] フォルダ名変更ボタンの監視開始 ---
 document.getElementById('car-name-edit').addEventListener('click', async () => {
-    console.log("🔘 [PHASE 1] フォルダ名変更の準備を開始...");
-
-    const newName = document.getElementById('new-car-project-name').value.trim();
-    const carSelect = document.getElementById('ac-car-select'); // ★追加：プルダウンからも情報を拾えるようにする
-
-    if (!newName) return alert("車両名を入力してください");
-
-    // --- [PHASE 2] 現在の状態を確認・補完 ---
-    let oldName = window.currentCarDirectoryName || (carSelect ? carSelect.value : null);
-    let oldDataPath = window.currentDataFolderPath;
-
-    // もし記憶が空なら、画面上の選択肢とルートパスから「住所」を復元する
-    if (!oldDataPath && oldName) {
-        const acRoot = document.getElementById('ac-root-path').value;
-        if (acRoot) {
-            const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
-            const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
-            oldDataPath = carsBase + "\\" + oldName + "\\data";
-        }
-    }
-
-    const oldPath = oldDataPath ? oldDataPath.replace(/[\\/]data$/i, '') : null;
-
-    if (!oldPath || oldName === "-- 車両を選択してください --") {
-        console.error("❌ フォルダパスが特定できません。");
-        return alert("エラー：対象の車両が見つかりません。車両を読み込むか、リストで選択してください。");
-    }
-
-    console.log(`📂 現車両名: ${oldName} -> 新車両名: ${newName}`);
-
-    // --- [PHASE 3] 物理的なフォルダ名変更の実行 ---
-    if (confirm(`フォルダ名を「${newName}」に変更しますか？`)) {
-        const res = await window.electronAPI.renameCarFolder(oldPath, newName);
-
-        if (res.success) {
-            // 修正：バックスラッシュは必ず2つ（\\）書く [cite: 302]
-            window.currentDataFolderPath = res.newPath + "\\data";
-            window.currentCarDirectoryName = newName;
-						console.log("💎 [PHASE 4] 3Dモデルファイル（.kn5）をリネーム中...");
-            await window.electronAPI.renameCarKn5(res.newPath, newName);
-
-            // --- [PHASE 5] サウンド設定の自動修正 ---
-            await window.fixCarSound(res.newPath, oldName, newName);
-
-            // --- [PHASE 6] 完了通知（モーダル） ---
-            if (typeof window.showCustomPopup === 'function') {
-                window.showCustomPopup(`✅ 車両名を「<strong>${newName}</strong>」に変更しました。<br>サウンド設定も自動修正されました。`);
-            } else {
-                alert(`車両名を「${newName}」に変更しました。`);
-            }
-        } else {
-            alert("フォルダのリネームに失敗しました: " + res.error);
-        }
-    }
+	console.log("🔘 [PHASE 1] フォルダ名変更の準備を開始...");
+	const newName = document.getElementById('new-car-project-name').value.trim();
+	const carSelect = document.getElementById('ac-car-select'); // ★追加：プルダウンからも情報を拾えるようにする
+	if (!newName) return alert("車両名を入力してください");
+	// --- [PHASE 2] 現在の状態を確認・補完 ---
+	let oldName = window.currentCarDirectoryName || (carSelect ? carSelect.value : null);
+	let oldDataPath = window.currentDataFolderPath;
+	// もし記憶が空なら、画面上の選択肢とルートパスから「住所」を復元する
+	if (!oldDataPath && oldName) {
+		const acRoot = document.getElementById('ac-root-path').value;
+		if (acRoot) {
+			const isAcStructure = (acRoot.endsWith('content\\cars') || acRoot.endsWith('content/cars'));
+			const carsBase = isAcStructure ? acRoot : acRoot + "\\content\\cars";
+			oldDataPath = carsBase + "\\" + oldName + "\\data";
+		}
+	}
+	const oldPath = oldDataPath ? oldDataPath.replace(/[\\/]data$/i, '') : null;
+	if (!oldPath || oldName === "-- 車両を選択してください --") {
+		console.error("❌ フォルダパスが特定できません。");
+		return alert("エラー：対象の車両が見つかりません。車両を読み込むか、リストで選択してください。");
+	}
+	console.log(`📂 現車両名: ${oldName} -> 新車両名: ${newName}`);
+	// --- [PHASE 3] 物理的なフォルダ名変更の実行 ---
+	if (confirm(`フォルダ名を「${newName}」に変更しますか？`)) {
+		const res = await window.electronAPI.renameCarFolder(oldPath, newName);
+		if (res.success) {
+			// 修正：バックスラッシュは必ず2つ（\\）書く [cite: 302]
+			window.currentDataFolderPath = res.newPath + "\\data";
+			window.currentCarDirectoryName = newName;
+			console.log("💎 [PHASE 4] 3Dモデルファイル（.kn5）をリネーム中...");
+			await window.electronAPI.renameCarKn5(res.newPath, newName);
+			// --- [PHASE 5] サウンド設定の自動修正 ---
+			await window.fixCarSound(res.newPath, oldName, newName);
+			// --- [PHASE 6] 完了通知（モーダル） ---
+			if (typeof window.showCustomPopup === 'function') {
+				window.showCustomPopup(`✅ 車両名を「<strong>${newName}</strong>」に変更しました。<br>サウンド設定も自動修正されました。`);
+			} else {
+				alert(`車両名を「${newName}」に変更しました。`);
+			}
+		} else {
+			alert("フォルダのリネームに失敗しました: " + res.error);
+		}
+	}
 });
 // ==========================================
 // ★ 新設：サウンドの整合性を整える共通司令塔
 // ==========================================
 window.fixCarSound = async function(carPath, oldName, newName) {
-    console.log(`🎵 [SFX] サウンド修正を開始: ${oldName} -> ${newName}`);
-    // preload.js で作った窓口を通じて、裏側の物理操作（リネーム・置換）を実行 [cite: 850]
-    const res = await window.electronAPI.updateCarSound(carPath, oldName, newName);
-    
-    if (res.success) {
-        console.log("✅ [SFX] サウンドの自動修正が完了しました。");
-    } else {
-        console.error("❌ [SFX] サウンド修正中にエラーが発生しました:", res.error);
-    }
+	console.log(`🎵 [SFX] サウンド修正を開始: ${oldName} -> ${newName}`);
+	// preload.js で作った窓口を通じて、裏側の物理操作（リネーム・置換）を実行 [cite: 850]
+	const res = await window.electronAPI.updateCarSound(carPath, oldName, newName);
+	if (res.success) {
+		console.log("✅ [SFX] サウンドの自動修正が完了しました。");
+	} else {
+		console.error("❌ [SFX] サウンド修正中にエラーが発生しました:", res.error);
+	}
 };
 // ★追加：サウンドスワップ・ボタンの処理
 document.getElementById('sound-swap_btn').addEventListener('click', async () => {
-    console.log("🔘 [PHASE 1] サウンドスワップを開始...");
-
-    const donorName = document.getElementById('sound-select').value;
-    if (!donorName || donorName.startsWith('--')) return alert("移植元のサウンド（ドナー）を選択してください");
-
-    // 今の車のパスと名前を特定
-    const targetDataPath = window.currentDataFolderPath; // 例: .../cars/target/data
-    const targetPath = targetDataPath ? targetDataPath.replace(/[\\/]data$/i, '') : null;
-    const targetName = window.currentCarDirectoryName;
-
-    if (!targetPath) return alert("車両を読み込んでから実行してください。");
-
-    // ドナーのパスを算出（今の車の住所をヒントにする）
-    const pathParts = targetPath.split(/[\\/]/);
-    pathParts.pop(); // 自分の名前を削る
-    const donorPath = pathParts.join('\\') + "\\" + donorName;
-
-    console.log(`🎵 スワップ元: ${donorName} -> スワップ先: ${targetName}`);
-
-    // --- [PHASE 2 & 3] 物理スワップ（バックアップ保護付き） ---
-    if (confirm(`「${donorName}」のサウンドを移植しますか？\n（現在の音は 'old-sound' に保存されます）`)) {
-        const res = await window.electronAPI.swapCarSound(targetPath, donorPath);
-
-        if (res.success) {
-            // --- [PHASE 4] 再利用：移植された音の中身を今の車に適合させる ---
-            console.log("🎵 [PHASE 4] 移植されたサウンドの整合性を修正中...");
-            await window.fixCarSound(targetPath, donorName, targetName);
-						// 🔄 [TARGET RELOAD] エンジン関連ファイルだけを最新状態に同期
-            const reloadRes = await window.electronAPI.readCarFolderData(targetPath); // [cite: 702]
-            if (reloadRes.success) {
-                const engineIniFile = reloadRes.files.find(f => f.name.toLowerCase() === 'engine.ini');
-                const powerLutFile = reloadRes.files.find(f => f.name.toLowerCase() === 'power.lut');
-                
-                if (engineIniFile) {
-                    window.currentEngineData = window.parseINI(engineIniFile.content); // [cite: 366]
-                    if (typeof window.initEngineEditor === 'function') {
-                        window.initEngineEditor(window.currentEngineData); // [cite: 162]
-                    }
-                }
-                if (powerLutFile) {
-                    if (typeof window.parsePowerLut === 'function') {
-                        window.parsePowerLut(powerLutFile.content); // [cite: 158]
-                    }
-                }
-                console.log("🔄 [System] エンジン関連データのみを最新に同期しました。");
-            }
-
-            // ★UIの表示を更新（黄色い文字と「移植済み」を追加）
-            const soundDataBox = document.getElementById('sound-data');
-            if (soundDataBox) {
-                // 黄色い文字（#fbbf24）でドナー名を表示し、「(移植済み)」を添えます [cite: 331, 356]
-                soundDataBox.innerHTML = `<div>現在のサウンド</div><div>${donorName}</div>`;
-            }
-
-            // ★修正2：プロジェクトデータへの記憶（階層を合わせる）
-            // 保存ボタン（main.js）は window.currentProject.engine_origin を見に行きます [cite: 721, 834]
-            if (!window.currentProject) window.currentProject = {};
-            window.currentProject.engine_origin = donorName;
-
-            // --- [PHASE 5] 完了通知 --- [cite: 326, 351]
-            if (typeof window.showCustomPopup === 'function') {
-                window.showCustomPopup(`✅ <strong>${donorName}</strong> のサウンドを移植しました。<br>元の音は 'old-sound' フォルダに保管されています。`);
-            } else {
-                alert("サウンドのスワップが完了しました。");
-            }
-        } else {
-            alert("スワップ失敗: " + res.error);
-        }
-    }
+	console.log("🔘 [PHASE 1] サウンドスワップを開始...");
+	const donorName = document.getElementById('sound-select').value;
+	if (!donorName || donorName.startsWith('--')) return alert("移植元のサウンド（ドナー）を選択してください");
+	// 今の車のパスと名前を特定
+	const targetDataPath = window.currentDataFolderPath; // 例: .../cars/target/data
+	const targetPath = targetDataPath ? targetDataPath.replace(/[\\/]data$/i, '') : null;
+	const targetName = window.currentCarDirectoryName;
+	if (!targetPath) return alert("車両を読み込んでから実行してください。");
+	// ドナーのパスを算出（今の車の住所をヒントにする）
+	const pathParts = targetPath.split(/[\\/]/);
+	pathParts.pop(); // 自分の名前を削る
+	const donorPath = pathParts.join('\\') + "\\" + donorName;
+	console.log(`🎵 スワップ元: ${donorName} -> スワップ先: ${targetName}`);
+	// --- [PHASE 2 & 3] 物理スワップ（バックアップ保護付き） ---
+	if (confirm(`「${donorName}」のサウンドを移植しますか？\n（現在の音は 'old-sound' に保存されます）`)) {
+		const res = await window.electronAPI.swapCarSound(targetPath, donorPath);
+		if (res.success) {
+			// --- [PHASE 4] 再利用：移植された音の中身を今の車に適合させる ---
+			console.log("🎵 [PHASE 4] 移植されたサウンドの整合性を修正中...");
+			await window.fixCarSound(targetPath, donorName, targetName);
+			// 🔄 [TARGET RELOAD] エンジン関連ファイルだけを最新状態に同期
+			const reloadRes = await window.electronAPI.readCarFolderData(targetPath);
+			if (reloadRes.success) {
+				const engineIniFile = reloadRes.files.find(f => f.name.toLowerCase() === 'engine.ini');
+				const powerLutFile = reloadRes.files.find(f => f.name.toLowerCase() === 'power.lut');
+				if (engineIniFile) {
+					window.currentEngineData = window.parseINI(engineIniFile.content);
+					if (typeof window.initEngineEditor === 'function') {
+						window.initEngineEditor(window.currentEngineData);
+					}
+				}
+				if (powerLutFile) {
+					if (typeof window.parsePowerLut === 'function') {
+						window.parsePowerLut(powerLutFile.content);
+					}
+				}
+				console.log("🔄 [System] エンジン関連データのみを最新に同期しました。");
+			}
+			// ★UIの表示を更新（黄色い文字と「移植済み」を追加）
+			const soundDataBox = document.getElementById('sound-data');
+			if (soundDataBox) {
+				// 黄色い文字（#fbbf24）でドナー名を表示し、「(移植済み)」を添えます [cite: 331, 356]
+				soundDataBox.innerHTML = `<div>現在のサウンド</div><div>${donorName}</div>`;
+			}
+			// ★修正2：プロジェクトデータへの記憶（階層を合わせる）
+			// 保存ボタン（main.js）は window.currentProject.engine_origin を見に行きます [cite: 721, 834]
+			if (!window.currentProject) window.currentProject = {};
+			window.currentProject.engine_origin = donorName;
+			// --- [PHASE 5] 完了通知 --- [cite: 326, 351]
+			if (typeof window.showCustomPopup === 'function') {
+				window.showCustomPopup(`✅ <strong>${donorName}</strong> のサウンドを移植しました。<br>元の音は 'old-sound' フォルダに保管されています。`);
+			} else {
+				alert("サウンドのスワップが完了しました。");
+			}
+		} else {
+			alert("スワップ失敗: " + res.error);
+		}
+	}
 });
 // エンジンスワップ
-document.addEventListener('click', async (e) => {
-    // 1. あなたが用意したボタンID "engine-swap_btn" かどうかを判定 
-    if (e.target && e.target.id === 'engine-swap_btn') {
-        
+const engineSwapBtn = document.getElementById('engine-swap_btn');
+if (engineSwapBtn) {
+    engineSwapBtn.addEventListener('click', async () => {
+        console.log("🔘 [ENGINE-SWAP] 処理を開始します...");
+
+        // 【PHASE 1】ドナーと住所の特定
         const donorName = document.getElementById('engine-select').value;
         if (!donorName || donorName.startsWith('--')) return alert("移植元（ドナー）を選択してください");
 
-        // 過去の資産を活用：現在の車両の data フォルダの住所を取得 
-        const currentDataPath = window.currentDataFolderPath; 
+        const currentDataPath = window.currentDataFolderPath;
         if (!currentDataPath) return alert("先に車両を読み込んでください");
 
-        // ✅ 【ここが修正のキモ】スラッシュの向きに左右されず、確実に2つ上のフォルダへ戻る計算
-        // 手順1：末尾の "/data" または "\data" を消して、自分の車のフォルダにする
-        const carRoot = currentDataPath.replace(/[\\\/]data$/i, '');
-        // 手順2：自分の車のフォルダ名の直前にある「最後の区切り文字（\ または /）」が何文字目か探す
+        const carRoot = currentDataPath.replace(/[\/]data$/i, '');
         const lastSlashIndex = Math.max(carRoot.lastIndexOf('\\'), carRoot.lastIndexOf('/'));
-        // 手順3：そこまでを切り出し、大元の cars フォルダを特定する
         const carsFolder = carRoot.substring(0, lastSlashIndex);
-        
-        // 手順4：Windowsの作法に合わせてドナーの名前を合体させる
         const donorPath = carsFolder + "\\" + donorName;
 
-        console.log(`🔎 [SWAP-PHASE1] 住所を修正しました: ${donorPath}`);
-
-        // 2. 裏側（Electron）に「この住所に engine.ini があるか」を聞く
+        // 【PHASE 2】物理チェック（engine.iniの存在確認）
         const res = await window.electronAPI.checkEngineFiles(donorPath);
+        if (!res.success) return alert(`❌ 失敗：${res.error}\n計算された住所：${donorPath}`);
 
-        if (res.success) {
-            // ✅ 【ここが繋ぎ目】工程1が成功したら、すぐに工程2を呼び出す
-            console.log(`🛠 [SWAP-PHASE2] 工程1成功につき、避難所の作成を開始します...`);
+        // 【PHASE 3-5】ファイルのコピーとサウンド移植
+        const copyRes = await window.electronAPI.copyEngineFiles(donorPath, currentDataPath);
+        if (!copyRes.success) return alert(`❌ コピー失敗：${copyRes.error}`);
 
-            // 裏側に避難所作成を依頼（今の自分の data フォルダの住所を渡す）
-            const backupRes = await window.electronAPI.createEngineBackup(currentDataPath);
+        const soundRes = await window.electronAPI.swapCarSound(carRoot, donorPath);
+        if (!soundRes.success) return alert(`❌ サウンド移植失敗：${soundRes.error}`);
 
-            if (backupRes.success) {
-                // ✅ 【ここが繋ぎ目】工程2が成功したら、工程3（読込テスト）を開始
-                console.log(`🧪 [SWAP-PHASE3] 避難所作成完了。ドナーのファイル読込テストを開始します...`);
+        const targetName = window.currentCarDirectoryName;
+        await window.fixCarSound(carRoot, donorName, targetName);
 
-                // 工程1で見つけた res.path (ドナーの engine.ini) を読み込む
-                const readRes = await window.electronAPI.readTextFile(res.path);
-
-                if (readRes.success) {
-                    // ✅ 【ここが繋ぎ目】読込テストができたら、いよいよ物理コピー（工程4）を開始
-                    console.log(`🚚 [SWAP-PHASE4] 読込テスト完了。物理コピーを開始します...`);
-
-                    // donorPath（車のルート）と currentDataPath（自分のdataフォルダ）を渡す
-                    const copyRes = await window.electronAPI.copyEngineFiles(donorPath, currentDataPath);
-
-                    if (copyRes.success) {
-                        // ✅ 工程4成功。既存の資産を使用してサウンド移植（工程5）を開始します
-                        console.log(`🔊 [SWAP-PHASE5] サウンド移植を開始します（既存の関数を使用）...`);
-
-                        // 自分の車両ルートを特定（例: .../cars/my_car）
-                        const targetRoot = currentDataPath.replace(/[\\\/]data$/i, '');
-
-                        // ★既に preload.js [cite: 812] にある関数を呼び出します
-                        // 引数：(自分のパス, ドナーのパス)
-                        const soundRes = await window.electronAPI.swapCarSound(targetRoot, donorPath);
-
-                        if (soundRes.success) {
-                            await window.fixCarSound(targetRoot, donorName, window.currentCarDirectoryName);
-													if (res.wasAcd) {
-                                console.log("🧹 ドナー車両の状態を元に戻しています...");
-                                await window.electronAPI.cleanupDonorData(donorPath);
-                            }
-                            // ✅ 工程6：UIの表示更新とデータの記録
-                            const engineDataBox = document.getElementById('engine-data');
-                            if (engineDataBox) {
-                                // あなたが用意した #engine-data の中身を「移植後の名前」に書き換えます
-                                engineDataBox.innerHTML = `<div>現在のエンジン</div><div>${donorName}</div>`;
-                            }
-														const soundSelect = document.getElementById('sound-select');
-                            if (soundSelect) {
-                                soundSelect.value = donorName;
-                            }
-														// ✅ 【ここを追加】サウンド表示枠（#sound-data）も移植済みの名前に書き換えます
-                            const soundDataBox = document.getElementById('sound-data');
-                            if (soundDataBox) {
-                                soundDataBox.innerHTML = `<div>現在のサウンド</div><div>${donorName}</div>`;
-                            }
-
-                            // プロジェクトデータに「エンジンの由来」を記録（保存用）
-                            if (!window.currentProject) window.currentProject = {};
-                            window.currentProject.engine_origin = donorName;
-
-                            alert(`✨ 全工程完了！\nエンジンとサウンドを ${donorName} から移植しました。\nプロジェクトを保存すれば、この状態が記録されます。`);
-                        } else {
-                            alert(`❌ 工程5失敗：サウンドのコピーに失敗しました。\n${soundRes.error}`);
-                        }
-                    } else {
-                        alert(`❌ 工程4失敗：ファイルのコピーに失敗しました。\n${copyRes.error}`);
-                    }
-                } else {
-                    alert(`❌ 工程3失敗：ドナーのファイルを読み取れませんでした。\n${readRes.error}`);
-                }
-            } else {
-                alert(`❌ 工程2失敗：自分のデータの退避に失敗しました。\n${backupRes.error}`);
-            }
-        } else {
-            // 前回のログで起きた「見つからない」という事実を報告 [Source 3, 4]
-            alert(`❌ 失敗：${res.error}\n計算された住所：${donorPath}`);
+        if (res.wasAcd) {
+            await window.electronAPI.cleanupDonorData(donorPath);
         }
-    }
-});
+
+        // 🔄 【あなたの提示コードを合流：Target Reload】
+        // 物理コピーが終わった直後に、エディターが最新のファイルを読み込み直します
+        const reloadRes = await window.electronAPI.readCarFolderData(carRoot);
+        if (reloadRes.success) {
+            const engineIniFile = reloadRes.files.find(f => f.name.toLowerCase() === 'engine.ini');
+            const powerLutFile = reloadRes.files.find(f => f.name.toLowerCase() === 'power.lut');
+            if (engineIniFile) {
+                window.currentEngineData = window.parseINI(engineIniFile.content);
+                if (typeof window.initEngineEditor === 'function') {
+                    window.initEngineEditor(window.currentEngineData);
+                }
+            }
+            if (powerLutFile && typeof window.parsePowerLut === 'function') {
+                window.parsePowerLut(powerLutFile.content);
+            }
+            console.log("🔄 [System] エンジン関連データのみを最新に同期しました。");
+        }
+
+        // 【PHASE 6】UI表示の更新と記憶
+        const engineDataBox = document.getElementById('engine-data');
+        if (engineDataBox) {
+            engineDataBox.innerHTML = `<div>現在のエンジン</div><div>${donorName}</div>`;
+        }
+        
+        const soundDataBox = document.getElementById('sound-data');
+        if (soundDataBox) {
+            soundDataBox.innerHTML = `<div>現在のサウンド</div><div>${donorName}</div>`;
+        }
+
+        // プロジェクトデータに記録
+        if (!window.currentProject) window.currentProject = {};
+        window.currentProject.engine_origin = donorName;
+
+        alert(`✨ 全工程完了！\n${donorName} からエンジンとサウンドを移植し、エディターを即座に更新しました。`);
+    });
+}
