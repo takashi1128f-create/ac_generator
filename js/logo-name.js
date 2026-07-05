@@ -359,6 +359,48 @@ document.getElementById('car-name-edit').addEventListener('click', async () => {
 		}
 	}
 });
+// ✅ 追加：「エンジンのみ」移植する新しいボタンの処理
+const engineOnlySwapBtn = document.getElementById('engine-only-swap_btn');
+if (engineOnlySwapBtn) {
+    engineOnlySwapBtn.addEventListener('click', async () => {
+        // 今あるセレクトボックス（engine-select）から値を取得（追加はしません）
+        const donorName = document.getElementById('engine-select').value;
+        if (!donorName || donorName.startsWith('--')) return alert("移植元（ドナー）を選択してください");
+        
+        const currentDataPath = window.currentDataFolderPath;
+        if (!currentDataPath) return alert("先に車両を読み込んでください");
+
+        const carRoot = currentDataPath.replace(/[/\\]data$/i, '');
+        const lastSlashIndex = Math.max(carRoot.lastIndexOf('\\'), carRoot.lastIndexOf('/'));
+        const carsFolder = carRoot.substring(0, lastSlashIndex);
+        const donorPath = carsFolder + "\\" + donorName;
+
+        // 1. 物理チェック（engine.iniがあるか、ACDなら展開 [cite: 723, 724]）
+        const res = await window.electronAPI.checkEngineFiles(donorPath);
+        if (!res.success) return alert(`❌ 移植失敗：${res.error}`);
+
+        // 2. エンジンファイルのみコピー（サウンドは触らない [cite: 727]）
+        const copyRes = await window.electronAPI.copyEngineFiles(donorPath, currentDataPath);
+        if (!copyRes.success) return alert(`❌ コピー失敗：${copyRes.error}`);
+
+        // 🌟 修正ポイント：もしACDから一時展開していたら後片付けをする [cite: 448, 725]
+        if (res.wasAcd) {
+            await window.electronAPI.cleanupDonorData(donorPath);
+        }
+
+        // 3. 由来情報の記録（エンジンのみ更新 [cite: 298]）
+        if (!window.currentProject) window.currentProject = {};
+        window.currentProject.engine_origin = donorName;
+
+        // 4. エディター画面の数値を最新の状態にリロード [cite: 694, 802]
+        const newData = await window.electronAPI.readCarFolderData(carRoot);
+        if (newData.success) {
+            window.loadProjectToUI({ files: newData.files });
+        }
+
+        alert(`✨ ${donorName} からの「エンジンのみ」移植が完了しました！`);
+    });
+}
 // ==========================================
 // ★ 新設：サウンドの整合性を整える共通司令塔
 // ==========================================
