@@ -101,7 +101,7 @@ div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
 .input-with-range {
 	display: flex;
 	flex-direction: row;
-	gap: 5px;
+	gap: 0.5em;
 }
 .input-with-range .text-input {
 	min-width: 70px;

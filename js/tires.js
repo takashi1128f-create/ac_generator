@@ -274,7 +274,7 @@ window.renderTyreUI = function() {
 						</div>
 					</div>
 
-					<div id="tyre-wizard-panel" style="display: ${window.isTyreWizardMode ? 'block' : 'none'}; padding:1.5em 1em; margin-top:10px;; border:1px solid #444; border-radius:6px;">
+					<div id="tyre-wizard-panel" style="display: ${window.isTyreWizardMode ? 'block' : 'none'};">
 						<div class="tyre-wizard-specs">
 							<div class="wiz-spec-row">
 								<div class="wiz-spec-col">
@@ -287,7 +287,7 @@ window.renderTyreUI = function() {
 								</div>
 							</div>
 							
-							<div class="wiz-spec-label" style="margin-bottom: 5px;">FRONT TIRE (Width / Aspect / Rim)</div>
+							<div class="wiz-spec-label">FRONT TIRE (Width / Aspect / Rim)</div>
 							<div class="wiz-spec-row">
 								<select id="wiz-f-w" class="wiz-spec-select" onchange="window.applyTyreWizard()">
 									${Array.from({length: 27}, (_, i) => 175 + i*5).map(v => `<option value="${v}" ${v===235?'selected':''}>${v}</option>`).join('')}
@@ -300,7 +300,7 @@ window.renderTyreUI = function() {
 								</select>
 							</div>
 
-							<div class="wiz-spec-label" style="margin-top: 10px; margin-bottom: 5px;">REAR TIRE (Width / Aspect / Rim)</div>
+							<div class="wiz-spec-label">REAR TIRE (Width / Aspect / Rim)</div>
 							<div class="wiz-spec-row">
 								<select id="wiz-r-w" class="wiz-spec-select" onchange="window.applyTyreWizard()">
 									${Array.from({length: 27}, (_, i) => 175 + i*5).map(v => `<option value="${v}" ${v===255?'selected':''}>${v}</option>`).join('')}
@@ -321,30 +321,54 @@ window.renderTyreUI = function() {
 								</select>
 							</div>
 						</div>
-						<p style="color:#aaa; font-size:11px; margin-bottom:20px; line-height:1.4;">スライダーでグリップとスライド特性を微調整します。</p>
+						<p class="wiz-spec-label-p">スライダーでグリップとスライド特性を微調整します。</p>
 						
-						<div class="suspension-item" style="margin-bottom:15px;">
-							<label style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>🏁 全体グリップ (Grip Level)</span> <span id="wiz-val-grip" style="color:#4ade80; font-weight:bold; font-size:14px;">${wGripLevel.toFixed(3)}</span></label>
-							<input type="range" style="width:100%; cursor:ew-resize;" id="wiz-grip" min="0.5" max="2.0" step="0.005" value="${wGripLevel}" oninput="window.applyTyreWizard()">
-						</div>
-						<div class="suspension-item" style="margin-bottom:15px;">
-							<label style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>⚖️ 縦横バランス (Grip Balance)</span> <span id="wiz-val-gbal" style="color:#4ade80; font-weight:bold; font-size:14px;">${wGripBal.toFixed(3)}</span></label>
-							<input type="range" style="width:100%; cursor:ew-resize;" id="wiz-gbal" min="-0.5" max="0.5" step="0.005" value="${wGripBal}" oninput="window.applyTyreWizard()">
-							<div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:2px;"><span>← 横重視</span><span>縦重視 →</span></div>
-						</div>
-						<div class="suspension-item" style="margin-bottom:15px;">
-							<label style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>🏋️ 荷重感度 (Load Sensitivity)</span> <span id="wiz-val-load" style="color:#4ade80; font-weight:bold; font-size:14px;">${wLoadSens.toFixed(3)}</span></label>
-							<input type="range" style="width:100%; cursor:ew-resize;" id="wiz-load" min="0.5" max="1.5" step="0.005" value="${wLoadSens}" oninput="window.applyTyreWizard()">
-						</div>
-						<div class="suspension-item" style="margin-bottom:15px;">
-							<label style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>⚖️ 荷重感度バランス (Load Sens Bal)</span> <span id="wiz-val-lbal" style="color:#4ade80; font-weight:bold; font-size:14px;">${wLoadBal.toFixed(3)}</span></label>
-							<input type="range" style="width:100%; cursor:ew-resize;" id="wiz-lbal" min="-0.5" max="0.5" step="0.005" value="${wLoadBal}" oninput="window.applyTyreWizard()">
-							<div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:2px;"><span>← 横重視</span><span>縦重視 →</span></div>
+						<div class="suspension-item">
+							<label>
+							<span>🏁 全体グリップ (Grip Level)</span>
+							<span id="wiz-val-grip">${wGripLevel.toFixed(3)}</span>
+							</label>
+							<input type="range" id="wiz-grip" min="0.5" max="2.0" step="0.005" value="${wGripLevel}" oninput="window.applyTyreWizard()">
 						</div>
 						<div class="suspension-item">
-							<label style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>💨 スライド特性 (Sliding Control)</span> <span id="wiz-val-slide" style="color:#4ade80; font-weight:bold; font-size:14px;">${wSlide.toFixed(3)}</span></label>
-							<input type="range" style="width:100%; cursor:ew-resize;" id="wiz-slide" min="0.5" max="1.0" step="0.005" value="${wSlide}" oninput="window.applyTyreWizard()">
-							<div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-top:2px;"><span>← ピーキー(滑る)</span><span>マイルド(粘る) →</span></div>
+							<label>
+							<span>⚖️ 縦横バランス (Grip Balance)</span>
+							<span id="wiz-val-gbal">${wGripBal.toFixed(3)}</span>
+							</label>
+							<input type="range" cursor:ew-resize;" id="wiz-gbal" min="-0.5" max="0.5" step="0.005" value="${wGripBal}" oninput="window.applyTyreWizard()">
+							<div>
+							<span>← 横重視</span>
+							<span>縦重視 →</span>
+							</div>
+						</div>
+						<div class="suspension-item">
+							<label>
+							<span>🏋️ 荷重感度 (Load Sensitivity)</span>
+							<span id="wiz-val-load">${wLoadSens.toFixed(3)}</span>
+							</label>
+							<input type="range" id="wiz-load" min="0.5" max="1.5" step="0.005" value="${wLoadSens}" oninput="window.applyTyreWizard()">
+						</div>
+						<div class="suspension-item">
+							<label>
+							<span>⚖️ 荷重感度バランス (Load Sens Bal)</span>
+							<span id="wiz-val-lbal">${wLoadBal.toFixed(3)}</span>
+							</label>
+							<input type="range" id="wiz-lbal" min="-0.5" max="0.5" step="0.005" value="${wLoadBal}" oninput="window.applyTyreWizard()">
+							<div>
+								<span>← 横重視</span>
+								<span>縦重視 →</span>
+							</div>
+						</div>
+						<div class="suspension-item">
+							<label>
+							<span>💨 スライド特性 (Sliding Control)</span>
+							<span id="wiz-val-slide">${wSlide.toFixed(3)}</span>
+							</label>
+							<input type="range" id="wiz-slide" min="0.5" max="1.0" step="0.005" value="${wSlide}" oninput="window.applyTyreWizard()">
+							<div>
+								<span>← ピーキー(滑る)</span>
+								<span>マイルド(粘る) →</span>
+							</div>
 						</div>
 					</div>
 

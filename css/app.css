@@ -771,7 +771,7 @@ label {
 	width: 100%;
 	cursor: pointer;
 	font-size: 0.9rem;
-	padding: 0.2rem;
+	padding: 0.1rem 0.4rem;
 	border: 1px solid #c1c1c1;
 	border-radius: 0.5rem;
 }
@@ -1481,15 +1481,19 @@ label {
 	width: 300px;
 }
 /* --- タイヤウィザード：スペック入力エリアのスタイル --- */
-.tyre-wizard-specs {
-	padding: 10px;
-	border-radius: 4px;
-	margin-bottom: 20px;
+#tyre-main-editor #tyre-wizard-panel{
+	padding: 0.5em;
+	margin-top: 1em;
+	border: 1px solid #444;
+	border-radius: 0.5em;
 }
 .wiz-spec-row {
 	display: flex;
-	gap: 10px;
-	margin-bottom: 10px;
+	gap: 0.5em;
+	margin-bottom: 0.5em;
+}
+.wiz-spec-label-p{
+	margin: 0.5em 0;
 }
 .wiz-spec-col {
 	flex: 1;
@@ -1801,7 +1805,7 @@ label {
 	padding: 1rem;
 }
 .visibility-controls{
-	padding: 0.5em;
+	padding: 0.2em 0.5em;
 }
 .engine-sound-text_box{
 	padding: 0.2em;
@@ -1809,6 +1813,7 @@ label {
 .suspension-item input{
 	margin: 0 0.2em;
 }
+#tyre-wizard-panel,
 .preview-area,
 .engine-sound-text_box,
 .tyres_select-explain_box,
