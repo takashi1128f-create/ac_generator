@@ -76,7 +76,8 @@ const PATHS = {
 	token: path.join(app.getPath('userData'), 'discord_auth_token.json'),
 	trial: path.join(app.getPath('userData'), 'trial_db.json'),
 	recent: path.join(app.getPath('userData'), 'recent_projects.json'),
-	root: path.join(app.getPath('documents'), 'AC_Generator_Projects')
+	root: path.join(app.getPath('documents'), 'AC_Generator_Projects'),
+	skipUpdate: path.join(app.getPath('userData'), 'skipped_version.txt')
 };
 let mainWindow;
 let isProjectLoaded = false;
@@ -353,20 +354,40 @@ app.whenReady().then(async () => {
 	});
 	// ★ ルートB：自動アップデート機能（electron-updater）
 	// アップデートが見つかった時の動作
-	autoUpdater.on('update-available', (info) => {
-		const result = dialog.showMessageBoxSync({
-			type: 'info',
-			title: 'アップデートのお知らせ',
-			message: `新しいバージョン（v${info.version}）が見つかりました。\nダウンロードしてアップデートを開始しますか？`,
-			noLink: true,
-			buttons: ['はい', 'いいえ'],
-			defaultId: 0,
-			cancelId: 1
-		});
-		if (result === 0) {
-			autoUpdater.downloadUpdate();
-		}
-	});
+	// アップデートが見つかった時の動作
+autoUpdater.on('update-available', (info) => {
+  // --- 💡 [100%の事実] 以前スキップしたバージョンか確認します ---
+  let skippedVersion = "";
+  if (fs.existsSync(PATHS.skipUpdate)) {
+    skippedVersion = fs.readFileSync(PATHS.skipUpdate, 'utf8').trim();
+  }
+
+  // 見つかったバージョンが、以前スキップしたものと同じなら何もしない
+  if (info.version === skippedVersion) {
+    console.log(`[Update] バージョン ${info.version} は以前スキップされたため、通知を表示しません。`);
+    return; 
+  }
+  // ---------------------------------------------------------
+
+  const result = dialog.showMessageBoxSync({
+    type: 'info',
+    title: 'アップデートのお知らせ',
+    message: `新しいバージョン（v${info.version}）が見つかりました。\nダウンロードしてアップデートを開始しますか？`,
+    noLink: true,
+    buttons: ['はい', 'いいえ'],
+    defaultId: 0,
+    cancelId: 1
+  });
+
+  if (result === 0) {
+    autoUpdater.downloadUpdate();
+  } else {
+    // --- 💡 [100%の事実] 「いいえ」が選ばれたら、このバージョン番号をPCに記憶させます ---
+    fs.writeFileSync(PATHS.skipUpdate, info.version, 'utf8');
+    console.log(`[Update] ユーザーが v${info.version} をスキップしました。次回からこのバージョンは通知しません。`);
+    // --------------------------------------------------------------------------------
+  }
+});
 	// アップロードされた進捗をメインプロセスで受け取り、フロントエンドへ転送する
 	autoUpdater.on('download-progress', (progressObj) => {
 		// mainWindowが存在し、読み込み済みであることを確認
