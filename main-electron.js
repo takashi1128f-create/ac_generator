@@ -1,28 +1,28 @@
-const {
-	app,
-	BrowserWindow,
-	Menu,
-	dialog,
-	shell,
-	ipcMain,
-	protocol,
-	net
-} = require('electron');
-const {
-	autoUpdater
-} = require('electron-updater');
-autoUpdater.autoDownload = false;
-//：プレリリース版の検知を許可
-autoUpdater.allowPrerelease = true;//製品版の時にコメントアウトを
+const { app, BrowserWindow, Menu, dialog, shell, ipcMain, protocol, net } = require('electron');
+const { autoUpdater } = require('electron-updater');
+
+// --- 💡 [100%の事実] 先に全てのモード判定を終わらせることでエラーを回避します ---
+const appVersion = app.getVersion(); 
+const IS_LOCAL = !app.isPackaged;                           // ① npm start
+const IS_DEV_BUILD = appVersion.includes('-dev');          // ② 開発者用ビルド
+const IS_PRERELEASE = appVersion.includes('-pre') || appVersion.includes('-beta'); // ③ プレ版
+const IS_PROD = !IS_LOCAL && !IS_DEV_BUILD && !IS_PRERELEASE; // ④ 製品版
+const IS_DEBUG = IS_LOCAL || IS_DEV_BUILD;                  // 統合デバッグ用フラグ
+const IS_DEV_MODE = IS_LOCAL;                               // 過去の変数との互換用
+// ---------------------------------------------------------------------------
+
+autoUpdater.autoDownload = false; 
+// 製品版（PROD）でなければ、プレリリース版のアップデート検知を許可します
+autoUpdater.allowPrerelease = !IS_PROD; 
+
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
-const {
-	exec
-} = require('child_process');
+const { exec } = require('child_process');
 const https = require('https');
-const IS_DEV_MODE = !app.isPackaged;
-if (IS_DEV_MODE) {
+
+// --- 💡 以下の electron-reload の処理もここにまとめます ---
+if (IS_LOCAL) {
 	try {
 		require('electron-reload')(__dirname);
 	} catch (e) {
@@ -30,8 +30,8 @@ if (IS_DEV_MODE) {
 	}
 }
 // ★追加：ビルドされた完成品（本番環境）の時だけ、ログ出力を空っぽ（無効）にする
-if (!IS_DEV_MODE) {
-	console.log = function() {};
+if (!IS_DEBUG) {
+    console.log = function() {};
 	console.info = function() {};
 	console.warn = function() {};
 	// ※ console.error は致命的なクラッシュ原因を探るために残すことが多いです
@@ -40,10 +40,10 @@ if (!IS_DEV_MODE) {
 // ★ アプリ全体の設定管理（司令塔）
 // ==========================================
 const SERVER_CONFIG = {
-	timing: {
-		splashDuration: 13000, // スプラッシュ画面を表示する時間（ミリ秒）
-		// splashDuration: 1000, // スプラッシュ画面を表示する時間（ミリ秒）
-	},
+  timing: {
+    // 開発関連モードなら1秒、プレリリースや製品版なら13秒に自動設定します
+    splashDuration: IS_DEBUG ? 1000 : 13000, 
+  },
 	flow: {
 		autoSkipLogin: true, // トークンがあれば自動ログインを試みる
 		showSplashAfterLogin: true // ログイン後にスプラッシュを表示する
@@ -179,13 +179,9 @@ function createMainWindow() {
 			role: 'paste',
 			label: '貼り付け'
 		});
-		if (IS_DEV_MODE) {
-			menuTemplate.push({
-				type: 'separator'
-			});
-			menuTemplate.push({
-				label: '要素を検証',
-				click: () => {
+		if (IS_DEBUG) {
+			menuTemplate.push({ type: 'separator' });
+			menuTemplate.push({ label: '要素を検証', click: () => {
 					mainWindow.webContents.inspectElement(params.x, params.y);
 				}
 			});
@@ -429,8 +425,12 @@ function startSplashFlow() {
 						// 完全に透明になったら、タイマーを止めて窓を完全に破壊する
 						clearInterval(fadeInterval);
 						if (!splash.isDestroyed()) splash.destroy();
-						autoUpdater.checkForUpdates();
-					} else {
+
+						// 開発中(Local/DevBuild)は勝手に更新されないよう、プレ版と製品版の時だけチェックします
+						if (!IS_DEBUG) {
+								autoUpdater.checkForUpdates();
+						}
+						} else {
 						// まだ透明じゃなければ、薄さを更新する
 						if (!splash.isDestroyed()) splash.setOpacity(opacity);
 					}
