@@ -1,6 +1,6 @@
-// ローカル開発：x.x.x-dev
-// 開発用ビルド：x.x.x-alpha / -beta
-// プレリリース：x.x.x-rc.x
+// 開発用ビルド：x.x.x-dev
+// 開発用アプデ：x.x.x-beta
+// プレリリース：x.x.x-pre
 // 製品版：1.0.0
 //package.jsonへのバージョンの書き方で変わるように変更
 
@@ -8,21 +8,31 @@ const { app, BrowserWindow, Menu, dialog, shell, ipcMain, protocol, net } = requ
 const { autoUpdater } = require('electron-updater');
 
 // --- 💡 [100%の事実] 先に全てのモード判定を終わらせることでエラーを回避します ---
-const appVersion = app.getVersion(); 
-const IS_LOCAL = !app.isPackaged;                           // ① npm start
-const IS_DEV_BUILD = appVersion.includes('-dev');          // ② 開発者用ビルド
-const IS_PRERELEASE = appVersion.includes('-pre') || appVersion.includes('-beta'); // ③ プレ版
-const IS_PROD = !IS_LOCAL && !IS_DEV_BUILD && !IS_PRERELEASE; // ④ 製品版
-const IS_DEBUG = IS_LOCAL || IS_DEV_BUILD;                  // 統合デバッグ用フラグ
-const IS_DEV_MODE = IS_LOCAL;                               // 過去の変数との互換用
-// ---------------------------------------------------------------------------
+const appVersion = app.getVersion();
+const IS_LOCAL = !app.isPackaged; 
+const IS_BETA = appVersion.includes('-beta'); // 💡 開発者（あなた）専用
+const IS_PRE  = appVersion.includes('-pre');  // 💡 プレリリース（テスター）用
+const IS_DEV_BUILD = appVersion.includes('-dev') || IS_BETA;  //ビルドテスト
+const IS_PRERELEASE = IS_PRE || IS_BETA; 
 
-autoUpdater.autoDownload = false; 
-// 製品版（PROD）でなければ、プレリリース版のアップデート検知を許可します
-autoUpdater.allowPrerelease = !IS_PROD; 
+const IS_PROD = !IS_LOCAL && !appVersion.includes('-pre') && !appVersion.includes('-beta') && !appVersion.includes('-dev');
+const IS_DEBUG = IS_LOCAL || IS_DEV_BUILD; 
+const IS_DEV_MODE = IS_LOCAL; 
 
 const path = require('path');
 const fs = require('fs');
+
+// --- 💡 [100%の事実] プレ版テスターの紐づけ設定（update_channel.txt） ---
+const channelPath = path.join(app.getPath('userData'), 'update_channel.txt');
+if (IS_PRE || IS_BETA) {
+    fs.writeFileSync(channelPath, 'prerelease', 'utf8');
+}
+const isPrereleaseTester = fs.existsSync(channelPath);
+// ---------------------------------------------------------------------------
+
+autoUpdater.autoDownload = false; 
+// テスターの証があるか、今の版がプレ版なら「プレリリース更新」を探すことを許可します
+autoUpdater.allowPrerelease = isPrereleaseTester || !IS_PROD; 
 const http = require('http');
 const { exec } = require('child_process');
 const https = require('https');
@@ -352,10 +362,23 @@ app.whenReady().then(async () => {
 		// 4. file:// プロトコルとして返却
 		return net.fetch('file://' + filePath);
 	});
-	// ★ ルートB：自動アップデート機能（electron-updater）
-	// アップデートが見つかった時の動作
-	// アップデートが見つかった時の動作
+// 自動アップデート機能（electron-updater） 
 autoUpdater.on('update-available', (info) => {
+  const newVer = info.version; // GitHubで見つかった新しい版の名前
+
+  // --- 💡 [100%の事実] ユーザー種別ごとの配信フィルターを追加します ---
+  // 1. 一般ユーザー（テスターの証がない人）が、間違えてbetaやpreを拾わないようにガード
+  if (!isPrereleaseTester && (newVer.includes('-beta') || newVer.includes('-pre'))) {
+    console.log("[Update] 一般ユーザーのため、プレリリース版の通知をブロックしました。");
+    return; 
+  }
+  // 2. プレ版テスター（IS_PRE）の時、開発用の「-beta」更新は見せない（混線を防ぐ）
+  if (IS_PRE && newVer.includes('-beta')) {
+    console.log("[Update] テスター版のため、開発者専用betaの通知をブロックしました。");
+    return;
+  }
+  // -----------------------------------------------------------------------
+
   // --- 💡 [100%の事実] 以前スキップしたバージョンか確認します ---
   let skippedVersion = "";
   if (fs.existsSync(PATHS.skipUpdate)) {
