@@ -409,35 +409,49 @@ app.whenReady().then(async () => {
 	startAuthServer();
 });
 // スプラッシュ表示フロー
-function startSplashFlow() {
-	createSplashWindow();
-	mainWindow.once('ready-to-show', () => {
-		setTimeout(() => {
-			// 1. まず、スプラッシュ画面の「裏」でメイン画面をこっそり表示して合図を送る
-			if (mainWindow && !mainWindow.isDestroyed()) {
-				mainWindow.show();
-				mainWindow.maximize();
-				mainWindow.webContents.send('main-window-shown');
-			}
-			// 2. ★修正：一番手前にあるスプラッシュを、いきなり壊さずに「徐々に透明」にする
-			if (splash && !splash.isDestroyed()) {
-				let opacity = 1.0; // 最初の濃さ（100%）
-				// 30ミリ秒ごとに、少しずつ透明にするタイマーを発動
-				const fadeInterval = setInterval(() => {
-					opacity -= 0.05; // 0.05ずつ薄くする
-					if (opacity <= 0) {
-						// 完全に透明になったら、タイマーを止めて窓を完全に破壊する
-						clearInterval(fadeInterval);
-						if (!splash.isDestroyed()) splash.destroy();
-						autoUpdater.checkForUpdates();
-					} else {
-						// まだ透明じゃなければ、薄さを更新する
-						if (!splash.isDestroyed()) splash.setOpacity(opacity);
-					}
-				}, 30); // 約0.6秒かけてフワッと消えます
-			}
-		}, SERVER_CONFIG.timing.splashDuration);
-	});
+function startSplashFlow(isManual = false) {
+    createSplashWindow();
+
+    // 13秒待機 ➔ メイン表示 ➔ フェードアウトの一連の処理（元のコードをそのまま関数化）
+    const triggerTransition = () => {
+        // 手動ログイン後の場合、スプラッシュ開始時に一旦隠して、13秒後に再表示させる
+        if (isManual && mainWindow) {
+            mainWindow.hide();
+        }
+
+        setTimeout(() => {
+            // 1. まず、スプラッシュ画面の「裏」でメイン画面をこっそり表示して合図を送る
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.show();
+                mainWindow.maximize();
+                mainWindow.webContents.send('main-window-shown');
+            }
+            // 2. 一番手前にあるスプラッシュを、いきなり壊さずに「徐々に透明」にする
+            if (splash && !splash.isDestroyed()) {
+                let opacity = 1.0; 
+                const fadeInterval = setInterval(() => {
+                    opacity -= 0.05; 
+                    if (opacity <= 0) {
+                        clearInterval(fadeInterval);
+                        if (!splash.isDestroyed()) splash.destroy();
+                        autoUpdater.checkForUpdates();
+                    } else {
+                        if (!splash.isDestroyed()) splash.setOpacity(opacity);
+                    }
+                }, 30); 
+            }
+        }, SERVER_CONFIG.timing.splashDuration); // ここで 13000ms 待機 [2]
+    };
+
+    if (isManual) {
+        // 手動ログイン後の場合：
+        // すでに ready-to-show は発生済みなので、直接トリガーを引く
+        triggerTransition();
+    } else {
+        // 通常起動時（2度目以降）：
+        // 元のコード通り、準備完了を一度だけ待ってからトリガーを引く [1]
+        mainWindow.once('ready-to-show', triggerTransition);
+    }
 }
 // ==========================================
 // ★ 認証システムと自動ログイン
@@ -601,13 +615,11 @@ function startAuthServer() {
 					'Content-Type': 'text/html; charset=utf-8'
 				});
 				if (authResult.success) {
-					fs.writeFileSync(PATHS.token, JSON.stringify({
-						accessToken: tokenData.access_token,
-						refreshToken: tokenData.refresh_token
-					}), 'utf8');
-					if (mainWindow) mainWindow.webContents.send('discord-auth-callback', authResult);
-					// ★削除（コメントアウト）：手動ログイン後にスプラッシュを再起動させない
-					// if (SERVER_CONFIG.flow.showSplashAfterLogin) startSplashFlow();
+				fs.writeFileSync(PATHS.token, JSON.stringify({ accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token }), 'utf8');
+				if (mainWindow) mainWindow.webContents.send('discord-auth-callback', authResult);
+				
+				// ★ここを修正：引数に true を渡して「手動モード」で起動
+				if (SERVER_CONFIG.flow.showSplashAfterLogin) startSplashFlow(true); 
 					res.end(`
 						<div style="text-align:center; font-family:sans-serif; margin-top:50px;">
 							<h1 style="color:#51cf66;">認証成功！</h1>
