@@ -389,32 +389,35 @@ app.whenReady().then(async () => {
 	});
 	// ★ ルートB：自動アップデート機能（electron-updater）
 	// アップデートが見つかった時の動作
-	autoUpdater.on ( 'update-available' ,( info ) => {   
-     // --- 💡 [100%の事実] 以前スキップしたバージョンか確認します --- [2]
-     let skippedVersion = "";
-     if (fs.existsSync(PATHS.skipUpdate)) {
-         skippedVersion = fs.readFileSync(PATHS.skipUpdate, 'utf8').trim();
-     }
+	autoUpdater.on('update-available', (info) => {
+		// --- 💡 [100%の事実] 以前スキップしたバージョンか確認します --- [2]
+		let skippedVersion = "";
+		if (fs.existsSync(PATHS.skipUpdate)) {
+			skippedVersion = fs.readFileSync(PATHS.skipUpdate, 'utf8').trim();
+		}
 
-     // 見つかったバージョンが、以前スキップしたものと同じなら何もしない [5]
-     if (info.version === skippedVersion) {
-         console.log(`[Update] バージョン ${info.version} は以前スキップされました。`);
-         return;
-     }
+		// 見つかったバージョンが、以前スキップしたものと同じなら何もしない [5]
+		if (info.version === skippedVersion) {
+			console.log(`[Update] バージョン ${info.version} は以前スキップされました。`);
+			return;
+		}
 
-     // --- 💡 [ご要望の認識分け] ---
-     const newV = info.version.toLowerCase();
+		// --- 💡 [ご要望の認識分け] ---
+		const newV = info.version.toLowerCase();
 
-     // ① 開発用ビルド(-dev)はアプデを一切無視
-     if (IS_DEV_BUILD) return; 
-     
-     // ② プレリリース版(-pre)の人は、未完成な(-beta)を検知してもスルーする
-     if (IS_PRE && newV.includes('-beta')) return; 
+		// ① 開発用ビルド(-dev)はアプデを一切無視
+		if (IS_DEV_BUILD) return;
 
-     // ※ 製品版(PROD)の人は一番上の allowPrerelease = false によって -beta/-pre は自動的に来ません。
-     // ※ 開発用アプデ(-beta)の人は上のフィルターに引っかからないので、全てのアプデ通知を受け取ります。
+		// ② 各モードに基づいたフィルタリング
+		// プレリリース版(-pre)の人は、未完成な(-beta)を検知してもスルーする
+		if (IS_PRE && newV.includes('-beta')) return;
 
-   const result = dialog . showMessageBoxSync ({
+		// 製品版(PROD)の人は(-beta, -pre)をスルー
+		if (IS_PROD && (newV.includes('-beta') || newV.includes('-pre'))) return;
+
+		// 開発用アプデ(-beta)の人は上のフィルターに引っかからないので、全てのアプデ通知を受け取ります。
+
+		const result = dialog.showMessageBoxSync({
 			type: 'info',
 			title: 'アップデートのお知らせ',
 			message: `新しいバージョン（v${info.version}）が見つかりました。\nダウンロードしてアップデートを開始しますか？`,
@@ -423,14 +426,15 @@ app.whenReady().then(async () => {
 			defaultId: 0,
 			cancelId: 1
 		});
-		if ( result === 0 ) {
-     autoUpdater . downloadUpdate ( ) ;
-   }   else {
-     // --- 💡 [100%の事実] 「いいえ」が選ばれたらバージョン番号を記憶させます --- [5]
-     fs.writeFileSync(PATHS.skipUpdate, info.version, 'utf8');
-     console.log(`[Update] ユーザーが v${info.version} をスキップしました。`);
-   }
-   });
+
+		if (result === 0) {
+			autoUpdater.downloadUpdate();
+		} else {
+			// --- 💡 [100%の事実] 「いいえ」が選ばれたらバージョン番号を記憶させます --- [5]
+			fs.writeFileSync(PATHS.skipUpdate, info.version, 'utf8');
+			console.log(`[Update] ユーザーが v${info.version} をスキップしました。`);
+		}
+	});
 	// アップロードされた進捗をメインプロセスで受け取り、フロントエンドへ転送する
 	autoUpdater.on('download-progress', (progressObj) => {
 		// mainWindowが存在し、読み込み済みであることを確認
