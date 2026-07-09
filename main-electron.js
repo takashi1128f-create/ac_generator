@@ -27,17 +27,38 @@ const https = require ( 'https' ) ;
 const appVersion = app.getVersion();
 const IS_LOCAL = !app.isPackaged;// ① npm start
 const IS_DEV_BUILD = appVersion.includes('-dev');// ② 開発用ビルド (アプデ無視/要素検証あり)
-const IS_BETA = appVersion.includes('-beta');// ③ 開発用アプデ (beta, pre, 製品版すべて受信)
-const IS_PRE = appVersion.includes('-pre');// ④ プレリリース (pre, 製品版を受信)
+
+// アプリ自体のバージョン文字列から現在の権限レベルを判定 (beta=2, pre=1, 製品版=0)
+let currentLevel = 0;
+if (appVersion.includes('-beta')) currentLevel = 2;
+else if (appVersion.includes('-pre')) currentLevel = 1;
+
+// 過去に記録された権限レベルを userData から読み込む
+const updateLevelPath = path.join(app.getPath('userData'), 'update_level.txt');
+let savedLevel = 0;
+if (fs.existsSync(updateLevelPath)) {
+	try {
+		savedLevel = parseInt(fs.readFileSync(updateLevelPath, 'utf8'), 10) || 0;
+	} catch (e) {
+		savedLevel = 0;
+	}
+}
+
+// 強い方の権限を最終的な権限とし、ファイルにも更新・保存する
+const finalLevel = Math.max(currentLevel, savedLevel);
+if (!IS_LOCAL && !IS_DEV_BUILD) {
+	fs.writeFileSync(updateLevelPath, finalLevel.toString(), 'utf8');
+}
+
+// 最終的な権限を過去の変数に割り当てる
+const IS_BETA = (finalLevel === 2);// ③ 開発用アプデ (beta, pre, 製品版すべて受信)
+const IS_PRE = (finalLevel === 1);// ④ プレリリース (pre, 製品版を受信)
 const IS_PROD = !IS_LOCAL && !IS_DEV_BUILD && !IS_BETA && !IS_PRE; // ⑤ 製品版 (製品版のみ受信)
 const IS_DEBUG = IS_LOCAL || IS_DEV_BUILD;// 統合デ...
 
 // 💡 過去の変数（IS_BETA と IS_PRE）をそのまま使用し、自動で判定させます
-// アプリが「-beta」か「-pre」の時だけGitHubのプレリリースを許可し、製品版の時は「Latest」のみに反応させます
 autoUpdater.allowPrerelease = IS_BETA || IS_PRE;
 const IS_DEV_MODE = IS_LOCAL;// 過去の変数との互換用
-// -beta と -pre のバージョンをインストールしている人だけ、プレリリースの検知を許可する
-autoUpdater.allowPrerelease = IS_BETA || IS_PRE;
 
 if ( IS_DEV_MODE ) {
 	console.log = function() {};
