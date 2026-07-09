@@ -1,6 +1,6 @@
 {
 	"name": "ac-file-generator",
-	"version": "0.1.0",
+	"version": "0.1.0-beta.pre",
 	"description": "Assetto Corsa File Generator",
 	"author": "nerutakachan",
 	"main": "main-electron.js",
@@ -15,6 +15,9 @@
 		"nodemon": "^3.1.14"
 	},
 	"build": {
+		"directories": {
+			"output": "D:/ダウンロード/あせコルMOD/オンラインジェネレーター/webで動作するソフト/ビルド/ビルド済み"
+		},
 		"files": ["**/*", "!dist${/*}", "!テスト${/*}"],
 		"appId": "com.example.ac-file-generator",
 		"productName": "AC FILE GENERATOR",

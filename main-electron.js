@@ -12,55 +12,27 @@ const {
 	autoUpdater
 } = require('electron-updater');
 autoUpdater.autoDownload = false;
-
-// 💡 ここにあった手動の allowPrerelease 設定は、下の自動判定へ引っ越したため削除しました
-
+//：プレリリース版の検知を許可
+autoUpdater.allowPrerelease = true;//製品版の時にコメントアウトを
+const appVersion = app.getVersion();
+// autoUpdater.allowPrerelease = appVersion.includes('-beta');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const {
 	exec
 } = require('child_process');
-const https = require ( 'https' ) ; 
-
-// --- 💡 [100%の事実] 先に全てのモード判定を終わらせることでエラーを回避します --- [1]
-const appVersion = app.getVersion();
-const IS_LOCAL = !app.isPackaged;// ① npm start
-const IS_DEV_BUILD = appVersion.includes('-dev');// ② 開発用ビルド (アプデ無視/要素検証あり)
-
-// アプリ自体のバージョン文字列から現在の権限レベルを判定 (beta=2, pre=1, 製品版=0)
-let currentLevel = 0;
-if (appVersion.includes('-beta')) currentLevel = 2;
-else if (appVersion.includes('-pre')) currentLevel = 1;
-
-// 過去に記録された権限レベルを userData から読み込む
-const updateLevelPath = path.join(app.getPath('userData'), 'update_level.txt');
-let savedLevel = 0;
-if (fs.existsSync(updateLevelPath)) {
+const https = require('https');
+const IS_DEV_MODE = !app.isPackaged;
+if (IS_DEV_MODE) {
 	try {
-		savedLevel = parseInt(fs.readFileSync(updateLevelPath, 'utf8'), 10) || 0;
+		require('electron-reload')(__dirname);
 	} catch (e) {
-		savedLevel = 0;
+		console.log('electron-reload の読み込みをスキップしました');
 	}
 }
-
-// 強い方の権限を最終的な権限とし、ファイルにも更新・保存する
-const finalLevel = Math.max(currentLevel, savedLevel);
-if (!IS_LOCAL && !IS_DEV_BUILD) {
-	fs.writeFileSync(updateLevelPath, finalLevel.toString(), 'utf8');
-}
-
-// 最終的な権限を過去の変数に割り当てる
-const IS_BETA = (finalLevel === 2);// ③ 開発用アプデ (beta, pre, 製品版すべて受信)
-const IS_PRE = (finalLevel === 1);// ④ プレリリース (pre, 製品版を受信)
-const IS_PROD = !IS_LOCAL && !IS_DEV_BUILD && !IS_BETA && !IS_PRE; // ⑤ 製品版 (製品版のみ受信)
-const IS_DEBUG = IS_LOCAL || IS_DEV_BUILD;// 統合デ...
-
-// 💡 過去の変数（IS_BETA と IS_PRE）をそのまま使用し、自動で判定させます
-autoUpdater.allowPrerelease = IS_BETA || IS_PRE;
-const IS_DEV_MODE = IS_LOCAL;// 過去の変数との互換用
-
-if ( IS_DEV_MODE ) {
+// ★追加：ビルドされた完成品（本番環境）の時だけ、ログ出力を空っぽ（無効）にする
+if (!IS_DEV_MODE) {
 	console.log = function() {};
 	console.info = function() {};
 	console.warn = function() {};
@@ -100,8 +72,7 @@ const PATHS = {
 	token: path.join(app.getPath('userData'), 'discord_auth_token.json'),
 	trial: path.join(app.getPath('userData'), 'trial_db.json'),
 	recent: path.join(app.getPath('userData'), 'recent_projects.json'),
-	root: path.join(app.getPath('documents'), 'AC_Generator_Projects') ,
-	skipUpdate: path.join(app.getPath('userData'), 'skipped_version.txt')
+	root: path.join(app.getPath('documents'), 'AC_Generator_Projects')
 };
 let mainWindow;
 let isProjectLoaded = false;
@@ -352,7 +323,7 @@ const template = [{
 	}]
 }];
 // ★開発モード（npm start）の時だけ「開発」メニューを配列の最後に追加する
-if (IS_LOCAL || IS_DEV_BUILD) {
+if (IS_DEV_MODE) {
 	template.push({
 		label: '開発',
 		submenu: [{
@@ -389,32 +360,8 @@ app.whenReady().then(async () => {
 	});
 	// ★ ルートB：自動アップデート機能（electron-updater）
 	// アップデートが見つかった時の動作
-	autoUpdater.on ( 'update-available' ,( info ) => {   
-     // --- 💡 [100%の事実] 以前スキップしたバージョンか確認します --- [2]
-     let skippedVersion = "";
-     if (fs.existsSync(PATHS.skipUpdate)) {
-         skippedVersion = fs.readFileSync(PATHS.skipUpdate, 'utf8').trim();
-     }
-
-     // 見つかったバージョンが、以前スキップしたものと同じなら何もしない [5]
-     if (info.version === skippedVersion) {
-         console.log(`[Update] バージョン ${info.version} は以前スキップされました。`);
-         return;
-     }
-
-     // --- 💡 [ご要望の認識分け] ---
-     const newV = info.version.toLowerCase();
-
-     // ① 開発用ビルド(-dev)はアプデを一切無視
-     if (IS_DEV_BUILD) return; 
-     
-     // ② プレリリース版(-pre)の人は、未完成な(-beta)を検知してもスルーする
-     if (IS_PRE && newV.includes('-beta')) return; 
-
-     // ※ 製品版(PROD)の人は一番上の allowPrerelease = false によって -beta/-pre は自動的に来ません。
-     // ※ 開発用アプデ(-beta)の人は上のフィルターに引っかからないので、全てのアプデ通知を受け取ります。
-
-   const result = dialog . showMessageBoxSync ({
+	autoUpdater.on('update-available', (info) => {
+		const result = dialog.showMessageBoxSync({
 			type: 'info',
 			title: 'アップデートのお知らせ',
 			message: `新しいバージョン（v${info.version}）が見つかりました。\nダウンロードしてアップデートを開始しますか？`,
@@ -423,14 +370,15 @@ app.whenReady().then(async () => {
 			defaultId: 0,
 			cancelId: 1
 		});
-		if ( result === 0 ) {
-     autoUpdater . downloadUpdate ( ) ;
-   }   else {
-     // --- 💡 [100%の事実] 「いいえ」が選ばれたらバージョン番号を記憶させます --- [5]
-     fs.writeFileSync(PATHS.skipUpdate, info.version, 'utf8');
-     console.log(`[Update] ユーザーが v${info.version} をスキップしました。`);
-   }
-   });
+		if (result === 0) {
+			autoUpdater.downloadUpdate();
+		}
+		dialog.showMessageBox({
+        type: 'info',
+        title: 'テスト確認',
+        message: `Version: ${info.version}\nallowPrerelease設定: ${autoUpdater.allowPrerelease}`
+    });
+	});
 	// アップロードされた進捗をメインプロセスで受け取り、フロントエンドへ転送する
 	autoUpdater.on('download-progress', (progressObj) => {
 		// mainWindowが存在し、読み込み済みであることを確認
