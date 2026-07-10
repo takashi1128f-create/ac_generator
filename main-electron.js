@@ -15,10 +15,8 @@ autoUpdater.autoDownload = false;
 //：プレリリース版の検知を許可
 autoUpdater.allowPrerelease = true; //製品版の時にコメントアウトを
 const appVersion = app.getVersion(); //⁠alpha・beta・無印で認識
-// const appVersion = app.getVersion();
 // autoUpdater.allowPrerelease = appVersion.includes('-alpha');
-// const appVersion = app.getVersion();
-// autoUpdater.allowPrerelease = appVersion.includes('-beta');
+autoUpdater.allowPrerelease = appVersion.includes('-beta');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -72,6 +70,7 @@ const SERVER_CONFIG = {
 const PATHS = {
 	token: path.join(app.getPath('userData'), 'discord_auth_token.json'),
 	trial: path.join(app.getPath('userData'), 'trial_db.json'),
+	skipUpdate: path.join(app.getPath('userData'), 'skip_version.txt'),
 	recent: path.join(app.getPath('userData'), 'recent_projects.json'),
 	root: path.join(app.getPath('documents'), 'AC_Generator_Projects')
 };
@@ -361,23 +360,40 @@ app.whenReady().then(async () => {
 	});
 	// 自動アップデート機能 アップデートが見つかった時の動作
 	autoUpdater.on('update-available', (info) => {
-		const result = dialog.showMessageBoxSync({
-			type: 'info',
-			title: 'アップデートのお知らせ',
-			message: `新しいバージョン（v${info.version}）が見つかりました。\nダウンロードしてアップデートを開始しますか？`,
-			noLink: true,
-			buttons: ['はい', 'いいえ'],
-			defaultId: 0,
-			cancelId: 1
-		});
-		if (result === 0) {
-			autoUpdater.downloadUpdate();
-		}
-		dialog.showMessageBox({
-			type: 'info',
-			title: 'テスト確認',
-			message: `Version: ${info.version}\nallowPrerelease設定: ${autoUpdater.allowPrerelease}`
-		});
+		// 1. 【スキップ判定】以前このバージョンで「いいえ」を押していれば、通知を出さずに終了します
+    if (fs.existsSync(PATHS.skipUpdate)) {
+      const skippedVersion = fs.readFileSync(PATHS.skipUpdate, 'utf8').trim();
+      if (skippedVersion === info.version) {
+        return; 
+      }
+    }
+
+    // 2. 【フィルタリング】新バージョンが「正規版(ハイフンなし)」か「-beta」かを確認します
+    const isNewStable = !info.version.includes('-'); 
+    const isNewBeta = info.version.includes('-beta');
+
+    // 正規版でもベータ版でもない（-alpha等）場合は、通知を出さずに無視します
+    if (!isNewStable && !isNewBeta) {
+      return;
+    }
+
+    const result = dialog.showMessageBoxSync({
+      type: 'info',
+      title: 'アップデートのお知らせ',
+      message: `新しいバージョン（v${info.version}）が見つかりました。\nダウンロードしてアップデートを開始しますか？`,
+      noLink: true,
+      buttons: ['はい', 'いいえ'],
+      defaultId: 0,
+      cancelId: 1
+    });
+
+    if (result === 0) {
+      autoUpdater.downloadUpdate();
+    } else {
+      // 3. 【スキップ記録】「いいえ」が押されたら、このバージョン番号をファイルに書き込みます
+      // 次回の起動時、同じバージョンであれば通知が出なくなります。
+      fs.writeFileSync(PATHS.skipUpdate, info.version);
+    }
 	});
 	// アップロードされた進捗をメインプロセスで受け取り、フロントエンドへ転送する
 	autoUpdater.on('download-progress', (progressObj) => {
