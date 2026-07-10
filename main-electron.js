@@ -13,8 +13,8 @@ const {
 } = require('electron-updater');
 autoUpdater.autoDownload = false;
 //：プレリリース版の検知を許可
-autoUpdater.allowPrerelease = true;//製品版の時にコメントアウトを
-const appVersion = app.getVersion();//⁠alpha・beta・無印で認識
+autoUpdater.allowPrerelease = true; //製品版の時にコメントアウトを
+const appVersion = app.getVersion(); //⁠alpha・beta・無印で認識
 // const appVersion = app.getVersion();
 // autoUpdater.allowPrerelease = appVersion.includes('-alpha');
 const appVersion = app.getVersion();
@@ -34,12 +34,11 @@ if (IS_DEV_MODE) {
 		console.log('electron-reload の読み込みをスキップしました');
 	}
 }
-// ★追加：ビルドされた完成品（本番環境）の時だけ、ログ出力を空っぽ（無効）にする
+//ビルドされた完成品（本番環境）の時だけ、ログ出力を空っぽ（無効）にする
 if (!IS_DEV_MODE) {
 	console.log = function() {};
 	console.info = function() {};
 	console.warn = function() {};
-	// ※ console.error は致命的なクラッシュ原因を探るために残すことが多いです
 }
 // ==========================================
 // ★ アプリ全体の設定管理（司令塔）
@@ -47,7 +46,6 @@ if (!IS_DEV_MODE) {
 const SERVER_CONFIG = {
 	timing: {
 		splashDuration: 13000, // スプラッシュ画面を表示する時間（ミリ秒）
-		// splashDuration: 1000, // スプラッシュ画面を表示する時間（ミリ秒）
 	},
 	flow: {
 		autoSkipLogin: true, // トークンがあれば自動ログインを試みる
@@ -204,10 +202,15 @@ function createMainWindow() {
 		mainWindow.webContents.send('send-app-version', appVersion);
 	});
 	mainWindow.webContents.on('context-menu', (e, props) => {
-		const { x, y } = props;
+		const {
+			x,
+			y
+		} = props;
 		Menu.buildFromTemplate([{
 			label: '要素を検証',
-			click: () => { mainWindow.webContents.inspectElement(x, y); }
+			click: () => {
+				mainWindow.webContents.inspectElement(x, y);
+			}
 		}]).popup(mainWindow);
 	});
 }
@@ -351,18 +354,12 @@ app.whenReady().then(async () => {
 		}
 	});
 	protocol.handle('local-file', (request) => {
-		// 1. URLからパス部分を抽出
 		const url = new URL(request.url);
-		// 2. pathname は先頭に "/" がつくため、それを除去して取得
-		// 例: "/D:/フォント・ソフト/..." -> "D:/フォント・ソフト/..."
 		const filePath = decodeURIComponent(url.pathname.slice(1));
-		// 3. ログで最終的なパスを確認（デバッグ用）
-		console.log("🔍 [Protocol] 確定パス:", filePath);
 		// 4. file:// プロトコルとして返却
 		return net.fetch('file://' + filePath);
 	});
-	// ★ ルートB：自動アップデート機能（electron-updater）
-	// アップデートが見つかった時の動作
+	// 自動アップデート機能 アップデートが見つかった時の動作
 	autoUpdater.on('update-available', (info) => {
 		const result = dialog.showMessageBoxSync({
 			type: 'info',
@@ -377,16 +374,14 @@ app.whenReady().then(async () => {
 			autoUpdater.downloadUpdate();
 		}
 		dialog.showMessageBox({
-        type: 'info',
-        title: 'テスト確認',
-        message: `Version: ${info.version}\nallowPrerelease設定: ${autoUpdater.allowPrerelease}`
-    });
+			type: 'info',
+			title: 'テスト確認',
+			message: `Version: ${info.version}\nallowPrerelease設定: ${autoUpdater.allowPrerelease}`
+		});
 	});
 	// アップロードされた進捗をメインプロセスで受け取り、フロントエンドへ転送する
 	autoUpdater.on('download-progress', (progressObj) => {
-		// mainWindowが存在し、読み込み済みであることを確認
 		if (mainWindow && !mainWindow.isDestroyed()) {
-			// 進捗率（percent）をフロントエンドへ送信
 			mainWindow.webContents.send('download-progress', Math.round(progressObj.percent));
 		} else {
 			console.log('進捗イベント: mainWindowがまだ準備されていません');
@@ -420,48 +415,45 @@ app.whenReady().then(async () => {
 });
 // スプラッシュ表示フロー
 function startSplashFlow(isManual = false) {
-    createSplashWindow();
-
-    // 13秒待機 ➔ メイン表示 ➔ フェードアウトの一連の処理（元のコードをそのまま関数化）
-    const triggerTransition = () => {
-        // 手動ログイン後の場合、スプラッシュ開始時に一旦隠して、13秒後に再表示させる
-        if (isManual && mainWindow) {
-            mainWindow.hide();
-        }
-
-        setTimeout(() => {
-            // 1. まず、スプラッシュ画面の「裏」でメイン画面をこっそり表示して合図を送る
-            if (mainWindow && !mainWindow.isDestroyed()) {
-                mainWindow.show();
-                mainWindow.maximize();
-                mainWindow.webContents.send('main-window-shown');
-            }
-            // 2. 一番手前にあるスプラッシュを、いきなり壊さずに「徐々に透明」にする
-            if (splash && !splash.isDestroyed()) {
-                let opacity = 1.0; 
-                const fadeInterval = setInterval(() => {
-                    opacity -= 0.05; 
-                    if (opacity <= 0) {
-                        clearInterval(fadeInterval);
-                        if (!splash.isDestroyed()) splash.destroy();
-                        autoUpdater.checkForUpdates();
-                    } else {
-                        if (!splash.isDestroyed()) splash.setOpacity(opacity);
-                    }
-                }, 30); 
-            }
-        }, SERVER_CONFIG.timing.splashDuration); // ここで 13000ms 待機 [2]
-    };
-
-    if (isManual) {
-        // 手動ログイン後の場合：
-        // すでに ready-to-show は発生済みなので、直接トリガーを引く
-        triggerTransition();
-    } else {
-        // 通常起動時（2度目以降）：
-        // 元のコード通り、準備完了を一度だけ待ってからトリガーを引く [1]
-        mainWindow.once('ready-to-show', triggerTransition);
-    }
+	createSplashWindow();
+	// 13秒待機 ➔ メイン表示 ➔ フェードアウトの一連の処理（元のコードをそのまま関数化）
+	const triggerTransition = () => {
+		// 手動ログイン後の場合、スプラッシュ開始時に一旦隠して、13秒後に再表示させる
+		if (isManual && mainWindow) {
+			mainWindow.hide();
+		}
+		setTimeout(() => {
+			// 1. まず、スプラッシュ画面の「裏」でメイン画面をこっそり表示して合図を送る
+			if (mainWindow && !mainWindow.isDestroyed()) {
+				mainWindow.show();
+				mainWindow.maximize();
+				mainWindow.webContents.send('main-window-shown');
+			}
+			// 2. 一番手前にあるスプラッシュを、いきなり壊さずに「徐々に透明」にする
+			if (splash && !splash.isDestroyed()) {
+				let opacity = 1.0;
+				const fadeInterval = setInterval(() => {
+					opacity -= 0.05;
+					if (opacity <= 0) {
+						clearInterval(fadeInterval);
+						if (!splash.isDestroyed()) splash.destroy();
+						autoUpdater.checkForUpdates();
+					} else {
+						if (!splash.isDestroyed()) splash.setOpacity(opacity);
+					}
+				}, 30);
+			}
+		}, SERVER_CONFIG.timing.splashDuration); // ここで 13000ms 待機 [2]
+	};
+	if (isManual) {
+		// 手動ログイン後の場合：
+		// すでに ready-to-show は発生済みなので、直接トリガーを引く
+		triggerTransition();
+	} else {
+		// 通常起動時（2度目以降）：
+		// 元のコード通り、準備完了を一度だけ待ってからトリガーを引く [1]
+		mainWindow.once('ready-to-show', triggerTransition);
+	}
 }
 // ==========================================
 // ★ 認証システムと自動ログイン
@@ -625,11 +617,13 @@ function startAuthServer() {
 					'Content-Type': 'text/html; charset=utf-8'
 				});
 				if (authResult.success) {
-				fs.writeFileSync(PATHS.token, JSON.stringify({ accessToken: tokenData.access_token, refreshToken: tokenData.refresh_token }), 'utf8');
-				if (mainWindow) mainWindow.webContents.send('discord-auth-callback', authResult);
-				
-				// ★ここを修正：引数に true を渡して「手動モード」で起動
-				if (SERVER_CONFIG.flow.showSplashAfterLogin) startSplashFlow(true); 
+					fs.writeFileSync(PATHS.token, JSON.stringify({
+						accessToken: tokenData.access_token,
+						refreshToken: tokenData.refresh_token
+					}), 'utf8');
+					if (mainWindow) mainWindow.webContents.send('discord-auth-callback', authResult);
+					// ★ここを修正：引数に true を渡して「手動モード」で起動
+					if (SERVER_CONFIG.flow.showSplashAfterLogin) startSplashFlow(true);
 					res.end(`
 						<div style="text-align:center; font-family:sans-serif; margin-top:50px;">
 							<h1 style="color:#51cf66;">認証成功！</h1>
@@ -1443,127 +1437,128 @@ async function recognizeMainKn5File(carPath) {
 	}
 }
 ipcMain.handle('sync-restore-end', async (event, folderPath) => {
-    return { success: cleanupSyncBackup(folderPath, true) };
+	return {
+		success: cleanupSyncBackup(folderPath, true)
+	};
 });
 // --- 💡ここからが修正対象となる clone-car-folder です（590行目付近） ---
 ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    const { execSync } = require('child_process'); // 順次実行(待機)のために必要
-
-    try {
-        if (!fs.existsSync(sourcePath)) return { success: false, error: '元の車両が見つかりません' };
-        if (fs.existsSync(targetPath)) return { success: false, error: '指定した名前の車両は既に存在します' };
-
-        const dataDirPath = path.join(sourcePath, 'data');
-        const acdPath = path.join(sourcePath, 'data.acd');
-        const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-				// ★記憶領域
-				const initialDataDirExisted = fs.existsSync(dataDirPath); // 元からdataフォルダがあったか？
-				let originalAcdFileName = 'data.acd';                    // 元のACDファイル名（初期値）
-        let isTemporarilyUnpacked = false;
-
-        // ==========================================
-        // PHASE 1: 元フォルダの事前準備（バックアップ復帰 ➔ 展開）
-        // ==========================================
-        console.log("🕵️ [PHASE 1] 元フォルダの調査と準備を開始...");
-
-        // 1.1 あらゆる末尾の data.acd_... を data.acd に戻す
-        if (!fs.existsSync(acdPath)) {
-            const allFiles = fs.readdirSync(sourcePath);
-            const anyAcdBackup = allFiles.find(f => f.startsWith('data.acd') && f !== 'data.acd');
-            if (anyAcdBackup) {
-							originalAcdFileName = anyAcdBackup;
-							fs.renameSync(path.join(sourcePath, anyAcdBackup), acdPath);
-							console.log(`🔄 ACD復帰成功: ${anyAcdBackup}`);
-            }
-        }
-
-        // 1.2 dataフォルダがない場合のみ展開して「複製できる状態」にする
-        if (!fs.existsSync(dataDirPath) && fs.existsSync(acdPath)) {
-            execSync(`"${sdkExe}" "${acdPath}"`); // 完了するまで次へ進まない
-            isTemporarilyUnpacked = true;
-            console.log("✅ 元フォルダ内への一時展開が完了しました。");
-        }
-
-        // ==========================================
-        // PHASE 2: 物理的な複製（コピー）
-        // ==========================================
-        console.log("🚚 [PHASE 2] フォルダの物理コピーを開始...");
-        
-        // 元フォルダが「展開済み」になったのを確認してからコピーを実行
-        fs.cpSync(sourcePath, targetPath, { recursive: true });
-        
-        console.log("✅ コピーが完了しました。");
-
-        // ==========================================
-        // PHASE 3: 複製先でのメインKN5リネーム処理安ど&FBXに展開
-        // ==========================================
-        console.log("📝 [PHASE 3] 複製先でのメインKN5のリネームを開始...");
-
-        const files = fs.readdirSync(targetPath); // 複製先のファイル一覧を取得
-        // 過去の協議で確定した「メインKN5」の認識ルール（collider以外）を使用 [cite: 512, 546]
-        const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
-
-        if (targetKn5) {
-            const folderName = path.basename(targetPath); // 複製先フォルダの名前を取得
-            const oldPath = path.join(targetPath, targetKn5);
-            const newPath = path.join(targetPath, `${folderName}.kn5`);
-
-            if (oldPath !== newPath) {
-                // 物理的なファイル名変更を実行 [cite: 513, 547]
-                fs.renameSync(oldPath, newPath);
-                console.log(`✅ [PHASE 3] リネーム成功: ${targetKn5} -> ${folderName}.kn5`);
-								// ★ 関数の呼び出し（複製先のフォルダ targetPath を指定）
-            		updateLodsIni(targetPath, folderName);
-            } else {
-                console.log("ℹ️ [PHASE 3] すでに正しい名前のため、リネームをスキップしました。");
-            }
-        } else {
-            console.warn("⚠️ [PHASE 3] 警告：複製先にメインの.kn5ファイルが見つかりませんでした。");
-        }
-				// ==========================================
-        // PHASE 4: 複製先でのコンパイル（data.acdの生成）
-        // ==========================================
-        console.log("🏗 [PHASE 4] 複製先でのコンパイルを開始...");
-
-        const targetDataDirPath = path.join(targetPath, 'data'); // 複製先のdataフォルダ
-        if (fs.existsSync(targetDataDirPath)) {
-            // dataフォルダをコンパイルして、新しい data.acd を生成・上書きする [cite: 580, 581]
-            execSync(`"${sdkExe}" "${targetDataDirPath}"`);
-            console.log("✅ [PHASE 4] コンパイル成功：新しい data.acd が生成されました。");
-        }
-				// ==========================================
-        // PHASE 5: 複製先での data.acd の固定（バックアップ化）
-        // ==========================================
-        console.log("🔒 [PHASE 5] 複製先での data.acd の固定を開始...");
-
-        const targetAcdPath = path.join(targetPath, 'data.acd');
-        if (fs.existsSync(targetAcdPath)) {
-            // 生成された data.acd をリネームし、dataフォルダが優先される状態にする [cite: 534, 535]
-            fs.renameSync(targetAcdPath, targetAcdPath + "_backup");
-            console.log("✅ [PHASE 5] 固定成功：data.acd をバックアップ化しました。");
-        }
-				// ==========================================
-        // STEP 8: 元フォルダの復元（検証ログのみ）
-        // ==========================================
-        console.log("🧹 [STEP 8] 元フォルダの状態復元（後片付け）を実行...");
-
-        // 1. 一時的に作成した data フォルダを削除
-        if (!initialDataDirExisted && isTemporarilyUnpacked && fs.existsSync(dataDirPath)) {
-            fs.rmSync(dataDirPath, { recursive: true, force: true });
-            console.log("🗑️ 元フォルダ内の一時的な data フォルダを削除しました。");
-        }
-
-        // 2. ACDファイルの名前を元の名前に戻す
-        if (originalAcdFileName !== 'data.acd' && fs.existsSync(acdPath)) {
-            const originalAcdPath = path.join(sourcePath, originalAcdFileName);
-            fs.renameSync(acdPath, originalAcdPath);
-            console.log(`🔄 data.acd を元の名前「${originalAcdFileName}」に戻しました。`);
-        }
-				// --- 修正箇所の「下」数行（次のPHASEへ続く） ---
-        return { success: true };
-    } catch (err) {
+	const fs = require('fs');
+	const path = require('path');
+	const {
+		execSync
+	} = require('child_process'); // 順次実行(待機)のために必要
+	try {
+		if (!fs.existsSync(sourcePath)) return {
+			success: false,
+			error: '元の車両が見つかりません'
+		};
+		if (fs.existsSync(targetPath)) return {
+			success: false,
+			error: '指定した名前の車両は既に存在します'
+		};
+		const dataDirPath = path.join(sourcePath, 'data');
+		const acdPath = path.join(sourcePath, 'data.acd');
+		const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+		// ★記憶領域
+		const initialDataDirExisted = fs.existsSync(dataDirPath); // 元からdataフォルダがあったか？
+		let originalAcdFileName = 'data.acd'; // 元のACDファイル名（初期値）
+		let isTemporarilyUnpacked = false;
+		// ==========================================
+		// PHASE 1: 元フォルダの事前準備（バックアップ復帰 ➔ 展開）
+		// ==========================================
+		console.log("🕵️ [PHASE 1] 元フォルダの調査と準備を開始...");
+		// 1.1 あらゆる末尾の data.acd_... を data.acd に戻す
+		if (!fs.existsSync(acdPath)) {
+			const allFiles = fs.readdirSync(sourcePath);
+			const anyAcdBackup = allFiles.find(f => f.startsWith('data.acd') && f !== 'data.acd');
+			if (anyAcdBackup) {
+				originalAcdFileName = anyAcdBackup;
+				fs.renameSync(path.join(sourcePath, anyAcdBackup), acdPath);
+				console.log(`🔄 ACD復帰成功: ${anyAcdBackup}`);
+			}
+		}
+		// 1.2 dataフォルダがない場合のみ展開して「複製できる状態」にする
+		if (!fs.existsSync(dataDirPath) && fs.existsSync(acdPath)) {
+			execSync(`"${sdkExe}" "${acdPath}"`); // 完了するまで次へ進まない
+			isTemporarilyUnpacked = true;
+			console.log("✅ 元フォルダ内への一時展開が完了しました。");
+		}
+		// ==========================================
+		// PHASE 2: 物理的な複製（コピー）
+		// ==========================================
+		console.log("🚚 [PHASE 2] フォルダの物理コピーを開始...");
+		// 元フォルダが「展開済み」になったのを確認してからコピーを実行
+		fs.cpSync(sourcePath, targetPath, {
+			recursive: true
+		});
+		console.log("✅ コピーが完了しました。");
+		// ==========================================
+		// PHASE 3: 複製先でのメインKN5リネーム処理安ど&FBXに展開
+		// ==========================================
+		console.log("📝 [PHASE 3] 複製先でのメインKN5のリネームを開始...");
+		const files = fs.readdirSync(targetPath); // 複製先のファイル一覧を取得
+		// 過去の協議で確定した「メインKN5」の認識ルール（collider以外）を使用 [cite: 512, 546]
+		const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
+		if (targetKn5) {
+			const folderName = path.basename(targetPath); // 複製先フォルダの名前を取得
+			const oldPath = path.join(targetPath, targetKn5);
+			const newPath = path.join(targetPath, `${folderName}.kn5`);
+			if (oldPath !== newPath) {
+				// 物理的なファイル名変更を実行 [cite: 513, 547]
+				fs.renameSync(oldPath, newPath);
+				console.log(`✅ [PHASE 3] リネーム成功: ${targetKn5} -> ${folderName}.kn5`);
+				// ★ 関数の呼び出し（複製先のフォルダ targetPath を指定）
+				updateLodsIni(targetPath, folderName);
+			} else {
+				console.log("ℹ️ [PHASE 3] すでに正しい名前のため、リネームをスキップしました。");
+			}
+		} else {
+			console.warn("⚠️ [PHASE 3] 警告：複製先にメインの.kn5ファイルが見つかりませんでした。");
+		}
+		// ==========================================
+		// PHASE 4: 複製先でのコンパイル（data.acdの生成）
+		// ==========================================
+		console.log("🏗 [PHASE 4] 複製先でのコンパイルを開始...");
+		const targetDataDirPath = path.join(targetPath, 'data'); // 複製先のdataフォルダ
+		if (fs.existsSync(targetDataDirPath)) {
+			// dataフォルダをコンパイルして、新しい data.acd を生成・上書きする [cite: 580, 581]
+			execSync(`"${sdkExe}" "${targetDataDirPath}"`);
+			console.log("✅ [PHASE 4] コンパイル成功：新しい data.acd が生成されました。");
+		}
+		// ==========================================
+		// PHASE 5: 複製先での data.acd の固定（バックアップ化）
+		// ==========================================
+		console.log("🔒 [PHASE 5] 複製先での data.acd の固定を開始...");
+		const targetAcdPath = path.join(targetPath, 'data.acd');
+		if (fs.existsSync(targetAcdPath)) {
+			// 生成された data.acd をリネームし、dataフォルダが優先される状態にする [cite: 534, 535]
+			fs.renameSync(targetAcdPath, targetAcdPath + "_backup");
+			console.log("✅ [PHASE 5] 固定成功：data.acd をバックアップ化しました。");
+		}
+		// ==========================================
+		// STEP 8: 元フォルダの復元（検証ログのみ）
+		// ==========================================
+		console.log("🧹 [STEP 8] 元フォルダの状態復元（後片付け）を実行...");
+		// 1. 一時的に作成した data フォルダを削除
+		if (!initialDataDirExisted && isTemporarilyUnpacked && fs.existsSync(dataDirPath)) {
+			fs.rmSync(dataDirPath, {
+				recursive: true,
+				force: true
+			});
+			console.log("🗑️ 元フォルダ内の一時的な data フォルダを削除しました。");
+		}
+		// 2. ACDファイルの名前を元の名前に戻す
+		if (originalAcdFileName !== 'data.acd' && fs.existsSync(acdPath)) {
+			const originalAcdPath = path.join(sourcePath, originalAcdFileName);
+			fs.renameSync(acdPath, originalAcdPath);
+			console.log(`🔄 data.acd を元の名前「${originalAcdFileName}」に戻しました。`);
+		}
+		// --- 修正箇所の「下」数行（次のPHASEへ続く） ---
+		return {
+			success: true
+		};
+	} catch (err) {
 		console.error("❌ クローン・リネーム処理エラー:", err.message);
 		return {
 			success: false,
@@ -1573,43 +1568,48 @@ ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
 });
 // 物理サウンドスワップAPI
 ipcMain.handle('swap-car-sound', async (event, targetCarPath, donorCarPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    try {
-        const targetSfx = path.join(targetCarPath, 'sfx');
-        const donorSfx = path.join(donorCarPath, 'sfx');
-        // ★修正：バックアップ先を sfx フォルダの中に変更
-        const backupSfx = path.join(targetSfx, 'old-sound');
-
-        // [PHASE 2] バックアップ作成（sfxフォルダ内へ）
-        if (fs.existsSync(targetSfx) && !fs.existsSync(backupSfx)) {
-            fs.mkdirSync(backupSfx, { recursive: true }); // まずフォルダを作る
-            
-            // sfxの中身をループして、ファイルだけを old-sound にコピーする
-            const currentFiles = fs.readdirSync(targetSfx);
-            for (const file of currentFiles) {
-                if (file === 'old-sound') continue; // 自分自身（バックアップフォルダ）はコピーしない
-                const src = path.join(targetSfx, file);
-                const dest = path.join(backupSfx, file);
-                if (fs.statSync(src).isFile()) {
-                    fs.copyFileSync(src, dest);
-                }
-            }
-            console.log("📂 [SFX] オリジナル音源を 'sfx/old-sound' に保護しました。");
-        }
-
-        // [PHASE 3] ドナーからの物理コピー
-        if (fs.existsSync(donorSfx)) {
-            fs.cpSync(donorSfx, targetSfx, { recursive: true });
-            console.log("🚚 [SFX] ドナー車両から sfx を移植完了しました。");
-        } else {
-            throw new Error("ドナー車両に sfx フォルダが見つかりません。");
-        }
-
-        return { success: true };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	const path = require('path');
+	try {
+		const targetSfx = path.join(targetCarPath, 'sfx');
+		const donorSfx = path.join(donorCarPath, 'sfx');
+		// ★修正：バックアップ先を sfx フォルダの中に変更
+		const backupSfx = path.join(targetSfx, 'old-sound');
+		// [PHASE 2] バックアップ作成（sfxフォルダ内へ）
+		if (fs.existsSync(targetSfx) && !fs.existsSync(backupSfx)) {
+			fs.mkdirSync(backupSfx, {
+				recursive: true
+			}); // まずフォルダを作る
+			// sfxの中身をループして、ファイルだけを old-sound にコピーする
+			const currentFiles = fs.readdirSync(targetSfx);
+			for (const file of currentFiles) {
+				if (file === 'old-sound') continue; // 自分自身（バックアップフォルダ）はコピーしない
+				const src = path.join(targetSfx, file);
+				const dest = path.join(backupSfx, file);
+				if (fs.statSync(src).isFile()) {
+					fs.copyFileSync(src, dest);
+				}
+			}
+			console.log("📂 [SFX] オリジナル音源を 'sfx/old-sound' に保護しました。");
+		}
+		// [PHASE 3] ドナーからの物理コピー
+		if (fs.existsSync(donorSfx)) {
+			fs.cpSync(donorSfx, targetSfx, {
+				recursive: true
+			});
+			console.log("🚚 [SFX] ドナー車両から sfx を移植完了しました。");
+		} else {
+			throw new Error("ドナー車両に sfx フォルダが見つかりません。");
+		}
+		return {
+			success: true
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 // フォルダ名変更
 ipcMain.handle('rename-car-folder', async (event, oldPath, newName) => {
@@ -1635,212 +1635,247 @@ ipcMain.handle('rename-car-folder', async (event, oldPath, newName) => {
 // ★ 新設：サウンドファイルの整合性を整える共通API
 // ==========================================
 ipcMain.handle('update-car-sound', async (event, carPath, oldName, newName) => {
-    const fs = require('fs');
-    const path = require('path');
-    try {
-        const sfxPath = path.join(carPath, 'sfx');
-        // sfxフォルダがない車両（サウンド未設定など）は、エラーにせず静かに終わらせる
-        if (!fs.existsSync(sfxPath)) return { success: true, info: 'sfxフォルダがないためスキップしました' };
-
-        // 1. .bank ファイルのリネーム（例：old.bank -> new.bank）
-        const oldBankPath = path.join(sfxPath, `${oldName}.bank`);
-        const newBankPath = path.join(sfxPath, `${newName}.bank`);
-        if (fs.existsSync(oldBankPath)) {
-            fs.renameSync(oldBankPath, newBankPath);
-            console.log(`🎵 [SFX] リネーム成功: ${oldName}.bank -> ${newName}.bank`);
-        }
-
-        // 2. GUIDs.txt の中身を新しいフォルダ名に一括置換
-        const guidsPath = path.join(sfxPath, 'GUIDs.txt');
-        if (fs.existsSync(guidsPath)) {
-            let content = fs.readFileSync(guidsPath, 'utf8');
-            // 置換ルール： /cars/元の名前/ ➔ /cars/新しい名前/
-            const searchStr = `/cars/${oldName}/`;
-            const replaceStr = `/cars/${newName}/`;
-
-            if (content.includes(searchStr)) {
-                // 文字列に含まれる全ての該当箇所を置換して上書き保存
-                const newContent = content.split(searchStr).join(replaceStr);
-                fs.writeFileSync(guidsPath, newContent, 'utf8');
-                console.log(`📝 [SFX] GUIDs.txt の文字列置換を完了しました`);
-            }
-        }
-        return { success: true };
-    } catch (err) {
-        console.error("❌ [SFX] サウンド修正中にエラー:", err.message);
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	const path = require('path');
+	try {
+		const sfxPath = path.join(carPath, 'sfx');
+		// sfxフォルダがない車両（サウンド未設定など）は、エラーにせず静かに終わらせる
+		if (!fs.existsSync(sfxPath)) return {
+			success: true,
+			info: 'sfxフォルダがないためスキップしました'
+		};
+		// 1. .bank ファイルのリネーム（例：old.bank -> new.bank）
+		const oldBankPath = path.join(sfxPath, `${oldName}.bank`);
+		const newBankPath = path.join(sfxPath, `${newName}.bank`);
+		if (fs.existsSync(oldBankPath)) {
+			fs.renameSync(oldBankPath, newBankPath);
+			console.log(`🎵 [SFX] リネーム成功: ${oldName}.bank -> ${newName}.bank`);
+		}
+		// 2. GUIDs.txt の中身を新しいフォルダ名に一括置換
+		const guidsPath = path.join(sfxPath, 'GUIDs.txt');
+		if (fs.existsSync(guidsPath)) {
+			let content = fs.readFileSync(guidsPath, 'utf8');
+			// 置換ルール： /cars/元の名前/ ➔ /cars/新しい名前/
+			const searchStr = `/cars/${oldName}/`;
+			const replaceStr = `/cars/${newName}/`;
+			if (content.includes(searchStr)) {
+				// 文字列に含まれる全ての該当箇所を置換して上書き保存
+				const newContent = content.split(searchStr).join(replaceStr);
+				fs.writeFileSync(guidsPath, newContent, 'utf8');
+				console.log(`📝 [SFX] GUIDs.txt の文字列置換を完了しました`);
+			}
+		}
+		return {
+			success: true
+		};
+	} catch (err) {
+		console.error("❌ [SFX] サウンド修正中にエラー:", err.message);
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 // ★再利用：メインの .kn5 ファイルを探してリネームする独立API
 ipcMain.handle('rename-car-kn5', async (event, carPath, newName) => {
-    const fs = require('fs');
-    const path = require('path');
-    try {
-        const files = fs.readdirSync(carPath);
-        // 過去のロジックを100%継承：collider以外で一番最初に見つかった.kn5を対象にする [cite: 611, 784]
-        const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
-        
-        if (targetKn5) {
-            const oldKn5Path = path.join(carPath, targetKn5);
-            const newKn5Path = path.join(carPath, `${newName}.kn5`);
-            fs.renameSync(oldKn5Path, newKn5Path);
-            console.log(`💎 [MODEL] リネーム成功: ${targetKn5} -> ${newName}.kn5`);
-						// ★ 関数の呼び出し（現在の車両フォルダ carPath を指定）
-            updateLodsIni(carPath, newName);
-        }
-        return { success: true };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	const path = require('path');
+	try {
+		const files = fs.readdirSync(carPath);
+		// 過去のロジックを100%継承：collider以外で一番最初に見つかった.kn5を対象にする [cite: 611, 784]
+		const targetKn5 = files.find(f => f.toLowerCase().endsWith('.kn5') && f.toLowerCase() !== 'collider.kn5');
+		if (targetKn5) {
+			const oldKn5Path = path.join(carPath, targetKn5);
+			const newKn5Path = path.join(carPath, `${newName}.kn5`);
+			fs.renameSync(oldKn5Path, newKn5Path);
+			console.log(`💎 [MODEL] リネーム成功: ${targetKn5} -> ${newName}.kn5`);
+			// ★ 関数の呼び出し（現在の車両フォルダ carPath を指定）
+			updateLodsIni(carPath, newName);
+		}
+		return {
+			success: true
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 // kn5のモデルの置き換えする為lods.iniの書き換えを追加
 function updateLodsIni(carPath, newName) {
-    const fs = require('fs');
-    const path = require('path');
-    const lodsIniPath = path.join(carPath, 'data', 'lods.ini');
-
-    if (fs.existsSync(lodsIniPath)) {
-        try {
-            // 1. 読込
-            let content = fs.readFileSync(lodsIniPath, 'utf8');
-
-            // 2. 置換（メモリ上でのデータ作成） [cite: 550]
-            // 変数を確実に展開するため、バックティック( ` )で囲みます
-            const updatedContent = content.replace(/^FILE=.*$/mi, `FILE=${newName}.kn5`);
-
-            // --- 追加された最後の工程：ディスクへの書き込み ---
-            // 既存の GUIDs.txt 等の書き換え処理と同じ作法で保存を実行します [cite: 549]
-            fs.writeFileSync(lodsIniPath, updatedContent, 'utf8');
-            
-            // 完了を報告（ここもバックティックで囲み、文法エラーを防止します）
-            console.log(`✅ [LODS-UPDATE] 書き換えと保存が完了しました: FILE=${newName}.kn5`);
-            // ----------------------------------------------
-
-        } catch (err) {
-            // 書き込み権限がない場合や、保存中にエラーが起きた場合に報告
-            console.error(`❌ [LODS-ERROR] 書き込み工程で失敗しました:`, err.message);
-        }
-    } else {
-        console.log(`❌ [LODS-CHECK] 保存対象のファイルが見つかりません: ${lodsIniPath}`);
-    }
+	const fs = require('fs');
+	const path = require('path');
+	const lodsIniPath = path.join(carPath, 'data', 'lods.ini');
+	if (fs.existsSync(lodsIniPath)) {
+		try {
+			// 1. 読込
+			let content = fs.readFileSync(lodsIniPath, 'utf8');
+			// 2. 置換（メモリ上でのデータ作成）
+			// 変数を確実に展開するため、バックティック( ` )で囲みます
+			const updatedContent = content.replace(/^FILE=.*$/mi, `FILE=${newName}.kn5`);
+			// 既存の GUIDs.txt 等の書き換え処理と同じ作法で保存を実行します 
+			fs.writeFileSync(lodsIniPath, updatedContent, 'utf8');
+			// 完了を報告（ここもバックティックで囲み、文法エラーを防止します）
+			console.log(`✅ [LODS-UPDATE] 書き換えと保存が完了しました: FILE=${newName}.kn5`);
+			// ----------------------------------------------
+		} catch (err) {
+			// 書き込み権限がない場合や、保存中にエラーが起きた場合に報告
+			console.error(`❌ [LODS-ERROR] 書き込み工程で失敗しました:`, err.message);
+		}
+	} else {
+		console.log(`❌ [LODS-CHECK] 保存対象のファイルが見つかりません: ${lodsIniPath}`);
+	}
 }
 // エンジンスワップ
 ipcMain.handle('check-engine-files', async (event, donorPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    const { execSync } = require('child_process');
-    // あなたが既にプロジェクト内で定義しているSDKのパスを使用します [cite: 532, 584]
-    const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-    const dataDir = path.join(donorPath, 'data');
-    const acdPath = path.join(donorPath, 'data.acd');
-
-    console.log(`📡 [Main] ドナー調査開始: ${donorPath}`);
-
-    // ① すでに data フォルダがある場合
-    if (fs.existsSync(path.join(dataDir, 'engine.ini'))) {
-        return { success: true, path: path.join(dataDir, 'engine.ini'), wasAcd: false };
-    }
-
-    // ② data フォルダがなく、data.acd がある場合（既存の展開ロジックを使用）
-    if (fs.existsSync(acdPath) && fs.existsSync(sdkExe)) {
-        console.log("📦 data.acd を発見。一時展開します...");
-        try {
-            // 既存のクローン機能と同じく、SDKを叩いて展開します [cite: 532]
-            execSync(`"${sdkExe}" "${acdPath}"`);
-            return { success: true, path: path.join(dataDir, 'engine.ini'), wasAcd: true };
-        } catch (err) {
-            return { success: false, error: "ACD展開に失敗しました" };
-        }
-    }
-    return { success: false, error: "エンジンデータが見つかりません" };
+	const fs = require('fs');
+	const path = require('path');
+	const {
+		execSync
+	} = require('child_process');
+	// あなたが既にプロジェクト内で定義しているSDKのパスを使用します 
+	const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+	const dataDir = path.join(donorPath, 'data');
+	const acdPath = path.join(donorPath, 'data.acd');
+	console.log(`📡 [Main] ドナー調査開始: ${donorPath}`);
+	// ① すでに data フォルダがある場合
+	if (fs.existsSync(path.join(dataDir, 'engine.ini'))) {
+		return {
+			success: true,
+			path: path.join(dataDir, 'engine.ini'),
+			wasAcd: false
+		};
+	}
+	// ② data フォルダがなく、data.acd がある場合（既存の展開ロジックを使用）
+	if (fs.existsSync(acdPath) && fs.existsSync(sdkExe)) {
+		console.log("📦 data.acd を発見。一時展開します...");
+		try {
+			// 既存のクローン機能と同じく、SDKを叩いて展開します
+			execSync(`"${sdkExe}" "${acdPath}"`);
+			return {
+				success: true,
+				path: path.join(dataDir, 'engine.ini'),
+				wasAcd: true
+			};
+		} catch (err) {
+			return {
+				success: false,
+				error: "ACD展開に失敗しました"
+			};
+		}
+	}
+	return {
+		success: false,
+		error: "エンジンデータが見つかりません"
+	};
 });
 ipcMain.handle('cleanup-donor-data', async (event, donorPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    const dataDir = path.join(donorPath, 'data');
-    const acdBackup = path.join(donorPath, 'data.acd_backup');
-    const acdOriginal = path.join(donorPath, 'data.acd');
-
-    try {
-        // 既存のクリーンアップ処理（Source 542）をスワップ用に転用
-        if (fs.existsSync(dataDir)) {
-            fs.rmSync(dataDir, { recursive: true, force: true });
-            console.log("🗑 一時的な data フォルダを削除しました。");
-        }
-        if (fs.existsSync(acdBackup)) {
-            fs.renameSync(acdBackup, acdOriginal);
-            console.log("🔄 data.acd を元の状態に戻しました。");
-        }
-        return { success: true };
-    } catch (err) {
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	const path = require('path');
+	const dataDir = path.join(donorPath, 'data');
+	const acdBackup = path.join(donorPath, 'data.acd_backup');
+	const acdOriginal = path.join(donorPath, 'data.acd');
+	try {
+		// 既存のクリーンアップ処理（Source 542）をスワップ用に転用
+		if (fs.existsSync(dataDir)) {
+			fs.rmSync(dataDir, {
+				recursive: true,
+				force: true
+			});
+			console.log("🗑 一時的な data フォルダを削除しました。");
+		}
+		if (fs.existsSync(acdBackup)) {
+			fs.renameSync(acdBackup, acdOriginal);
+			console.log("🔄 data.acd を元の状態に戻しました。");
+		}
+		return {
+			success: true
+		};
+	} catch (err) {
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 ipcMain.handle('create-engine-backup', async (event, dataPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    const backupDir = path.join(dataPath, 'old-engine');
-
-    try {
-        // 1. 避難所（フォルダ）がなければ作る
-        if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir, { recursive: true });
-            console.log(`📁 [Main] 避難所を作成しました: ${backupDir}`);
-        }
-
-        // 2. 現在のエンジンデータを避難所へコピー（資産：engine.ini と power.lut）
-        const filesToBackUp = ['engine.ini', 'power.lut'];
-        filesToBackUp.forEach(file => {
-            const src = path.join(dataPath, file);
-            if (fs.existsSync(src)) {
-                fs.copyFileSync(src, path.join(backupDir, file));
-                console.log(`💾 [Main] 退避成功: ${file}`);
-            }
-        });
-
-        return { success: true, path: backupDir };
-    } catch (err) {
-        console.error(`❌ [Main] 避難所作成エラー: ${err.message}`);
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	const path = require('path');
+	const backupDir = path.join(dataPath, 'old-engine');
+	try {
+		// 1. 避難所（フォルダ）がなければ作る
+		if (!fs.existsSync(backupDir)) {
+			fs.mkdirSync(backupDir, {
+				recursive: true
+			});
+			console.log(`📁 [Main] 避難所を作成しました: ${backupDir}`);
+		}
+		// 2. 現在のエンジンデータを避難所へコピー（資産：engine.ini と power.lut）
+		const filesToBackUp = ['engine.ini', 'power.lut'];
+		filesToBackUp.forEach(file => {
+			const src = path.join(dataPath, file);
+			if (fs.existsSync(src)) {
+				fs.copyFileSync(src, path.join(backupDir, file));
+				console.log(`💾 [Main] 退避成功: ${file}`);
+			}
+		});
+		return {
+			success: true,
+			path: backupDir
+		};
+	} catch (err) {
+		console.error(`❌ [Main] 避難所作成エラー: ${err.message}`);
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 ipcMain.handle('read-text-file', async (event, filePath) => {
-    const fs = require('fs');
-    try {
-        // ドナーの engine.ini をテキスト形式(utf8)で読み込む
-        const content = fs.readFileSync(filePath, 'utf8');
-        
-        // ターミナルに事実を報告
-        console.log(`📄 [Main] 読込テスト成功: ${filePath} (${content.length} 文字)`);
-        
-        // 最初の100文字だけを表側に返して確認させます
-        return { success: true, preview: content.substring(0, 100), length: content.length };
-    } catch (err) {
-        console.error(`❌ [Main] 読込エラー: ${err.message}`);
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	try {
+		// ドナーの engine.ini をテキスト形式(utf8)で読み込む
+		const content = fs.readFileSync(filePath, 'utf8');
+		// ターミナルに事実を報告
+		console.log(`📄 [Main] 読込テスト成功: ${filePath} (${content.length} 文字)`);
+		// 最初の100文字だけを表側に返して確認させます
+		return {
+			success: true,
+			preview: content.substring(0, 100),
+			length: content.length
+		};
+	} catch (err) {
+		console.error(`❌ [Main] 読込エラー: ${err.message}`);
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
 // ✅ 追加：工程4（物理的なファイル移植）
 ipcMain.handle('copy-engine-files', async (event, donorPath, targetPath) => {
-    const fs = require('fs');
-    const path = require('path');
-    try {
-        // 移植対象のセット（この2つは常にペアで動く事実に基づきます [cite: 309, 313]）
-        const filesToCopy = ['engine.ini', 'power.lut'];
-        
-        filesToCopy.forEach(file => {
-            const src = path.join(donorPath, 'data', file);
-            const dest = path.join(targetPath, file);
-            
-            if (fs.existsSync(src)) {
-                fs.copyFileSync(src, dest);
-                console.log(`🚚 [Main] 移植成功: ${file}`);
-            }
-        });
-
-        return { success: true };
-    } catch (err) {
-        console.error(`❌ [Main] 移植エラー: ${err.message}`);
-        return { success: false, error: err.message };
-    }
+	const fs = require('fs');
+	const path = require('path');
+	try {
+		// 移植対象のセット（この2つは常にペアで動く事実に基づきます [cite: 309, 313]）
+		const filesToCopy = ['engine.ini', 'power.lut'];
+		filesToCopy.forEach(file => {
+			const src = path.join(donorPath, 'data', file);
+			const dest = path.join(targetPath, file);
+			if (fs.existsSync(src)) {
+				fs.copyFileSync(src, dest);
+				console.log(`🚚 [Main] 移植成功: ${file}`);
+			}
+		});
+		return {
+			success: true
+		};
+	} catch (err) {
+		console.error(`❌ [Main] 移植エラー: ${err.message}`);
+		return {
+			success: false,
+			error: err.message
+		};
+	}
 });
