@@ -369,6 +369,8 @@ app.whenReady().then(async () => {
 		// 現在のバージョンとアップデートのバージョンの第3桁を取得
 		const currentPatch = parseInt(app.getVersion().split('.')[2] || 0, 10);
 		const updatePatch = parseInt(info.version.split('.')[2] || 0, 10);
+
+		// 製品版ユーザー(0)なら、ベータ版(0以外)の通知を無視する
 		if (currentPatch === 0 && updatePatch !== 0) {
 			return;
 		}
