@@ -12,15 +12,13 @@ const {
 	autoUpdater
 } = require('electron-updater');
 autoUpdater.autoDownload = false;
-
 //：プレリリース版の検知を許可
 autoUpdater.allowPrerelease = true;//製品版の時にコメントアウトを
 const appVersion = app.getVersion();//⁠alpha・beta・無印で認識
-// // const appVersion = app.getVersion();
-// // autoUpdater.allowPrerelease = appVersion.includes('-alpha');
 // const appVersion = app.getVersion();
-// autoUpdater.allowPrerelease = appVersion.includes('-beta');
-
+// autoUpdater.allowPrerelease = appVersion.includes('-alpha');
+const appVersion = app.getVersion();
+autoUpdater.allowPrerelease = appVersion.includes('-beta');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -366,14 +364,6 @@ app.whenReady().then(async () => {
 	// ★ ルートB：自動アップデート機能（electron-updater）
 	// アップデートが見つかった時の動作
 	autoUpdater.on('update-available', (info) => {
-		// 現在のバージョンとアップデートのバージョンの第3桁を取得
-		const currentPatch = parseInt(app.getVersion().split('.')[2] || 0, 10);
-		const updatePatch = parseInt(info.version.split('.')[2] || 0, 10);
-
-		// 製品版ユーザー(0)なら、ベータ版(0以外)の通知を無視する
-		if (currentPatch === 0 && updatePatch !== 0) {
-			return;
-		}
 		const result = dialog.showMessageBoxSync({
 			type: 'info',
 			title: 'アップデートのお知らせ',

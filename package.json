@@ -1,6 +1,6 @@
 {
 	"name": "ac-file-generator",
-	"version": "0.1.0",
+	"version": "0.1.0-beta",
 	"description": "Assetto Corsa File Generator",
 	"author": "nerutakachan",
 	"main": "main-electron.js",
