@@ -251,7 +251,7 @@ label {
 }
 .hub-main {
 	flex: 1;
-	padding: 60px;
+	padding: 2em;
 	display: flex;
 	flex-direction: column;
 	/* justify-content: flex-start; */
