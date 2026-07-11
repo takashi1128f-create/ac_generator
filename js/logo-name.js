@@ -200,8 +200,8 @@ window.initSkinGallery = function(skins) {
 		li.addEventListener('click', () => window.selectSkin(idx));
 		listUl.appendChild(li);
 	});
-	window.selectSkin(0); // 最初の画像を表示
-	window.setupGalleryArrows(); // ◀ ▶ ボタンを有効化
+	window.selectSkin(0);
+	window.setupGalleryArrows();
 };
 window.selectSkin = function(idx) {
 	if (idx < 0 || idx >= window.allCarSkins.length) return;
@@ -216,6 +216,14 @@ window.selectSkin = function(idx) {
 		if (i === idx) item.classList.add('is-active');
 		else item.classList.remove('is-active');
 	});
+	// ★追加：選択した画像が中央に来るようにリストをスクロールさせる
+	const container = document.querySelector('.color-list_box');
+	if (container && items[idx]) {
+		const item = items[idx];
+		// 中央位置を計算：(アイテムの左端位置) - (外枠の幅の半分) + (アイテム自体の幅の半分)
+		const scrollX = item.offsetLeft - (container.clientWidth / 2) + (item.clientWidth / 2);
+		container.scrollTo({ left: scrollX, behavior: 'smooth' });
+	}
 };
 window.setupGalleryArrows = function() {
 	// 付与していただいたID「color-preview-arrow」を使ってボタンを探します
