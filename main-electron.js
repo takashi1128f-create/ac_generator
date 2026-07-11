@@ -661,10 +661,9 @@ function startAuthServer() {
 	authServer.listen(34567);
 }
 ipcMain.handle('unpack-kn5', async (event, kn5Path) => {
-	// アプリ同梱ツールのパス
-	const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-	// 100%の事実に基づく修正：ツールは「fbx」というフォルダを作ってその中に保存します [cite: 759]
-	const kn5Dir = path.dirname(kn5Path); // .kn5 があるフォルダ（車両フォルダ）を取得
+  let sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+  if (app.isPackaged) { sdkExe = sdkExe.replace('app.asar', 'app.asar.unpacked'); }
+  const kn5Dir = path.dirname(kn5Path); // .kn5 があるフォルダ（車両フォルダ）を取得
 	const kn5Name = path.basename(kn5Path, '.kn5'); // ファイル名（例：nissan_silvia_s13）を取得
 	const outputFbxPath = path.join(kn5Dir, 'fbx', `${kn5Name}.fbx`); // 「fbx」フォルダ内のパスを組み立て
 	return new Promise((resolve) => {
@@ -842,9 +841,9 @@ ipcMain.handle('delete-project', async (event, projectPath) => {
 	}
 });
 ipcMain.handle('unpack-acd', async (event, acdPath) => {
-	// 💡 過去に使用した変数名 sdkExe (kunossdk.exe) をそのまま使用します [cite: 500]
-	const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-	const carDir = path.dirname(acdPath);
+  let sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+  if (app.isPackaged) { sdkExe = sdkExe.replace('app.asar', 'app.asar.unpacked'); }
+  const carDir = path.dirname(acdPath);
 	const outputDir = path.join(carDir, 'data');
 	return new Promise((resolve) => {
 		if (!fs.existsSync(sdkExe)) {
@@ -1475,9 +1474,9 @@ ipcMain.handle('clone-car-folder', async (event, sourcePath, targetPath) => {
 		};
 		const dataDirPath = path.join(sourcePath, 'data');
 		const acdPath = path.join(sourcePath, 'data.acd');
-		const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-		// ★記憶領域
-		const initialDataDirExisted = fs.existsSync(dataDirPath); // 元からdataフォルダがあったか？
+		let sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+			if (app.isPackaged) { sdkExe = sdkExe.replace('app.asar', 'app.asar.unpacked'); }
+		const initialDataDirExisted = fs.existsSync(dataDirPath);
 		let originalAcdFileName = 'data.acd'; // 元のACDファイル名（初期値）
 		let isTemporarilyUnpacked = false;
 		// ==========================================
@@ -1751,8 +1750,9 @@ ipcMain.handle('check-engine-files', async (event, donorPath) => {
 		execSync
 	} = require('child_process');
 	// あなたが既にプロジェクト内で定義しているSDKのパスを使用します 
-	const sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
-	const dataDir = path.join(donorPath, 'data');
+	let sdkExe = path.join(__dirname, 'tools-folder', 'lib', 'kunossdk.exe');
+  	if (app.isPackaged) { sdkExe = sdkExe.replace('app.asar', 'app.asar.unpacked'); }
+  const dataDir = path.join(donorPath, 'data');
 	const acdPath = path.join(donorPath, 'data.acd');
 	console.log(`📡 [Main] ドナー調査開始: ${donorPath}`);
 	// ① すでに data フォルダがある場合
