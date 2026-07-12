@@ -590,28 +590,8 @@ export function applyIniData(fileName, parsedData) {
 			window.loadSetupIniForGears(window.currentSetupData);
 		}
 	} else if (name.includes('mirrors.ini')) {
-			window.currentMirrorsData = normalizedData;
-			if (typeof window.updateMirrorsVisuals === 'function') window.updateMirrorsVisuals();
-	} else if (name.includes('view.ini')) {
-			// view.iniの視点情報を、エディターが参照する変数（currentCarData.GRAPHICS）へマージします [cite: 178, 327]
-			if (!window.currentCarData) window.currentCarData = {};
-			if (!window.currentCarData.GRAPHICS) window.currentCarData.GRAPHICS = {};
-			
-			// [CAMERA]セクションと[DRIVER_EYES_POSITION]セクションの内容を統合
-			if (normalizedData.CAMERA) Object.assign(window.currentCarData.GRAPHICS, normalizedData.CAMERA);
-			if (normalizedData.DRIVER_EYES_POSITION) Object.assign(window.currentCarData.GRAPHICS, normalizedData.DRIVER_EYES_POSITION);
-			
-			// UI（Carタブ）を更新して読み込んだ数値を画面に表示させます [cite: 354]
-			if (typeof window.updateCarEditorUI === 'function') window.updateCarEditorUI(window.currentCarData);
-
-	} else if (name.includes('dash_cam.ini')) {
-			// dash_cam.iniの情報を統合（キー名を POS から DASH_CAM_POS へ変換して格納） [cite: 178, 328, 398]
-			if (!window.currentCarData) window.currentCarData = {};
-			if (!window.currentCarData.GRAPHICS) window.currentCarData.GRAPHICS = {};
-			if (normalizedData.DASH_CAM && normalizedData.DASH_CAM.POS) {
-					window.currentCarData.GRAPHICS.DASH_CAM_POS = normalizedData.DASH_CAM.POS;
-			}
-			if (typeof window.updateCarEditorUI === 'function') window.updateCarEditorUI(window.currentCarData);
+		window.currentMirrorsData = normalizedData;
+		if (typeof window.updateMirrorsVisuals === 'function') window.updateMirrorsVisuals();
 	}
 	const physicsFiles = ['car.ini', 'engine.ini', 'drivetrain.ini', 'tyres.ini', 'power.lut'];
 	if (physicsFiles.some(f => name.includes(f))) {
