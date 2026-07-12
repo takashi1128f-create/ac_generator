@@ -336,17 +336,24 @@ window.triggerLiveSync = function(isUiField = false) {
 			}
 			const filesToExport = [];
 			for (const file of window.EXPORT_CONFIG) {
-				// UIファイルや読み込まれていないデータはスキップ
-				if (file.id === 'view' || file.id === 'ui_car' || file.name === 'ui_car.json') continue;
-				const statusKey = (file.id === 'dash_cam') ? 'car' : file.id;
+				// ★修正：view（view.ini）をスキップ対象から外します
+				if (file.id === 'ui_car' || file.name === 'ui_car.json') continue;
+				// ★修正：id が 'view' の場合も編集フラグを 'car'（車両設定タブ）と連動させます
+				const statusKey = (file.id === 'dash_cam' || file.id === 'view') ? 'car' : file.id;
 				if (!window.modifiedStatus || !window.modifiedStatus[statusKey]) continue;
 				const getFunc = window[file.func];
 				if (typeof getFunc === 'function') {
 					const content = getFunc(true);
-					if (content) filesToExport.push({
-						name: file.name,
-						content: content
-					});
+					if (content) {
+						// ★追加：view.ini の場合だけは、dataフォルダではなくマイドキュメントへ直接保存する
+						if (file.id === 'view') {
+							const carName = window.currentCarDirectoryName;
+							if (carName) await window.electronAPI.saveViewIni(carName, content);
+						} else {
+							// それ以外（car.ini等）は、これまで通り data フォルダ用のリストへ
+							filesToExport.push({ name: file.name, content: content });
+						}
+					}
 				}
 			}
 			if (filesToExport.length > 0) {

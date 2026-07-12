@@ -1391,6 +1391,10 @@ if (btnExecuteCreation) {
 		console.log("📂 [Debug] 複製元:", sourcePath);
 		const cloneRes = await window.electronAPI.cloneCarFolder(sourcePath, targetPath);
 		if (cloneRes.success) {
+			// ベース車両の view.ini を読み取り（無ければデフォルトを使用）、新しい名前でマイドキュメントへ保存
+			const viewRes = await window.electronAPI.readViewIni(selectedCar);
+			const viewContent = viewRes.success ? viewRes.content : window.downloadViewIni(true);
+			await window.electronAPI.saveViewIni(newCarName, viewContent);
 			// サウンド：(新しいパス, 元の名前, 新しい名前)
 			await window.fixCarSound(targetPath, selectedCar, newCarName);
 			await loadCarToEditor(targetPath, newCarName);

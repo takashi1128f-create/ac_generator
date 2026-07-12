@@ -1,6 +1,6 @@
 // js/car.js
 // ==========================================
-// ★追加：フォーカスを破壊しない、綺麗なカスタムポップアップを表示する関数
+// フォーカスを破壊しない、綺麗なカスタムポップアップを表示する関数
 // ==========================================
 window.showCustomPopup = function(messageHtml, parentElement = document.body) {
 	const overlay = document.createElement('div');
@@ -15,7 +15,7 @@ window.showCustomPopup = function(messageHtml, parentElement = document.body) {
 	btn.textContent = 'OK';
 	// OKボタンを押したらポップアップを消す
 	btn.onclick = () => {
-		document.body.removeChild(overlay);
+		overlay.remove();
 	};
 	btnWrap.appendChild(btn);
 	box.appendChild(btnWrap);
@@ -186,9 +186,9 @@ window.updateCarEditorUI = function(data) {
 						// localStorage.removeItem('view_ini_noticed'); // ★テストが終わったらこの行は消すかコメントアウトしてください
 						if (!isNoticed) {
 							localStorage.setItem('view_ini_noticed', 'true'); // 案内済みフラグを立てる
-							// ★修正：案内文から dash_cam.ini を削除し、view.ini 専用の案内に変更
+							// ★修正：第2引数をあなたが作成する 'view-overlay' に変更
 							const msg = "💡 アセットコルサの仕様上、シートポジション（DRIVEREYES 等）は <b>view.ini</b> という特別なファイルに保存されます。<br><br>このツールでは書き出し時に自動でマイドキュメント内のフォルダを探し、安全にバックアップを取りながら保存を行います。";
-							window.showCustomPopup(msg, document.getElementById('preview-suspension'));
+							window.showCustomPopup(msg, document.getElementById('view-overlay'));
 						}
 					}
 					// 1. グローバル変数に現在のキーを記憶させる
@@ -285,11 +285,11 @@ window.updateCarEditorUI = function(data) {
 	}
 };
 // ==========================================
-// ★追加：car.iniの視点座標へカメラを移動させる関数
+// car.iniの視点座標へカメラを移動させる関数
 // ==========================================
 window.savedPreviewCameraState = null; // ★追加：元のカメラ状態を記憶する変数
 // ==========================================
-// ★追加：カメラを滑らかにアニメーションさせる共通関数
+// カメラを滑らかにアニメーションさせる共通関数
 // ==========================================
 window.currentCameraAnimation = null;
 window.animateCameraTransition = function(targetCamera, endPos, endQuat, endTarget, duration, onComplete) {
@@ -334,7 +334,7 @@ window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, 
 	if (!window.camera || !window.suspensionScene) return;
 	// サスペンション用カメラの制御を一時的に上書きする
 	const targetCamera = window.camera;
-	// ★追加：元のカメラ位置とOrbitControlsのターゲットを記憶する（まだ記憶していなければ）
+	// 元のカメラ位置とOrbitControlsのターゲットを記憶する（まだ記憶していなければ）
 	if (!window.savedPreviewCameraState) {
 		window.savedPreviewCameraState = {
 			position: targetCamera.position.clone(),
@@ -342,7 +342,7 @@ window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, 
 			target: window.controls ? window.controls.target.clone() : new THREE.Vector3()
 		};
 	}
-	// ★追加：OrbitControlsが動いていると視点がマウスに引っ張られるため一時的に無効化する
+	// OrbitControlsが動いていると視点がマウスに引っ張られるため一時的に無効化する
 	if (window.controls) {
 		window.controls.enabled = false;
 	}
@@ -414,7 +414,7 @@ window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, 
 	hideOnlyCarMeshes(window.suspensionScene);
 	hideOnlyCarMeshes(window.scene);
 	// 4. 視点の向き（方向とピッチ角）を設定
-	// ★修正：ワールドのZ軸ではなく、車体の「現在の向き」に合わせてカメラを向かせる
+	// ワールドのZ軸ではなく、車体の「現在の向き」に合わせてカメラを向かせる
 	let lookDirection = new THREE.Vector3(0, 0, (label === 'MIRROR') ? -1 : 1); // Z軸プラスが前、マイナスが後ろ
 	if (carGroup) {
 		// 車体の回転情報を方向ベクトルに適用
@@ -422,12 +422,12 @@ window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, 
 	}
 	// カメラ位置から、上で計算した方向へ少し先のポイントを見る
 	const targetPoint = new THREE.Vector3(finalX, finalY, finalZ).add(lookDirection.multiplyScalar(10));
-	// ★修正：瞬時に移動させず、まずは「最終的な目標の姿（ダミー）」を計算する
+	// 瞬時に移動させず、まずは「最終的な目標の姿（ダミー）」を計算する
 	const dummyCamera = targetCamera.clone();
 	dummyCamera.position.set(finalX, finalY, finalZ);
 	dummyCamera.lookAt(targetPoint);
 	dummyCamera.rotateX(-pitch * (Math.PI / 180));
-	// ★追加：上で計算した「最終的な姿（位置と角度）」に向けて、800ミリ秒（0.8秒）かけて滑らかに移動する
+	// 上で計算した「最終的な姿（位置と角度）」に向けて、800ミリ秒（0.8秒）かけて滑らかに移動する
 	window.animateCameraTransition(targetCamera, dummyCamera.position, dummyCamera.quaternion, targetPoint, 800);
 	// 5. プレビュー画面上に現在の視点名をオーバーレイ表示する
 	let overlay = document.getElementById('vision-overlay');
@@ -441,7 +441,7 @@ window.movePreviewCameraToCarVision = function(posX, posY, posZ, pitchAngleDeg, 
 window.resetPreviewCameraVision = function() {
 	const overlay = document.getElementById('vision-overlay');
 	if (overlay) overlay.style.display = 'none';
-	// ★修正：非表示になっていた車体モデルを「メッシュ単位で」確実に再表示させる
+	// 非表示になっていた車体モデルを「メッシュ単位で」確実に再表示させる
 	const showOnlyCarMeshes = (sceneObj) => {
 		if (!sceneObj) return;
 		sceneObj.children.forEach(child => {
@@ -456,9 +456,9 @@ window.resetPreviewCameraVision = function() {
 	};
 	showOnlyCarMeshes(window.suspensionScene);
 	showOnlyCarMeshes(window.scene);
-	// ★追加：カメラを元あった場所へ復旧させる
+	// カメラを元あった場所へ復旧させる
 	if (window.savedPreviewCameraState && window.camera) {
-		// ★修正：瞬時に戻さず、記憶しておいた状態に向けて800ミリ秒かけて滑らかに戻る
+		// 瞬時に戻さず、記憶しておいた状態に向けて800ミリ秒かけて滑らかに戻る
 		window.animateCameraTransition(window.camera, window.savedPreviewCameraState.position, window.savedPreviewCameraState.quaternion, window.savedPreviewCameraState.target, 800, // アニメーション時間（ミリ秒）
 			() => {
 				// ★アニメーションが完了した「後」に実行する処理
@@ -477,7 +477,7 @@ window.resetPreviewCameraVision = function() {
 	if (window.requestRender) window.requestRender();
 };
 // ==========================================
-// ★追加：現在のデータから座標と角度を抽出してカメラを移動する司令塔
+// 現在のデータから座標と角度を抽出してカメラを移動する司令塔
 // ==========================================
 window.updateCameraPreviewWithCurrentData = function() {
 	const activeKey = window.currentActiveCameraKey;
@@ -487,7 +487,7 @@ window.updateCameraPreviewWithCurrentData = function() {
 	let pitchKey = null;
 	let label = '';
 	// 1. フォーカスされたキーから、対になる座標と角度のキー名を割り出す
-	// ★修正：ON_BOARD_YAW_ANGLE もドライバー視点のグループに追加し、ダッシュボード視点の対応も追加
+	// ON_BOARD_YAW_ANGLE もドライバー視点のグループに追加し、ダッシュボード視点の対応も追加
 	if (activeKey === 'DRIVEREYES' || activeKey === 'ON_BOARD_PITCH_ANGLE' || activeKey === 'ON_BOARD_YAW_ANGLE') {
 		posKey = 'DRIVEREYES';
 		pitchKey = 'ON_BOARD_PITCH_ANGLE'; // ※Yaw（左右の首振り）はThree.jsのカメラ挙動として現状は固定しているためピッチのみ使用

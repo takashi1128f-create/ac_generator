@@ -153,7 +153,8 @@ export const ini_DATA = {
 	'power.lut': default_power_lut,
 	'drivetrain.ini': parseINI(drivetrain_ini),
 	'setup.ini': parseINI(setup_ini),
-	'final.rto': default_final_rto
+	'final.rto': default_final_rto,
+	'view.ini': default_view_ini 
 };
 window.ini_DATA = ini_DATA;
 //デフォルトのデータを維持するみたいだけど怖い「絶対に上書きされない「純粋なデフォルトデータ」を保存」って書いてあったから
@@ -875,34 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	// まとめてアップロード（マルチ）用の処理
 	const multiFileInput = document.getElementById('multiFileUpload');
 	if (multiFileInput) {
-		// multiFileInput.addEventListener('change', async (e) => {
-		// 	window.isMultiUploading = true;
-		// // ★追加：LIVE SYNC の ON/OFF 切り替え時のデータ復元処理
-		// 	const liveSyncSwitch = document.getElementById('liveSyncSwitch');
-		// 	if (liveSyncSwitch) {
-		// 		liveSyncSwitch.addEventListener('change', (e) => {
-		// 			if (e.target.checked) {
-		// 				// ONにした時：現在のデータをバックアップとして保存
-		// 				window.syncBackupData = JSON.parse(JSON.stringify(window.currentSetupData));
-		// 			} else if (window.syncBackupData) {
-		// 				// OFFにした時：保存しておいたデータを復元
-		// 				window.currentSetupData = JSON.parse(JSON.stringify(window.syncBackupData));
-		// 				// エディタのUIを再読み込み
-		// 				if (typeof window.initSetupEditor === 'function') {
-		// 					window.initSetupEditor(window.currentSetupData);
-		// 				}
-		// 			}
-		// 		});
-		// 	}
-		// const files = Array.from(e.target.files);
-		// ★修正：ここでは一括でパスを記憶せず（3Dモデルのパスを誤認するのを防ぐため）、
-		// 上記の handleMultiFileUpload 内でデータファイルごとに記憶するように処理を移動しました。
-		// handleMultiFileUpload を直接呼び出し、一括処理を開始する
-		// 	await handleMultiFileUpload(files);
-		// 	window.isMultiUploading = false;
-		// 	e.target.value = ''; // 選択をリセット
-		// });
-		multiFileInput.addEventListener('change', async (e) => {
+			multiFileInput.addEventListener('change', async (e) => {
 			const files = Array.from(e.target.files);
 			try {
 				window.isMultiUploading = true;
