@@ -153,7 +153,9 @@ export const ini_DATA = {
 	'power.lut': default_power_lut,
 	'drivetrain.ini': parseINI(drivetrain_ini),
 	'setup.ini': parseINI(setup_ini),
-	'final.rto': default_final_rto
+	'final.rto': default_final_rto,
+	'view.ini': parseINI(default_view_ini),
+	'dash_cam.ini': parseINI(default_dash_cam_ini)
 };
 window.ini_DATA = ini_DATA;
 //デフォルトのデータを維持するみたいだけど怖い「絶対に上書きされない「純粋なデフォルトデータ」を保存」って書いてあったから
@@ -553,17 +555,33 @@ export function applyIniData(fileName, parsedData) {
 		window.currentTyreData = normalizedData;
 		if (typeof window.updateTyreEditorUI === 'function') window.updateTyreEditorUI(window.currentTyreData);
 	} else if (name.includes('car.ini')) {
-		const preservedColliders = {};
-		if (window.currentCarData) {
-			for (const key in window.currentCarData) {
-				if (key.startsWith('COLLIDER_')) preservedColliders[key] = window.currentCarData[key];
+		// 既存のデータを捨てずに、新しいデータをマージ（合流）させる
+		if (!window.currentCarData) window.currentCarData = {};
+		
+		// セクションごとにマージすることで、view.iniなどの他ファイルデータを保護
+		for (let section in normalizedData) {
+			if (!window.currentCarData[section]) {
+				window.currentCarData[section] = normalizedData[section];
+			} else {
+				// セクションが既に存在する場合、中身のキー（値）だけを上書き
+				Object.assign(window.currentCarData[section], normalizedData[section]);
 			}
 		}
-		window.currentCarData = {
-			...preservedColliders,
-			...normalizedData
-		};
 		if (typeof window.updateCarEditorUI === 'function') window.updateCarEditorUI(window.currentCarData);
+
+	} else if (name.includes('colliders.ini')) {
+		// ★追加：欠落していたコライダー反映処理
+		if (!window.currentCarData) window.currentCarData = {};
+		
+		// コライダーデータを共有変数(currentCarData)へ合流
+		for (let section in normalizedData) {
+			if (section.startsWith('COLLIDER_') || section === 'HEADER') {
+				window.currentCarData[section] = normalizedData[section];
+			}
+		}
+		// エディターUIと3D表示を更新
+		if (typeof window.initColliderEditor === 'function') window.initColliderEditor(normalizedData);
+		if (typeof window.updateColliderVisuals === 'function') window.updateColliderVisuals();
 	} else if (name.includes('engine.ini')) {
 		window.currentEngineData = normalizedData;
 		if (typeof window.initEngineEditor === 'function') window.initEngineEditor(window.currentEngineData);

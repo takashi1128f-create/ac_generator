@@ -1340,15 +1340,40 @@ async function loadCarToEditor(carFullPath, carDirName) {
 			window.updateBadgeImage(window.currentDataFolderPath);
 		}
 		// --- ★ここからが「D&Dと同じ読み込み」の核心 ---
-		// 4. 全ての準備が整ったので、一括処理フラグを解除する
-		window.isMultiUploading = false;
-		// 5. 貯蔵庫(ini_DATA)にある全データを、一斉に各エディターの画面へ反映させる
-		// （D&Dの完了時と全く同じ「自動巡回」ルートです）
-		Object.keys(window.ini_DATA).forEach(fileName => {
+		// 4. 反映させる順番を厳格に定義（依存関係の親子順：全18要素を網羅）
+	const loadOrder = [
+		'suspensions.ini', // 1. 物理の土台
+		'car.ini',         // 2. 配置の土台
+		'view.ini',        // 3. 視点（マイドキュメント由来）
+		'dash_cam.ini',    // 4. メーター視点
+		'colliders.ini',   // 5. 衝突判定
+		'tyres.ini',       // 6. タイヤ
+		'engine.ini',      // 7. エンジン
+		'power.lut',       // 8. パワー曲線
+		'drivetrain.ini',  // 9. 駆動系
+		'setup.ini',       // 10. ピット設定
+		'final.rto',       // 11. ファイナルギア
+		'ratios.rto',      // 12. ギア比リスト
+		'aero.ini',        // 13. 空力
+		'mirrors.ini',     // 14. ミラー
+		'ui_car.json',     // 15. 車両情報
+		'cameras.ini',     // 16. F6カメラ
+		'lods.ini'         // 17. LOD設定
+		// ※18. メインモデル(.kn5)はこれより前の工程で既に処理済み
+	];
+
+	// 5. 貯蔵庫(ini_DATA)にあるデータを、上記の順番で一つずつ確実に画面へ反映させる
+	loadOrder.forEach(fileName => {
+		if (window.ini_DATA[fileName]) {
 			importModule.applyIniData(fileName, window.ini_DATA[fileName]);
-		});
-		// 6. 最後に物理スペック（馬力など）を計算して完成
-		if (typeof window.updateSpecsFromPhysics === 'function') window.updateSpecsFromPhysics();
+		}
+	});
+
+	// 6. 全ての設置が「完了したという報告」をもって、フラグ解除とスペック計算を行う
+	window.isMultiUploading = false;
+	if (typeof window.updateSpecsFromPhysics === 'function') {
+		window.updateSpecsFromPhysics();
+	}
 		// --- ★追加：すべての処理（FBX展開・INI解析）が完了したことを確認 ---
 		if (window.isMultiUploading === false) {
 			// 画面を切り替えてエディターを表示
