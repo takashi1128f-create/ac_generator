@@ -339,7 +339,8 @@ window.triggerLiveSync = function(isUiField = false) {
 				// UIファイルや読み込まれていないデータはスキップ
 				if (file.id === 'view' || file.id === 'ui_car' || file.name === 'ui_car.json') continue;
 				const statusKey = (file.id === 'dash_cam') ? 'car' : file.id;
-				if (!window.modifiedStatus || !window.modifiedStatus[statusKey]) continue;
+				const isInitialSync = (isUiField === false); 
+            if (!isInitialSync && (!window.modifiedStatus || !window.modifiedStatus[statusKey])) continue;
 				const getFunc = window[file.func];
 				if (typeof getFunc === 'function') {
 					const content = getFunc(true);

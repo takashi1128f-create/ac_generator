@@ -1421,6 +1421,22 @@ if (btnExecuteCreation) {
 		if (cloneRes.success) {
 			// サウンド：(新しいパス, 元の名前, 新しい名前)
 			await window.fixCarSound(targetPath, selectedCar, newCarName);
+			// --- [繋がりの復元] LIVE SYNCの対象外であるマイドキュメント側も初期化する ---
+			if (window.electronAPI.readViewIni && window.electronAPI.saveViewIni) {
+					// 1. まず複製元（selectedCar）の view.ini を読み込む
+					const viewRes = await window.electronAPI.readViewIni(selectedCar);
+					
+					if (viewRes.success) {
+							// 2. 成功したら、新しい車名で保存（フォルダも自動作成されます）
+							await window.electronAPI.saveViewIni(newCarName, viewRes.content);
+							console.log("✅ [新規作成] マイドキュメント側の視点設定を複製しました。");
+					} else {
+							// 元の車に設定がない場合は、デフォルト値でフォルダだけ先に作っておく
+							const defaultContent = "[CAMERA]\nON_BOARD_PITCH_ANGLE=0\nON_BOARD_YAW_ANGLE=0\n\n[DRIVER_EYES_POSITION]\nDRIVEREYES=0, 1.0, 0";
+							await window.electronAPI.saveViewIni(newCarName, defaultContent);
+							console.log("⚠️ [新規作成] 複製元に設定がないため、デフォルト値でフォルダを作成しました。");
+					}
+			}
 			await loadCarToEditor(targetPath, newCarName);
 		} else {
 			alert("複製エラー: " + cloneRes.error);
