@@ -110,6 +110,7 @@ window.updateCarEditorUI = function(data) {
 			}
 			// ★追加：USE_ANIMATED_SUSPENSIONS や VIRTUAL_MIRROR_ENABLED などのON/OFFフラグはチェックボックスにする
 			if (key === 'USE_ANIMATED_SUSPENSIONS' || key === 'VIRTUAL_MIRROR_ENABLED') {
+				console.log("【調査6】スイッチ判定：", key, "はチェックボックスとして生成を開始します。");
 				const isChecked = parseInt(v) === 1 ? 'checked' : '';
 				return `<input type="checkbox" class="suspension-item-toggle text-input" data-idx="${i}" ${isChecked} style="width:auto; height:auto; transform:scale(1.2); margin-left:5px; cursor:pointer;">`;
 			}
@@ -237,6 +238,9 @@ window.updateCarEditorUI = function(data) {
 			itemBox.className = 'suspension-item_box';
 			if (itemDef.keys) {
 				itemDef.keys.forEach(key => {
+					if (key === 'USE_ANIMATED_SUSPENSIONS' || key === 'VIRTUAL_MIRROR_ENABLED') {
+                    console.log("【調査5】UI生成ループ：", key, "を検知。データの中身は:", data[itemDef.section][key]);
+                }
 					const val = data[itemDef.section][key] !== undefined ? data[itemDef.section][key] : "";
 					addCarInput(itemBox, itemDef.section, key, val);
 				});

@@ -616,6 +616,12 @@ export function applyIniData(fileName, parsedData) {
         if (normalizedData.DRIVER_EYES_POSITION) {
             Object.assign(window.currentCarData.GRAPHICS, normalizedData.DRIVER_EYES_POSITION);
         }
+				} else if (name.includes('dash_cam.ini')) {
+        if (!window.currentCarData) window.currentCarData = {};
+        if (!window.currentCarData.GRAPHICS) window.currentCarData.GRAPHICS = {};
+        if (normalizedData.DASH_CAM && normalizedData.DASH_CAM.POS) {
+            window.currentCarData.GRAPHICS.DASH_CAM_POS = normalizedData.DASH_CAM.POS;
+        }
 	} else if (name.includes('mirrors.ini')) {
 		window.currentMirrorsData = normalizedData;
 		if (typeof window.updateMirrorsVisuals === 'function') window.updateMirrorsVisuals();
@@ -775,6 +781,7 @@ export async function handleMultiFileUpload(files) {
 		const viewRes = await window.electronAPI.readViewIni(window.currentCarDirectoryName);
 		if (viewRes.success) {
 			const parsedView = parseINI(viewRes.content);
+			console.log("【調査3】受付係：view.ini を解析しました。中身はこれです:", parsedView);
 			applyIniData('view.ini', parsedView); // 既存の applyIniData で処理
 			console.log("✅ 視点設定を適用しました。");
 		}

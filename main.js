@@ -1372,7 +1372,9 @@ async function loadCarToEditor(carFullPath, carDirName) {
 
 	// 6. 全ての設置が「完了したという報告」をもって、フラグ解除とスペック計算を行う
 	window.isMultiUploading = false;
+	console.log("【調査4】司令塔：全読み込みが終了。現在保持している車両データ(currentCarData)はこれです:", window.currentCarData);
 	if (typeof window.updateSpecsFromPhysics === 'function') {
+		if (typeof window.updateCarEditorUI === 'function') window.updateCarEditorUI(window.currentCarData);
 		window.updateSpecsFromPhysics();
 	}
 		// --- ★追加：すべての処理（FBX展開・INI解析）が完了したことを確認 ---
