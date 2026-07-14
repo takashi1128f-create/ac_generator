@@ -1366,6 +1366,8 @@ function cleanupSyncBackup(folderPath, shouldRestore) {
 			});
 		}
 		if (shouldRestore && fs.existsSync(viewIniOld)) {
+    // ★この1行を追加：バックアップを元の場所へコピーして戻します
+			fs.copyFileSync(viewIniOld, docViewIni);
 			fs.unlinkSync(viewIniOld);
 		}
 		const backupDir = path.join(folderPath, 'sync_backup');
