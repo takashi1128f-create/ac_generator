@@ -83,7 +83,7 @@
 	font-size: 14px;
 	width: 30px; /* ON/OFFの文字幅を固定してガタツキ防止 */
 }
-.status-text.off { color: #ff0000; }
+.status-text.off { color: #ffffff; }
 .status-text.on { color: #000000; } /* ONの時は緑色 */
 
 /* トグルスイッチ本体のスタイル */

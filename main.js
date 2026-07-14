@@ -462,6 +462,7 @@ window.loadProjectToUI = async function(projectState) {
 	if (files['suspensions']) window.currentSuspensionData = files['suspensions'].currentData;
 	if (files['tyres']) window.currentTyreData = files['tyres'].currentData;
 	if (files['car']) window.currentCarData = files['car'].currentData;
+	if (files['mirrors']) window.currentMirrorsData = files['mirrors'].currentData;
 	if (window.currentCarData?.BASIC?.TOTALMASS) {
 		window.updateSpecsDisplay({
 			weight: window.currentCarData.BASIC.TOTALMASS
@@ -529,6 +530,9 @@ window.loadProjectToUI = async function(projectState) {
 	if (typeof window.initAeroEditor === 'function') window.initAeroEditor(window.currentAeroData);
 	if (typeof window.initSetupEditor === 'function') window.initSetupEditor(window.currentSetupData);
 	if (typeof window.initColliderEditor === 'function') window.initColliderEditor(window.currentCarData);
+	if (window.currentMirrorsData && typeof window.updateMirrorsVisuals === 'function') {
+		window.updateMirrorsVisuals();
+	}
 	// ★追加：ui_carデータの復元
 	if (files['ui_car']) {
 		window.uiCarData = files['ui_car'].currentData;
@@ -752,7 +756,7 @@ document.addEventListener('DOMContentLoaded', () => {
 				'engine': window.currentEngineData,
 				'setup': window.currentSetupData,
 				'drivetrain': window.currentDrivetrainData,
-				// リスト・テキスト形式の重要データ
+				'mirrors': window.currentMirrorsData,
 				'power_lut_raw': window.currentPowerLutRaw,
 				'final_rto_list': window.finalRtoList,
 				// 編集状態フラグ（オレンジ色のタグを復元するため）
