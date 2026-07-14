@@ -97,6 +97,7 @@ div#suspension-content .preview_outer_box .control-panel .suspension-data-area {
 .suspension-item * {
 	box-sizing: border-box;
 	margin-bottom: 0.2rem;
+	padding: 0 0.2em;
 }
 .input-with-range {
 	display: flex;
