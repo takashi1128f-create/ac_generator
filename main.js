@@ -983,23 +983,40 @@ window.electronAPI.onMenuSave(() => {
 });
 // ★追加：「保存して終了」を受け取った時の動作
 if (window.electronAPI.onTriggerSaveAndClose) {
-	window.electronAPI.onTriggerSaveAndClose(() => {
-		const btn = document.getElementById('btn-save-project');
-		if (btn) {
-			btn.click(); // 1. 既存の保存ボタンをプログラムから押す
-			// 2. 保存完了を待ってからアプリを強制終了する
-			// データの回収と書き込み時間を考慮し、1.5秒待機します
-			setTimeout(() => {
-				if (window.electronAPI.forceQuit) {
-					window.electronAPI.forceQuit();
-				}
-			}, 1500);
-		} else {
-			// エディター画面以外（保存ボタンがない画面）ならそのまま終了
-			if (window.electronAPI.forceQuit) window.electronAPI.forceQuit();
-		}
-	});
-}
+        window.electronAPI.onTriggerSaveAndClose(async () => {
+            // 1. LIVE SYNC が ON の場合は、ファイルの復元が終わるまで待つ
+            const syncSwitch = document.getElementById('liveSyncSwitch');
+            const folder = window.currentDataFolderPath;
+            if (syncSwitch && syncSwitch.checked && folder) {
+                // 復元処理（syncRestoreEnd）の完了を await で確実に待ちます
+                await window.electronAPI.syncRestoreEnd(folder);
+                
+                // UI表示もOFFに戻しておく（一瞬ですが、整合性のため）
+                syncSwitch.checked = false;
+                const statusText = document.getElementById('liveSyncStatusText');
+                if (statusText) {
+                    statusText.textContent = "OFF";
+                    statusText.className = "status-text off";
+                }
+            }
+
+            // 2. プロジェクトの保存を実行し、完了を待つ
+            const btn = document.getElementById('btn-save-project');
+            if (btn) {
+                // ボタンをクリックして「保存中」の表示演出を出しつつ、
+                // 実際の保存API（saveProject）が完了するのを await で待ちます
+                btn.click();
+                if (window.currentProject) {
+                    await window.electronAPI.saveProject(window.currentProject);
+                }
+            }
+
+            // 3. すべて（復元と保存）が完璧に終わったら、Electronに終了を許可する
+            if (window.electronAPI.forceQuit) {
+                window.electronAPI.forceQuit();
+            }
+        });
+    }
 window.electronAPI.onMenuSaveAs(async () => {
 	const currentName = window.currentProject.projectName || "名称未設定";
 	const newName = await showCustomPrompt("新しいプロジェクト名を入力してください:", currentName + "_copy");
