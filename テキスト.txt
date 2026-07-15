@@ -1,4 +1,5 @@
 ギットハブでソースコードをアップロードしました。
+コメットIDは「」です。
 現状の確認と整合性、繋がりの全てを網羅して下さい。
 中途半端に確認をされると動作不良になります。
 
@@ -13,82 +14,14 @@ Electron側の仕様
 ⁠electron-updater⁠ がデフォルトで標準チャンネル（プレリリース用のルート）として認識・処理できる識別子はalpha⁠、beta⁠、rc⁠のみです。
 そのため、⁠-pre⁠ などのカスタム文字列を認識させるには、GitHub側ではなく、Electronアプリのコード側で ⁠autoUpdater.channel = 'pre'⁠ のように明示的にチャンネルを指定する必要があります。
 
+betaは「Latest」「Pre-release」両方だが、任意のアップデートなのでテストで開発者が手動で扱う。
+無印は「Latest」のみのアップデート。
 
-実装テスト：npm start
-開発用ビルド：x.x.x-dev（アプデはスルーして右クリックでの「要素を検証」が欲しい）
-・開発用アプデ：x.x.x-beta
-・プレリリース：x.x.x-pre
-・製品版：x.x.x
-v0.1.0の後に「-beta」「-pre」付けることによって挙動が変わるようにしたいです
-ギットハブではtagの「v0.1.0-beta」「v0.1.0-pre」「v0.1.0」でアップデートでの認識が分かれるようにしたい。
+一般的な考え
+パッチバージョン（3桁目）: UIの微修正、軽微なバグ修正、依存関係の更新など、機能そのものに変更がない場合に使用します。
+マイナーバージョン（2桁目）: 後方互換性がある状態での機能追加を行う場合に使用します。
+メジャーバージョン（1桁目）: 後方互換性のない破壊的な変更を行う場合に使用します。
 
-Release label
-
-内容としては
-●開発用アプデ：x.x.x-beta
-・Release label：Pre-release、Latestの両方対応
-・GitHubのtag「v0.1.0-beta」「v0.1.0-pre」「v0.1.0」全部対応
-・アンインストールされて「x.x.x-pre」「製品版：x.x.x」をインストールしてもRelease label：Pre-release、Latestの両方対応」、「「v0.1.0-beta」「v0.1.0-pre」「v0.1.0」全部対応」
-
-●プレリリース：x.x.x-pre
-・Release label：Pre-release、Latestの両方対応
-・GitHubのtag「v0.1.0-pre」「v0.1.0」の対応
-・アンインストールされて「製品版：x.x.x」をインストールしても「Release label：Pre-release、Latestの両方対応」、「「v0.1.0-pre」「v0.1.0」全部対応」
-
-製品版：x.x.x
-・Release label：Latestのみ対応
-・GitHubのtag「v0.1.0」のみ対応
-・アンインストールされても「Release label：Latestのみ対応」「「v0.1.0」のみ対応」
-
-内容としては
-●プレリリース
-・Release label：Pre-release、Latestの両方対応
-・「タイトルv0.0.0-beta」も「タイトルv0.0.0」無印もテストいろいろ使われる
-
-下記の二つは設定の切り替えでどちらでも可能
-●ベータ版
-・Release label：Latestのみ対応
-・「タイトルv0.0.0-beta」、「タイトルv0.0.0」無印両方のアップデートに対応
-
-製品版（無印）
-・Release label：Latestのみ対応
-・タイトルv0.0.0のみ通知がでる
-
-
-GitHub側とアプリ側の設定を以下のように組み合わせることで実現できます。
-
-●GitHub側の公開方法
-・無印・betaのバージョン：通常の「Release」として公開する
-・⁠alpha⁠のバージョン：「Pre-release」にチェックを入れて公開する
-
-●アプリ側の挙動
-・通常版アプリ（allowPrerelease = false）：GitHubの「Release（無印）」「Release（beta）」を認識し、「Pre-release（alpha⁠）」は無視
-・ベータ版アプリ（allowPrerelease = true）：GitHubの「Release（無印）」と「Release（beta）」と「Pre-release（alpha⁠）」の3つを認識
-
-
-"output": "D:/ダウンロード/あせコルMOD/オンラインジェネレーター/webで動作するソフト/ビルド/ビルド済み"
-
-認識した
-ギットハブのPre-releaseの状態でアップデートの認識確認。
-alphaにてインストール⁠下記のバージョンの認識を確認しました。
-・beta
-・無印
-
-ソースコード
-autoUpdater.autoDownload = false;
-//：プレリリース版の検知を許可
-autoUpdater.allowPrerelease = true;//製品版の時にコメントアウトを
-const appVersion = app.getVersion();
-
-⁠alpha
-「Release（無印）」
-
-・beta
-・無印
-この二つを「Latest」のみのに変更できますか？
-
-⁠alphaは現状のまま「Latest」・「Pre-release」どちらも認識させるようにしてください
-
-⁠alpha「Latest」・「Pre-release」どちらも認識できました。
-beta、無印「Latest」・「Pre-release」ともに反応なしでした。
-beta、無印がギットハブの「Latest」に何の反応もしないですね
+1桁目：読み込みファイルの追加
+2桁目：機能追加
+3桁目：バグ修正、CSS調整
