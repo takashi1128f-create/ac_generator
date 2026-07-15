@@ -397,36 +397,55 @@ window.loadProjectToUI = async function(projectState) {
 	const env = projectState.environment || {};
 	// --- 物理パス（Route）からUIを100%復元するロジック ---
 		if (env.data_folder) {
-				const fullPath = env.data_folder.replace(/\\/g, '/'); // スラッシュを統一して解析しやすくします
-				const pathParts = fullPath.split('/');
-				
-				// content/cars の位置を探して、ルートと車両名を特定します
-				const carsIdx = pathParts.findIndex(p => p.toLowerCase() === 'cars');
-				if (carsIdx !== -1) {
-						// 1. Assetto Corsa ルートフォルダ (content より前の部分)
-						const acRoot = pathParts.slice(0, carsIdx - 1).join('\\');
-						const acRootInput = document.getElementById('ac-root-path');
-						if (acRootInput) acRootInput.value = acRoot;
+    window.currentDataFolderPath = env.data_folder; // 住所をシステムに記憶
+    const fullPath = env.data_folder.replace(/\\/g, '/');
+    const pathParts = fullPath.split('/');
+    const carsIdx = pathParts.findIndex(p => p.toLowerCase() === 'cars');
 
-						// 2. ベース車両を選択 (cars の直後のフォルダ名)
-						const baseCar = pathParts[carsIdx + 1];
-						const carSelect = document.getElementById('ac-car-select');
-						if (carSelect && baseCar) {
-								// リストを更新（既存の関数を使用）してから車両を合わせます
-								if (typeof window.refreshCarList === 'function') {
-										await window.refreshCarList(acRoot);
-										carSelect.value = baseCar;
-								}
-						}
+    if (carsIdx !== -1) {
+        const acRoot = pathParts.slice(0, carsIdx - 1).join('\\');
+        const baseCar = pathParts[carsIdx + 1];
+        const carRoot = pathParts.slice(0, carsIdx + 2).join('\\'); // dataの1つ上の階層
 
-						// 3. フォルダ名 (絶対に存在する物理フォルダ名から復元)
-						const nameInput = document.getElementById('new-car-project-name');
-						if (nameInput) {
-								// 保存された名前があればそれを、なければパスから抽出した名前をセット
-								nameInput.value = env.output_car_name || baseCar;
-						}
-				}
-		}
+        // ① 指示された3つのUI要素を物理パスから100%復元
+        const acRootInput = document.getElementById('ac-root-path');
+        if (acRootInput) acRootInput.value = acRoot;
+
+        const carSelect = document.getElementById('ac-car-select');
+        if (carSelect && baseCar && typeof window.refreshCarList === 'function') {
+            await window.refreshCarList(acRoot);
+            carSelect.value = baseCar;
+        }
+
+        const nameInput = document.getElementById('new-car-project-name');
+        if (nameInput) nameInput.value = env.output_car_name || baseCar;
+
+        // ② v0.0.7（内部1.0.0）の救済措置：不足データをディスクから吸い上げる
+        if (projectState.project && projectState.project.version === "1.0.0") {
+            console.log("🛠 [RESCUE] 旧形式を検知。実フォルダから最新状態をマージします。");
+            const diskRes = await window.electronAPI.readCarFolderData(carRoot);
+            if (diskRes.success) {
+                // ファイルデータの補完
+                diskRes.files.forEach(diskFile => {
+									const lowerName = diskFile.name.toLowerCase();
+									const isTextFile = lowerName.endsWith('.ini') || lowerName.endsWith('.lut') || lowerName.endsWith('.rto') || lowerName.endsWith('.json');
+									if (!isTextFile) return; // .kn5 や .acd など、文章ではないファイルは無視します
+                    const fileId = diskFile.name.replace('.ini', '').replace('.rto', '').replace('.json', '');
+                    if (!projectState.files[fileId]) {
+                        console.log(`➕ [MERGE] 欠落ファイルを補完: ${diskFile.name}`);
+                        projectState.files[fileId] = { 
+                            currentData: diskFile.name.endsWith('.json') ? JSON.parse(diskFile.content) : window.parseINI(diskFile.content)
+                        };
+                    }
+                });
+                // スキン・ロゴ情報の補完
+                if (!env.all_car_skins || env.all_car_skins.length === 0) env.all_car_skins = diskRes.skins;
+            }
+        }
+    }
+}
+// データを金庫（window.currentProject）へ同期し、以降の処理が「完全なデータ」を参照できるようにする
+window.currentProject = projectState;
 	// 1. 車両名の入力欄を復元
 	const nameInput = document.getElementById('new-car-project-name');
 	if (nameInput && env.output_car_name) {
@@ -660,7 +679,8 @@ window.loadProjectToUI = async function(projectState) {
 				console.log(" [RESTORE] 置換されたカスタム画像を復元しました:", env.custom_badge_path);
 			} else if (env.data_folder) {
 				// 2. 個別パスが保存されていない場合は、標準の「車両フォルダ/ui/badge.png」を表示
-				window.updateBadgeImage(env.data_folder);
+				 const carRootForBadge = env.data_folder.replace(/[\\\/]data$/i, '');
+   			 window.updateBadgeImage(carRootForBadge);
 			}
 		}
 	}
