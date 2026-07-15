@@ -304,11 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			if (window.electronAPI && window.electronAPI.setWindowTitle) {
 				window.electronAPI.setWindowTitle(projectName);
 			}
-			window.currentProject.project = {
-				name: projectName,
-				created: new Date().toISOString(),
-				version: "1.0.0"
-			};
+			window.currentProject.project = { name: projectName, created: new Date().toISOString(), version: window.appVersion };
 			try {
 				// メインプロセスへ、記憶領域のデータをそのまま保存依頼
 				const result = await window.electronAPI.saveProject(window.currentProject);
@@ -799,7 +795,9 @@ document.addEventListener('DOMContentLoaded', () => {
 			window.currentProject.environment.current_skin_idx = window.currentSkinIdx || 0;
 			// ★追加：上書き保存用の「データフォルダのパス」も一緒にセーブデータに記憶させる！
 			window.currentProject.environment.data_folder = window.currentDataFolderPath || "";
-			console.log("✅ [SAVE] 拡張物理の状態を回収しました:", window.currentProject.environment.isExtendedPhysicsEnabled);
+			window.currentProject.project.version = window.appVersion;
+			console.log("✅ [SAVE] 拡張物理の状態を回収しました:", 
+				window.currentProject.environment.isExtendedPhysicsEnabled);
 			// 3. 最新データを回収した状態でのみ、保存（バックアップ作成）を実行
 			try {
 				const result = await window.electronAPI.saveProject(window.currentProject);
