@@ -333,7 +333,7 @@ const template = [{
 			label: 'GitHubで最新版（ベータ含む）を確認',
 			click: () => {
 				// 外部ブラウザでリリース一覧ページを開く
-				shell.openExternal('https://github.com/takashi1128f-create/ac_generator/releases');
+				shell.openExternal('https://github.com/nerutakachan/ac_generator/releases');
 			}
 		},
 		{ type: 'separator' },
